@@ -1,0 +1,45 @@
+{
+  "family": "file-upload-server",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::560629972528:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::560629972528:role/ecsTaskRole",
+  "containerDefinitions": [
+    {
+      "name": "file-upload-server",
+      "image": "560629972528.dkr.ecr.eu-north-1.amazonaws.com/file-upload-server:latest",
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 3001,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "AWS_REGION",
+          "value": "eu-north-1"
+        },
+        {
+          "name": "S3_BUCKET_NAME",
+          "value": "image-upload-just-life-things"
+        },
+        {
+          "name": "PORT",
+          "value": "3001"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/file-upload-server",
+          "awslogs-region": "eu-north-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ]
+}
+
