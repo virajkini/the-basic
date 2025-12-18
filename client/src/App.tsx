@@ -13,9 +13,14 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4">
       <div className="max-w-4xl mx-auto space-y-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-          File Upload
-        </h1>
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            File Upload Manager
+          </h1>
+          <p className="text-sm text-gray-500">
+            Upload and manage your files with ease
+          </p>
+        </div>
         <FileUpload 
           apiBase={import.meta.env.VITE_API_BASE_URL || "http://localhost:3001/api"} 
           onUploadSuccess={handleUploadSuccess}
