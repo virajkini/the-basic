@@ -3,12 +3,10 @@ frontend:
   phases:
     preBuild:
       commands:
-        - cd client
-        - npm install --prefer-offline --no-audit
+        - cd client && npm ci
     build:
       commands:
-        - cd client
-        - npm run build
+        - cd client && npm run build
   artifacts:
     baseDirectory: client/dist
     files:
