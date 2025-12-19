@@ -3,15 +3,17 @@ frontend:
   phases:
     preBuild:
       commands:
-        - cd client && npm ci --legacy-peer-deps
+        - cd client
+        - npm ci --legacy-peer-deps
     build:
       commands:
-        - cd client && npm run build
+        - npm run build
+
   artifacts:
     baseDirectory: client/dist
     files:
       - '**/*'
+
   cache:
     paths:
       - client/node_modules/**/*
-
