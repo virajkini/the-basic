@@ -4,7 +4,7 @@ frontend:
     preBuild:
       commands:
         - cd client
-        - npm ci --cache .npm --prefer-offline
+        - npm install --prefer-offline --no-audit
     build:
       commands:
         - cd client
@@ -15,6 +15,5 @@ frontend:
       - '**/*'
   cache:
     paths:
-      - client/.npm/**/*
       - client/node_modules/**/*
 
