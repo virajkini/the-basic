@@ -1,4 +1,4 @@
-name: Deploy to AWS ECS
+name: Deploy Server to AWS ECS
 
 on:
   push:
@@ -8,21 +8,42 @@ on:
       - '**.md'
       - '.gitignore'
       - 'LICENSE'
+      - 'client/**'
+      - 'amplify.yml'
 
 env:
   AWS_REGION: eu-north-1
   ECR_REPOSITORY_SERVER: file-upload-server
-  ECR_REPOSITORY_CLIENT: file-upload-client
   CLUSTER_NAME: file-upload-cluster-1
   SERVICE_NAME_SERVER: file-upload-server-service
-  SERVICE_NAME_CLIENT: file-upload-client-service
-  # Update this with your ALB DNS name
-  ALB_DNS: file-upload-alb-209868263.eu-north-1.elb.amazonaws.com
 
 jobs:
-  deploy:
-    name: Build and Deploy
+  check-changes:
+    name: Check for Server Changes
     runs-on: ubuntu-latest
+    outputs:
+      server-changed: ${{ steps.filter.outputs.server }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for server changes
+        id: filter
+        uses: dorny/paths-filter@v2
+        with:
+          filters: |
+            server:
+              - 'server/**'
+              - 'ecs/server-task-definition.json'
+              - '.github/workflows/deploy.yml'
+
+  deploy:
+    name: Build and Deploy Server
+    runs-on: ubuntu-latest
+    needs: check-changes
+    if: needs.check-changes.outputs.server-changed == 'true'
     
     steps:
       - name: Checkout code
@@ -62,24 +83,6 @@ jobs:
           docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_SERVER }}:latest
           cd ..
 
-      - name: Build, tag, and push client image to Amazon ECR
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
-          VITE_API_BASE_URL: http://${{ env.ALB_DNS }}/api
-        run: |
-          echo "Building client Docker image..."
-          cd client
-          docker build --platform linux/amd64 \
-            --build-arg VITE_API_BASE_URL=$VITE_API_BASE_URL \
-            -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_CLIENT }}:$IMAGE_TAG \
-            -t $ECR_REGISTRY/${{ env.ECR_REPOSITORY_CLIENT }}:latest \
-            .
-          echo "Pushing client image to ECR..."
-          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_CLIENT }}:$IMAGE_TAG
-          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_CLIENT }}:latest
-          cd ..
-
       - name: Update server task definition
         id: task-def-server
         uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -87,14 +90,6 @@ jobs:
           task-definition: ecs/server-task-definition.json
           container-name: file-upload-server
           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_SERVER }}:${{ github.sha }}
-
-      - name: Update client task definition
-        id: task-def-client
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: ecs/client-task-definition.json
-          container-name: file-upload-client
-          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_CLIENT }}:${{ github.sha }}
 
       - name: Deploy server to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
@@ -104,29 +99,12 @@ jobs:
           cluster: ${{ env.CLUSTER_NAME }}
           wait-for-service-stability: true
 
-      - name: Deploy client to Amazon ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def-client.outputs.task-definition }}
-          service: ${{ env.SERVICE_NAME_CLIENT }}
-          cluster: ${{ env.CLUSTER_NAME }}
-          wait-for-service-stability: true
-
       - name: Verify deployment
         run: |
-          echo "Verifying deployment status..."
-          echo "Server Service:"
+          echo "Verifying server deployment status..."
           aws ecs describe-services \
             --cluster ${{ env.CLUSTER_NAME }} \
             --services ${{ env.SERVICE_NAME_SERVER }} \
-            --region ${{ env.AWS_REGION }} \
-            --query 'services[0].[serviceName,status,runningCount,desiredCount]' \
-            --output table
-          
-          echo "Client Service:"
-          aws ecs describe-services \
-            --cluster ${{ env.CLUSTER_NAME }} \
-            --services ${{ env.SERVICE_NAME_CLIENT }} \
             --region ${{ env.AWS_REGION }} \
             --query 'services[0].[serviceName,status,runningCount,desiredCount]' \
             --output table
@@ -134,8 +112,8 @@ jobs:
       - name: Deployment Summary
         if: success()
         run: |
-          echo "✅ Deployment completed successfully!"
+          echo "✅ Server deployment completed successfully!"
           echo "Commit SHA: ${{ github.sha }}"
           echo "Server Image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_SERVER }}:${{ github.sha }}"
-          echo "Client Image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_CLIENT }}:${{ github.sha }}"
+          echo "ℹ️  Client is deployed automatically via AWS Amplify"
 
