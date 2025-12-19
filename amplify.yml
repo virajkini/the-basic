@@ -4,13 +4,25 @@ frontend:
     preBuild:
       commands:
         - |
-          cd client
-          npm ci --legacy-peer-deps
+          if [ -d "client" ]; then
+            cd client
+            npm ci --legacy-peer-deps
+          else
+            echo "Error: client directory not found"
+            ls -la
+            exit 1
+          fi
     build:
       commands:
         - |
-          cd client
-          npm run build
+          if [ -d "client" ]; then
+            cd client
+            npm run build
+          else
+            echo "Error: client directory not found"
+            ls -la
+            exit 1
+          fi
   artifacts:
     baseDirectory: client/dist
     files:
