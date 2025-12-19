@@ -16,18 +16,8 @@ services:
     networks:
       - app-network
 
-  client:
-    build:
-      context: ./client
-      dockerfile: Dockerfile
-      args:
-        - VITE_API_BASE_URL=http://localhost:3001/api
-    ports:
-      - "3000:80"
-    depends_on:
-      - server
-    networks:
-      - app-network
+# Note: Client is now deployed via AWS Amplify
+# For local development, run: cd client && npm run dev
 
 networks:
   app-network:
