@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import FileUpload from './components/FileUpload'
 import AssetList from './components/AssetList'
+import OTPFlow from './components/OTPFlow'
 
 function App() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -29,6 +30,7 @@ function App() {
           apiBase={import.meta.env.VITE_API_BASE_URL || "http://localhost:3001/api"}
           refreshTrigger={refreshTrigger}
         />
+        <OTPFlow />
       </div>
     </div>
   )

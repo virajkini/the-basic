@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../utils/apiClient';
 
 function OTPFlow() {
@@ -9,6 +9,38 @@ function OTPFlow() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
+  const [userPhone, setUserPhone] = useState<string | null>(null);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Check authentication status on page load
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const response = await api.get('/auth/me');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.loggedIn && data.user) {
+            setAuthenticated(true);
+            setUserPhone(data.user.phone);
+          } else {
+            setAuthenticated(false);
+            setUserPhone(null);
+          }
+        } else {
+          setAuthenticated(false);
+          setUserPhone(null);
+        }
+      } catch (err) {
+        console.error('Error checking auth status:', err);
+        setAuthenticated(false);
+        setUserPhone(null);
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    checkAuthStatus();
+  }, []);
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +101,7 @@ function OTPFlow() {
         const data = await response.json();
         if (data.authenticated) {
           setAuthenticated(true);
+          setUserPhone(normalizedPhone);
           setSuccess(true);
           // Reset form after successful login
           setTimeout(() => {
@@ -95,6 +128,7 @@ function OTPFlow() {
     try {
       await api.post('/auth/logout');
       setAuthenticated(false);
+      setUserPhone(null);
       setStep('phone');
       setPhone('');
       setOtp('');
@@ -105,13 +139,22 @@ function OTPFlow() {
     }
   };
 
-  if (authenticated) {
+  // Show loading state while checking auth
+  if (checkingAuth) {
+    return (
+      <div className="mt-8 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <p className="text-gray-600 text-center">Checking authentication...</p>
+      </div>
+    );
+  }
+
+  if (authenticated && userPhone) {
     return (
       <div className="mt-8 p-6 bg-green-50 border border-green-200 rounded-lg">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-green-800 font-medium">✓ Authenticated</p>
-            <p className="text-sm text-green-600 mt-1">Logged in as {phone}</p>
+            <p className="text-sm text-green-600 mt-1">Logged in as {userPhone}</p>
           </div>
           <button
             onClick={handleLogout}

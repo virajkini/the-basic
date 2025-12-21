@@ -19,7 +19,7 @@ const OTP_EXPIRY = 5 * 60 * 1000; // 5 minutes in milliseconds
 // Rate limiter for OTP send endpoint
 const otpRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 3, // Limit each IP to 3 requests per windowMs
+  max: 5, // Limit each IP to 3 requests per windowMs
   message: { error: 'Too many OTP requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
@@ -37,6 +37,23 @@ const isValidPhone = (phone: string): boolean => {
 const generateOTP = (): string => {
   // For test phone, always return 1111
   return '1111';
+};
+
+// Helper functions for token verification
+const verifyAccessToken = (token: string): { phone: string; type: string } => {
+  const decoded = jwt.verify(token, JWT_SECRET) as { phone: string; type: string };
+  if (decoded.type !== 'access') {
+    throw new Error('Invalid token type');
+  }
+  return decoded;
+};
+
+const verifyRefreshToken = (token: string): { phone: string; type: string } => {
+  const decoded = jwt.verify(token, JWT_REFRESH_SECRET) as { phone: string; type: string };
+  if (decoded.type !== 'refresh') {
+    throw new Error('Invalid token type');
+  }
+  return decoded;
 };
 
 // POST /auth/otp/send
@@ -122,8 +139,6 @@ router.post('/otp/verify', (req: Request, res: Response) => {
       { expiresIn: REFRESH_TOKEN_EXPIRY }
     );
 
-    // Generate CSRF token
-    const csrfToken = crypto.randomBytes(32).toString('hex');
 
     // Store refresh token
     const refreshTokenExpiry = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days
@@ -135,23 +150,17 @@ router.post('/otp/verify', (req: Request, res: Response) => {
     res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: isProduction, // Only send over HTTPS in production
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: isProduction, // Only send over HTTPS in production
-      sameSite: 'strict',
+      sameSite: 'lax', // Allows cookies when navigating from external sites (Gmail, WhatsApp, etc.)
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    res.cookie('csrfToken', csrfToken, {
-      httpOnly: false, // Readable by JavaScript
-      secure: isProduction,
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
 
     res.json({ authenticated: true });
   } catch (error) {
@@ -218,14 +227,14 @@ router.post('/refresh', (req: Request, res: Response) => {
     res.cookie('accessToken', newAccessToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict',
+      sameSite: 'lax', // Allows cookies when navigating from external sites (Gmail, WhatsApp, etc.)
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -234,6 +243,93 @@ router.post('/refresh', (req: Request, res: Response) => {
     console.error('Error refreshing token:', error);
     res.status(500).json({ 
       error: 'Failed to refresh token',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// GET /auth/me - Check authentication status and refresh if needed
+router.get('/me', async (req: Request, res: Response) => {
+  try {
+    const accessToken = req.cookies?.accessToken;
+    const refreshToken = req.cookies?.refreshToken;
+
+    // 1️⃣ No tokens → logged out
+    if (!accessToken && !refreshToken) {
+      return res.status(401).json({ loggedIn: false });
+    }
+
+    // 2️⃣ Try access token
+    if (accessToken) {
+      try {
+        const payload = verifyAccessToken(accessToken);
+        return res.json({
+          loggedIn: true,
+          user: { phone: payload.phone }
+        });
+      } catch (err) {
+        // Token expired or invalid, fallthrough to refresh
+      }
+    }
+
+    // 3️⃣ Try refresh token
+    if (!refreshToken) {
+      return res.status(401).json({ loggedIn: false });
+    }
+
+    try {
+      // Check if refresh token exists in store
+      const storedToken = refreshTokenStore.get(refreshToken);
+      if (!storedToken) {
+        res.clearCookie('accessToken');
+        res.clearCookie('refreshToken');
+        return res.status(401).json({ loggedIn: false });
+      }
+
+      // Check if refresh token expired in store
+      if (Date.now() > storedToken.expiresAt) {
+        refreshTokenStore.delete(refreshToken);
+        res.clearCookie('accessToken');
+        res.clearCookie('refreshToken');
+        return res.status(401).json({ loggedIn: false });
+      }
+
+      // Verify JWT
+      const payload = verifyRefreshToken(refreshToken);
+
+      // Generate new access token
+      const newAccessToken = jwt.sign(
+        { phone: payload.phone, type: 'access' },
+        JWT_SECRET,
+        { expiresIn: ACCESS_TOKEN_EXPIRY }
+      );
+
+      // Set new access token cookie
+      const isProduction = process.env.NODE_ENV === 'production';
+      res.cookie('accessToken', newAccessToken, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: 'lax',
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+
+      return res.json({
+        loggedIn: true,
+        user: { phone: payload.phone }
+      });
+    } catch (err) {
+      // Refresh token invalid
+      if (refreshToken) {
+        refreshTokenStore.delete(refreshToken);
+      }
+      res.clearCookie('accessToken');
+      res.clearCookie('refreshToken');
+      return res.status(401).json({ loggedIn: false });
+    }
+  } catch (error) {
+    console.error('Error in /auth/me:', error);
+    res.status(500).json({ 
+      error: 'Failed to check authentication status',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
@@ -252,7 +348,6 @@ router.post('/logout', (req: Request, res: Response) => {
     // Clear cookies
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
-    res.clearCookie('csrfToken');
 
     res.json({ loggedOut: true });
   } catch (error) {
