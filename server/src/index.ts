@@ -33,7 +33,12 @@ const s3Client = new S3Client(s3ClientConfig);
 
 const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'image-upload-just-life-things';
 
-app.use(cors());
+// CORS configuration
+app.use(cors({
+  origin: '*', // Allow all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json());
 
 // Presigned URL endpoint
