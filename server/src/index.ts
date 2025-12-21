@@ -1,8 +1,11 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import authRoutes from './routes/auth.js';
+import { authenticateToken } from './middleware/auth.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -33,8 +36,31 @@ const s3Client = new S3Client(s3ClientConfig);
 
 const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'image-upload-just-life-things';
 
-app.use(cors());
+// CORS configuration - must specify exact origin when using credentials
+app.use(cors({
+  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  credentials: true, // Required for cookies
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+}));
 app.use(express.json());
+app.use(cookieParser());
+
+// Auth routes (no authentication required)
+app.use('/api/auth', authRoutes);
+
+// Apply authentication middleware to all other API routes (excluding /api/auth)
+app.use((req, res, next) => {
+  // Skip authentication for auth routes
+  if (req.path.startsWith('/api/auth')) {
+    return next();
+  }
+  // Apply authentication for all other /api routes
+  if (req.path.startsWith('/api')) {
+    return authenticateToken(req, res, next);
+  }
+  next();
+});
 
 // Presigned URL endpoint
 app.get('/api/presign', async (req, res) => {

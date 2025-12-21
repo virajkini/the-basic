@@ -1,8 +1,5 @@
 import React, { useState } from "react";
-
-interface FileUploadProps {
-  apiBase: string;
-}
+import { apiClient } from "../utils/apiClient";
 
 interface FileUploadProps {
   apiBase: string;
@@ -34,9 +31,8 @@ export default function FileUpload({ apiBase, onUploadSuccess }: FileUploadProps
 
     try {
       // 1. ask backend for presigned url & key
-      const res = await fetch(
-        `${apiBase}/presign?filename=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}`
-      );
+      const endpoint = `/presign?filename=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}`;
+      const res = await apiClient(endpoint);
       
       if (!res.ok) {
         throw new Error("Failed to get presigned URL");

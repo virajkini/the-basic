@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { apiClient } from "../utils/apiClient";
 
 interface Asset {
   key: string;
@@ -80,7 +81,7 @@ export default function AssetList({ apiBase, refreshTrigger }: AssetListProps) {
       }
 
       setLoading(true);
-      const res = await fetch(`${apiBase}/files`);
+      const res = await apiClient('/files');
       if (!res.ok) {
         throw new Error("Failed to fetch assets");
       }
@@ -122,9 +123,7 @@ export default function AssetList({ apiBase, refreshTrigger }: AssetListProps) {
 
     try {
       setDeleting(key);
-      const res = await fetch(`${apiBase}/files/${encodeURIComponent(key)}`, {
-        method: "DELETE",
-      });
+      const res = await apiClient(`/files/${encodeURIComponent(key)}`, { method: "DELETE" });
 
       if (!res.ok) {
         throw new Error("Failed to delete file");
