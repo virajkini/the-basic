@@ -21,6 +21,7 @@ jobs:
   check-changes:
     name: Check for Server Changes
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       server-changed: ${{ steps.filter.outputs.server }}
     steps:
@@ -42,6 +43,7 @@ jobs:
   deploy:
     name: Build and Deploy Server
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     needs: check-changes
     if: needs.check-changes.outputs.server-changed == 'true'
     
@@ -68,6 +70,7 @@ jobs:
           echo "AWS Account ID: $ACCOUNT_ID"
 
       - name: Build, tag, and push server image to Amazon ECR
+        timeout-minutes: 10
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
@@ -92,6 +95,7 @@ jobs:
           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_SERVER }}:${{ github.sha }}
 
       - name: Deploy server to Amazon ECS
+        timeout-minutes: 3
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def-server.outputs.task-definition }}
@@ -100,6 +104,7 @@ jobs:
           wait-for-service-stability: true
 
       - name: Verify deployment
+        timeout-minutes: 2
         run: |
           echo "Verifying server deployment status..."
           aws ecs describe-services \
@@ -116,4 +121,3 @@ jobs:
           echo "Commit SHA: ${{ github.sha }}"
           echo "Server Image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_SERVER }}:${{ github.sha }}"
           echo "ℹ️  Client is deployed automatically via AWS Amplify"
-
