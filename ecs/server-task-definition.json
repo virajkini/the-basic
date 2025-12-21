@@ -38,11 +38,11 @@
       "secrets": [
         {
           "name": "JWT_SECRET",
-          "valueFrom": "arn:aws:ssm:eu-north-1:560629972528:parameter/file-upload-server/JWT_SECRET"
+          "valueFrom": "/file-upload-server/JWT_SECRET"
         },
         {
           "name": "JWT_REFRESH_SECRET",
-          "valueFrom": "arn:aws:ssm:eu-north-1:560629972528:parameter/file-upload-server/JWT_REFRESH_SECRET"
+          "valueFrom": "/file-upload-server/JWT_REFRESH_SECRET"
         }
       ],
       "logConfiguration": {
@@ -56,4 +56,3 @@
     }
   ]
 }
-
