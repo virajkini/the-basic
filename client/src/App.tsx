@@ -23,7 +23,6 @@ function App() {
           </p>
         </div>
         <FileUpload 
-          apiBase={import.meta.env.VITE_API_BASE_URL || "http://localhost:3001/api"} 
           onUploadSuccess={handleUploadSuccess}
         />
         <AssetList 
@@ -37,4 +36,3 @@ function App() {
 }
 
 export default App
-

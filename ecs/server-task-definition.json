@@ -38,11 +38,11 @@
       "secrets": [
         {
           "name": "JWT_SECRET",
-          "valueFrom": "/file-upload-server/JWT_SECRET"
+          "valueFrom": "/file-upload-server/jwt-secret"
         },
         {
           "name": "JWT_REFRESH_SECRET",
-          "valueFrom": "/file-upload-server/JWT_REFRESH_SECRET"
+          "valueFrom": "/file-upload-server/jwt-refresh-secret"
         }
       ],
       "logConfiguration": {

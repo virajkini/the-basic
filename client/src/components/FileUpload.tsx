@@ -2,11 +2,10 @@ import React, { useState } from "react";
 import { apiClient } from "../utils/apiClient";
 
 interface FileUploadProps {
-  apiBase: string;
   onUploadSuccess?: () => void;
 }
 
-export default function FileUpload({ apiBase, onUploadSuccess }: FileUploadProps) {
+export default function FileUpload({ onUploadSuccess }: FileUploadProps) {
   const [file, setFile] = useState<File | null>(null);
   const [progress, setProgress] = useState(0);
   const [uploadedKey, setUploadedKey] = useState<string | null>(null);
@@ -135,4 +134,3 @@ export default function FileUpload({ apiBase, onUploadSuccess }: FileUploadProps
     </div>
   );
 }
-
