@@ -14,8 +14,8 @@ on:
 env:
   AWS_REGION: ap-south-1
   ECR_REPOSITORY_SERVER: amgel-jodi-server
-  CLUSTER_NAME: file-upload-cluster-1
-  SERVICE_NAME_SERVER: file-upload-server-service
+  CLUSTER_NAME: amgel-jodi-cluster
+  SERVICE_NAME_SERVER: amgel-jodi-server-service-2k99cdf3
 
 jobs:
   check-changes:
