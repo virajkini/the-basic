@@ -146,22 +146,33 @@ router.post('/otp/verify', (req: Request, res: Response) => {
 
     // Set cookies
     const isProduction = process.env.NODE_ENV === 'production';
-    
-    res.cookie('accessToken', accessToken, {
+    const cookieOptions: any = {
       httpOnly: true,
       secure: isProduction, // Only send over HTTPS in production
       sameSite: 'lax',
-      domain: '.amgeljodi.com', // Allow cookies to work across subdomains
       maxAge: 15 * 60 * 1000, // 15 minutes
-    });
+    };
+    
+    // Only set domain in production (for localhost, omit domain)
+    if (isProduction) {
+      cookieOptions.domain = '.amgeljodi.com'; // Allow cookies to work across subdomains
+    }
+    
+    res.cookie('accessToken', accessToken, cookieOptions);
 
-    res.cookie('refreshToken', refreshToken, {
+    const refreshCookieOptions: any = {
       httpOnly: true,
       secure: isProduction, // Only send over HTTPS in production
       sameSite: 'lax', // Allows cookies when navigating from external sites (Gmail, WhatsApp, etc.)
-      domain: '.amgeljodi.com', // Allow cookies to work across subdomains
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    };
+    
+    // Only set domain in production (for localhost, omit domain)
+    if (isProduction) {
+      refreshCookieOptions.domain = '.amgeljodi.com'; // Allow cookies to work across subdomains
+    }
+
+    res.cookie('refreshToken', refreshToken, refreshCookieOptions);
 
 
     res.json({ authenticated: true });
@@ -225,22 +236,34 @@ router.post('/refresh', (req: Request, res: Response) => {
 
     // Set new cookies
     const isProduction = process.env.NODE_ENV === 'production';
-
-    res.cookie('accessToken', newAccessToken, {
+    
+    const cookieOptions: any = {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax',
-      domain: '.amgeljodi.com', // Allow cookies to work across subdomains
       maxAge: 15 * 60 * 1000, // 15 minutes
-    });
+    };
+    
+    // Only set domain in production (for localhost, omit domain)
+    if (isProduction) {
+      cookieOptions.domain = '.amgeljodi.com'; // Allow cookies to work across subdomains
+    }
 
-    res.cookie('refreshToken', newRefreshToken, {
+    res.cookie('accessToken', newAccessToken, cookieOptions);
+
+    const refreshCookieOptions: any = {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax', // Allows cookies when navigating from external sites (Gmail, WhatsApp, etc.)
-      domain: '.amgeljodi.com', // Allow cookies to work across subdomains
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    };
+    
+    // Only set domain in production (for localhost, omit domain)
+    if (isProduction) {
+      refreshCookieOptions.domain = '.amgeljodi.com'; // Allow cookies to work across subdomains
+    }
+
+    res.cookie('refreshToken', newRefreshToken, refreshCookieOptions);
 
     res.json({ refreshed: true });
   } catch (error) {
@@ -310,13 +333,19 @@ router.get('/me', async (req: Request, res: Response) => {
 
       // Set new access token cookie
       const isProduction = process.env.NODE_ENV === 'production';
-      res.cookie('accessToken', newAccessToken, {
+      const cookieOptions: any = {
         httpOnly: true,
         secure: isProduction,
         sameSite: 'lax',
-        domain: '.amgeljodi.com', // Allow cookies to work across subdomains
         maxAge: 15 * 60 * 1000, // 15 minutes
-      });
+      };
+      
+      // Only set domain in production (for localhost, omit domain)
+      if (isProduction) {
+        cookieOptions.domain = '.amgeljodi.com'; // Allow cookies to work across subdomains
+      }
+      
+      res.cookie('accessToken', newAccessToken, cookieOptions);
 
       return res.json({
         loggedIn: true,

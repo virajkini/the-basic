@@ -3,22 +3,11 @@
 
 echo "🔍 Running TypeScript type checks..."
 
-# Check client TypeScript
-echo "Checking client TypeScript..."
-cd client
-if ! npx tsc --noEmit; then
-  echo "❌ Client TypeScript check failed"
+# Use the npm script that checks all projects (home, app, and server)
+if ! npm run typecheck; then
+  echo "❌ TypeScript checks failed"
   exit 1
 fi
-cd ..
-
-# Check server TypeScript
-echo "Checking server TypeScript..."
-cd server
-if ! npx tsc --noEmit; then
-  echo "❌ Server TypeScript check failed"
-  exit 1
-fi
-cd ..
 
 echo "✅ All TypeScript checks passed!"
+

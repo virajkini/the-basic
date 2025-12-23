@@ -1,19 +1,24 @@
 {
-  "name": "file-upload-app",
+  "name": "amgel-jodi",
   "version": "1.0.0",
-  "description": "Simple React file upload app with Express backend",
+  "description": "GSB Konkani Matrimony Platform",
   "scripts": {
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:home\" \"npm run dev:app\"",
     "dev:server": "cd server && npm run dev",
-    "dev:client": "cd client && npm run dev",
-    "install:all": "npm install && cd server && npm install && cd ../client && npm install",
+    "dev:home": "cd client/amgel-jodi-home && npm run dev",
+    "dev:app": "cd client/amgel-jodi-app && npm run dev",
+    "install:all": "npm install && cd server && npm install && cd ../client/amgel-jodi-home && npm install && cd ../amgel-jodi-app && npm install",
     "prepare": "husky install",
-    "typecheck:client": "cd client && npx tsc --noEmit",
+    "typecheck:home": "cd client/amgel-jodi-home && npx tsc --noEmit",
+    "typecheck:app": "cd client/amgel-jodi-app && npx tsc --noEmit",
     "typecheck:server": "cd server && npx tsc --noEmit",
-    "typecheck": "npm run typecheck:client && npm run typecheck:server"
+    "typecheck": "npm run typecheck:home && npm run typecheck:app && npm run typecheck:server"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
     "husky": "^8.0.3"
+  },
+  "dependencies": {
+    "typescript": "^5.9.3"
   }
 }
