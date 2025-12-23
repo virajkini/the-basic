@@ -12,8 +12,8 @@ on:
       - 'amplify.yml'
 
 env:
-  AWS_REGION: eu-north-1
-  ECR_REPOSITORY_SERVER: file-upload-server
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY_SERVER: amgel-jodi-server
   CLUSTER_NAME: file-upload-cluster-1
   SERVICE_NAME_SERVER: file-upload-server-service
 
@@ -91,7 +91,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: ecs/server-task-definition.json
-          container-name: file-upload-server
+          container-name: amgel-jodi-server
           image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_SERVER }}:${{ github.sha }}
 
       - name: Deploy server to Amazon ECS
