@@ -36,6 +36,12 @@ const s3Client = new S3Client(s3ClientConfig);
 
 const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'image-upload-just-life-things';
 
+// Debug middleware to check CLIENT_URL environment variable
+app.use((req, res, next) => {
+  res.setHeader('X-Debug-Origin', process.env.CLIENT_URL || 'NOT_SET');
+  next();
+});
+
 // CORS configuration - must specify exact origin when using credentials
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:3000',
