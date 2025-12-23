@@ -52,7 +52,7 @@
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/file-upload-server",
+          "awslogs-group": "/ecs/amgel-jodi-server",
           "awslogs-region": "ap-south-1",
           "awslogs-stream-prefix": "ecs"
         }
