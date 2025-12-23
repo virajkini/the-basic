@@ -72,13 +72,18 @@ app.use(cors({
 app.use(express.json());
 app.use(cookieParser());
 
+// Health check endpoint (no authentication required)
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
 // Auth routes (no authentication required)
 app.use('/api/auth', authRoutes);
 
-// Apply authentication middleware to all other API routes (excluding /api/auth)
+// Apply authentication middleware to all other API routes (excluding /api/auth and /health)
 app.use((req, res, next) => {
-  // Skip authentication for auth routes
-  if (req.path.startsWith('/api/auth')) {
+  // Skip authentication for auth routes and health check
+  if (req.path.startsWith('/api/auth') || req.path === '/health') {
     return next();
   }
   // Apply authentication for all other /api routes
