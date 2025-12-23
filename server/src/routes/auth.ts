@@ -151,6 +151,7 @@ router.post('/otp/verify', (req: Request, res: Response) => {
       httpOnly: true,
       secure: isProduction, // Only send over HTTPS in production
       sameSite: 'lax',
+      domain: '.amgeljodi.com', // Allow cookies to work across subdomains
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
@@ -158,6 +159,7 @@ router.post('/otp/verify', (req: Request, res: Response) => {
       httpOnly: true,
       secure: isProduction, // Only send over HTTPS in production
       sameSite: 'lax', // Allows cookies when navigating from external sites (Gmail, WhatsApp, etc.)
+      domain: '.amgeljodi.com', // Allow cookies to work across subdomains
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -228,6 +230,7 @@ router.post('/refresh', (req: Request, res: Response) => {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax',
+      domain: '.amgeljodi.com', // Allow cookies to work across subdomains
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
@@ -235,6 +238,7 @@ router.post('/refresh', (req: Request, res: Response) => {
       httpOnly: true,
       secure: isProduction,
       sameSite: 'lax', // Allows cookies when navigating from external sites (Gmail, WhatsApp, etc.)
+      domain: '.amgeljodi.com', // Allow cookies to work across subdomains
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -310,6 +314,7 @@ router.get('/me', async (req: Request, res: Response) => {
         httpOnly: true,
         secure: isProduction,
         sameSite: 'lax',
+        domain: '.amgeljodi.com', // Allow cookies to work across subdomains
         maxAge: 15 * 60 * 1000, // 15 minutes
       });
 
