@@ -1,5 +1,5 @@
 {
-  "family": "file-upload-server",
+  "family": "amgel-jodi-server",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
   "cpu": "256",
@@ -8,8 +8,8 @@
   "taskRoleArn": "arn:aws:iam::560629972528:role/ecsTaskRole",
   "containerDefinitions": [
     {
-      "name": "file-upload-server",
-      "image": "560629972528.dkr.ecr.eu-north-1.amazonaws.com/file-upload-server:latest",
+      "name": "amgel-jodi-server",
+      "image": "560629972528.dkr.ecr.ap-south-1.amazonaws.com/amgel-jodi-server:latest",
       "essential": true,
       "portMappings": [
         {
@@ -20,7 +20,7 @@
       "environment": [
         {
           "name": "AWS_REGION",
-          "value": "eu-north-1"
+          "value": "ap-south-1"
         },
         {
           "name": "S3_BUCKET_NAME",
@@ -53,7 +53,7 @@
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/file-upload-server",
-          "awslogs-region": "eu-north-1",
+          "awslogs-region": "ap-south-1",
           "awslogs-stream-prefix": "ecs"
         }
       }
