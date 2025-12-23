@@ -45,7 +45,7 @@ app.use((req, res, next) => {
 // CORS configuration - must specify exact origin when using credentials
 const allowedOrigins = [
   'https://www.amgeljodi.com',
-  'https://amgeljodi.com/',
+  'https://amgeljodi.com',
   process.env.CLIENT_URL,
   'http://localhost:3000' // For local development
 ].filter(Boolean); // Remove any undefined/null values
@@ -191,7 +191,11 @@ app.delete('/api/files/:key', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
+// Enable HTTP keep-alive for better connection reuse
+server.keepAliveTimeout = 65000; // 65 seconds
+server.headersTimeout = 66000; // 66 seconds (must be > keepAliveTimeout)
 
