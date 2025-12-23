@@ -45,7 +45,7 @@ app.use((req, res, next) => {
 // CORS configuration - must specify exact origin when using credentials
 const allowedOrigins = [
   'https://www.amgeljodi.com',
-  'https://api.amgeljodi.com',
+  'https://amgeljodi.com/',
   process.env.CLIENT_URL,
   'http://localhost:3000' // For local development
 ].filter(Boolean); // Remove any undefined/null values
