@@ -43,8 +43,28 @@ app.use((req, res, next) => {
 });
 
 // CORS configuration - must specify exact origin when using credentials
+const allowedOrigins = [
+  'https://www.amgeljodi.com',
+  'https://amgeljodi.com/',
+  process.env.CLIENT_URL,
+  'http://localhost:3000' // For local development
+].filter(Boolean); // Remove any undefined/null values
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) {
+      return callback(null, true);
+    }
+    
+    // Check if the origin is in the allowed list
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true, // Required for cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
