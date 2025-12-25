@@ -9,8 +9,11 @@ declare global {
     interface Request {
       user?: {
         phone: string;
+        userId: string;
         type: string;
       };
+      authenticatedUserId?: string;
+      authenticatedUserPhone?: string;
     }
   }
 }
@@ -26,18 +29,23 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     }
 
     // Verify the token
-    const decoded = jwt.verify(accessToken, JWT_SECRET) as { phone: string; type: string };
+    const decoded = jwt.verify(accessToken, JWT_SECRET) as { phone: string; userId: string; type: string };
 
     // Check if it's an access token
     if (decoded.type !== 'access') {
       return res.status(401).json({ error: 'Invalid token type' });
     }
 
-    // Attach user info to request
+    // Attach user info to request (userId comes from token, no DB lookup needed)
     req.user = {
       phone: decoded.phone,
+      userId: decoded.userId,
       type: decoded.type,
     };
+
+    // Attach userId and phone directly to request for easy access
+    req.authenticatedUserId = decoded.userId;
+    req.authenticatedUserPhone = decoded.phone;
 
     next();
   } catch (error) {

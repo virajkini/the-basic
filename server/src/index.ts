@@ -5,6 +5,8 @@ import cookieParser from 'cookie-parser';
 import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
+import profileRoutes from './routes/profiles.js';
 import { authenticateToken } from './middleware/auth.js';
 
 const app = express();
@@ -77,8 +79,15 @@ app.get('/health', (req, res) => {
   res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
+
 // Auth routes (no authentication required)
 app.use('/api/auth', authRoutes);
+
+// User routes
+app.use('/api/users', userRoutes);
+
+// Profile routes
+app.use('/api/profiles', profileRoutes);
 
 // Apply authentication middleware to all other API routes (excluding /api/auth and /health)
 app.use((req, res, next) => {
