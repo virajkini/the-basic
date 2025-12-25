@@ -27,9 +27,25 @@ export async function POST() {
   // Create response with redirect
   const response = NextResponse.redirect(new URL(HOME_URL))
 
-  // Clear cookies in response
-  response.cookies.set('accessToken', '', { maxAge: 0, path: '/' })
-  response.cookies.set('refreshToken', '', { maxAge: 0, path: '/' })
+  // Clear cookies in response - must match the exact attributes used when setting them
+  const isProduction = process.env.NODE_ENV === 'production'
+  
+  const clearCookieOptions: any = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'lax' as const,
+    maxAge: 0,
+    path: '/',
+  }
+  
+  // Only set domain in production (must match how cookies were set)
+  if (isProduction) {
+    clearCookieOptions.domain = '.amgeljodi.com'
+  }
+
+  // Clear both cookies with matching attributes
+  response.cookies.set('accessToken', '', clearCookieOptions)
+  response.cookies.set('refreshToken', '', clearCookieOptions)
 
   return response
 }
