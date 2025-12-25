@@ -47,6 +47,10 @@
         {
           "name": "JWT_REFRESH_SECRET",
           "valueFrom": "/file-upload-server/jwt-refresh-secret"
+        },
+        {
+          "name": "MONGODB_URI",
+          "valueFrom": "/file-upload-server/mongodb-uri"
         }
       ],
       "logConfiguration": {

@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
+import { findUserByPhone, createUser } from '../services/userManager.js';
 
 const router = express.Router();
 
@@ -94,7 +95,7 @@ router.post('/otp/send', otpRateLimiter, (req: Request, res: Response) => {
 });
 
 // POST /auth/otp/verify
-router.post('/otp/verify', (req: Request, res: Response) => {
+router.post('/otp/verify', async (req: Request, res: Response) => {
   try {
     const { phone, otp } = req.body;
 
@@ -126,15 +127,22 @@ router.post('/otp/verify', (req: Request, res: Response) => {
     // OTP verified, remove it from store
     otpStore.delete(normalizedPhone);
 
-    // Generate tokens
+    // Check if user exists, if not create new user
+    let user = await findUserByPhone(normalizedPhone);
+    if (!user) {
+      // Create new user
+      user = await createUser(normalizedPhone);
+    }
+
+    // Generate tokens with userId included
     const accessToken = jwt.sign(
-      { phone: normalizedPhone, type: 'access' },
+      { phone: normalizedPhone, userId: user._id, type: 'access' },
       JWT_SECRET,
       { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
 
     const refreshToken = jwt.sign(
-      { phone: normalizedPhone, type: 'refresh' },
+      { phone: normalizedPhone, userId: user._id, type: 'refresh' },
       JWT_REFRESH_SECRET,
       { expiresIn: REFRESH_TOKEN_EXPIRY }
     );
@@ -215,16 +223,16 @@ router.post('/refresh', (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid refresh token' });
     }
 
-    // Generate new access token
+    // Generate new access token (include userId from decoded token)
     const newAccessToken = jwt.sign(
-      { phone: decoded.phone, type: 'access' },
+      { phone: decoded.phone, userId: decoded.userId, type: 'access' },
       JWT_SECRET,
       { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
 
-    // Generate new refresh token (rotate)
+    // Generate new refresh token (rotate, include userId)
     const newRefreshToken = jwt.sign(
-      { phone: decoded.phone, type: 'refresh' },
+      { phone: decoded.phone, userId: decoded.userId, type: 'refresh' },
       JWT_REFRESH_SECRET,
       { expiresIn: REFRESH_TOKEN_EXPIRY }
     );
