@@ -16,6 +16,9 @@ RUN npm run build
 # Production stage
 FROM node:20.17.0-alpine
 
+# Install CA certificates for MongoDB Atlas TLS connection
+RUN apk add --no-cache ca-certificates
+
 WORKDIR /app
 
 # Set NODE_ENV to production
