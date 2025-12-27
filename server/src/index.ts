@@ -11,20 +11,31 @@ import { authenticateToken } from './middleware/auth.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Debug middleware to check CLIENT_URL environment variable
+// Debug middleware to check CLIENT_URL environment variable and log CORS requests
 app.use((req, res, next) => {
   res.setHeader('X-Debug-Origin', process.env.CLIENT_URL || 'NOT_SET');
+  res.setHeader('X-Debug-Allowed-Origins', normalizedOrigins.join(', '));
+  
+  // Log CORS-related requests for debugging
+  if (req.method === 'OPTIONS' || req.headers.origin) {
+    console.log(`[CORS] ${req.method} ${req.path} - Origin: ${req.headers.origin || 'none'}`);
+  }
+  
   next();
 });
 
 // CORS configuration - must specify exact origin when using credentials
-const allowedOrigins = [
+const allowedOrigins: string[] = [
   'https://www.amgeljodi.com',
   'https://amgeljodi.com',
+  'https://app.amgeljodi.com', // Protected app domain
   process.env.CLIENT_URL,
   'http://localhost:3000', // For local development (home app)
   'http://localhost:3002' // For local development (protected app)
-].filter(Boolean); // Remove any undefined/null values
+].filter((origin): origin is string => Boolean(origin)); // Remove any undefined/null values
+
+// Normalize origins (remove trailing slashes)
+const normalizedOrigins = allowedOrigins.map(origin => origin.replace(/\/$/, ''));
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -33,17 +44,33 @@ app.use(cors({
       return callback(null, true);
     }
     
+    // Normalize the incoming origin (remove trailing slash)
+    const normalizedOrigin = origin.replace(/\/$/, '');
+    
     // Check if the origin is in the allowed list
-    if (allowedOrigins.includes(origin)) {
+    if (normalizedOrigins.includes(normalizedOrigin) || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
       console.warn(`CORS blocked origin: ${origin}`);
+      console.warn(`Allowed origins: ${normalizedOrigins.join(', ')}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true, // Required for cookies
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ],
+  exposedHeaders: ['Content-Type', 'Content-Length'],
+  maxAge: 86400, // 24 hours
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 app.use(express.json());
 app.use(cookieParser());
