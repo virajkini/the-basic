@@ -16,6 +16,7 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isAnimating, setIsAnimating] = useState(false)
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
 
   useEffect(() => {
     if (isOpen) {
@@ -27,6 +28,36 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
       setError(null)
     } else {
       setIsAnimating(false)
+    }
+  }, [isOpen])
+
+  // Handle iOS keyboard visibility
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleResize = () => {
+      // On iOS, when keyboard opens, viewport height decreases
+      const viewportHeight = window.visualViewport?.height || window.innerHeight
+      const windowHeight = window.innerHeight
+      const keyboardHeight = windowHeight - viewportHeight
+      setKeyboardHeight(keyboardHeight > 50 ? keyboardHeight : 0) // Only set if significant change
+    }
+
+    // Use visualViewport API for better keyboard detection on iOS
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize)
+      handleResize() // Initial check
+    } else {
+      // Fallback for browsers without visualViewport
+      window.addEventListener('resize', handleResize)
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize)
+      } else {
+        window.removeEventListener('resize', handleResize)
+      }
     }
   }, [isOpen])
 
@@ -112,11 +143,18 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
 
       {/* Sheet */}
       <div
-        className={`fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl shadow-2xl z-50 transition-all duration-300 ease-out md:bottom-auto md:left-1/2 md:top-1/2 md:right-auto md:w-96 md:rounded-2xl ${
+        className={`fixed left-0 right-0 bg-white rounded-t-2xl shadow-2xl z-50 transition-all duration-300 ease-out md:bottom-auto md:left-1/2 md:top-1/2 md:right-auto md:w-96 md:rounded-2xl ${
           isOpen
             ? 'translate-y-0 opacity-100 md:translate-x-[-50%] md:translate-y-[-50%] md:scale-100'
             : 'translate-y-full opacity-0 md:translate-x-[-50%] md:translate-y-[-40%] md:scale-95 pointer-events-none'
         }`}
+        style={{
+          bottom: keyboardHeight > 0 ? `${keyboardHeight}px` : '0',
+          maxHeight: keyboardHeight > 0 
+            ? `calc(100vh - ${keyboardHeight}px - env(safe-area-inset-bottom, 0px))`
+            : '90vh',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        }}
       >
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">

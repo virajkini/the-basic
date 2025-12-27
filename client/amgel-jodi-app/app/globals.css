@@ -2,3 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes expandToFullScreen {
+  from {
+    left: var(--start-left, 50%);
+    top: var(--start-top, 50%);
+    width: var(--start-width, 200px);
+    height: var(--start-height, 200px);
+    transform: translate(-50%, -50%);
+    borderRadius: 0.5rem;
+  }
+  to {
+    left: 50%;
+    top: 50%;
+    width: auto;
+    height: auto;
+    max-width: 90vw;
+    max-height: 90vh;
+    transform: translate(-50%, -50%);
+    borderRadius: 0;
+  }
+}
+
