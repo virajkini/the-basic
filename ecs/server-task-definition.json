@@ -24,7 +24,11 @@
         },
         {
           "name": "S3_BUCKET_NAME",
-          "value": "image-upload-just-life-things"
+          "value": "amgel-jodi-s3"
+        },
+        {
+          "name": "CLOUDFRONT_DOMAIN",
+          "value": "static.amgeljodi.com"
         },
         {
           "name": "PORT",
