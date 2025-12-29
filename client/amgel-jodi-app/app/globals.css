@@ -2,33 +2,191 @@
 @tailwind components;
 @tailwind utilities;
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
+@layer base {
+  html {
+    scroll-behavior: smooth;
   }
-  to {
-    opacity: 1;
+
+  body {
+    @apply bg-gradient-to-b from-myColor-50 to-white min-h-screen;
+  }
+
+  body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    height: 100%;
   }
 }
 
-@keyframes expandToFullScreen {
-  from {
-    left: var(--start-left, 50%);
-    top: var(--start-top, 50%);
-    width: var(--start-width, 200px);
-    height: var(--start-height, 200px);
-    transform: translate(-50%, -50%);
-    borderRadius: 0.5rem;
+@layer utilities {
+  /* Fade animations */
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
-  to {
-    left: 50%;
-    top: 50%;
-    width: auto;
-    height: auto;
-    max-width: 90vw;
-    max-height: 90vh;
-    transform: translate(-50%, -50%);
-    borderRadius: 0;
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 0 0 rgba(167, 99, 241, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgba(167, 99, 241, 0);
+    }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @keyframes expandToFullScreen {
+    from {
+      left: var(--start-left, 50%);
+      top: var(--start-top, 50%);
+      width: var(--start-width, 200px);
+      height: var(--start-height, 200px);
+      transform: translate(-50%, -50%);
+      borderRadius: 0.5rem;
+    }
+    to {
+      left: 50%;
+      top: 50%;
+      width: auto;
+      height: auto;
+      max-width: 90vw;
+      max-height: 90vh;
+      transform: translate(-50%, -50%);
+      borderRadius: 0;
+    }
+  }
+
+  /* Progress bar animation */
+  @keyframes progress {
+    from { width: 0%; }
+    to { width: 100%; }
+  }
+
+  /* Animation utility classes */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
+
+  .animate-fade-in-down {
+    animation: fadeInDown 0.5s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out forwards;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  /* Delay utilities */
+  .delay-100 { animation-delay: 0.1s; }
+  .delay-200 { animation-delay: 0.2s; }
+  .delay-300 { animation-delay: 0.3s; }
+  .delay-400 { animation-delay: 0.4s; }
+  .delay-500 { animation-delay: 0.5s; }
+
+  /* Glassmorphism */
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-lg border border-white/30 shadow-xl;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-myColor-600 via-myColor-500 to-myColor-700 bg-clip-text text-transparent;
   }
 }
 
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-myColor-50;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-myColor-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-myColor-400;
+}
+
+/* Selection color */
+::selection {
+  @apply bg-myColor-200 text-myColor-900;
+}
+
+/* Form input focus states */
+input:focus, select:focus, textarea:focus {
+  @apply outline-none ring-2 ring-myColor-500 border-myColor-500;
+}
