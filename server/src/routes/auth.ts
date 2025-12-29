@@ -41,16 +41,16 @@ const generateOTP = (): string => {
 };
 
 // Helper functions for token verification
-const verifyAccessToken = (token: string): { phone: string; type: string } => {
-  const decoded = jwt.verify(token, JWT_SECRET) as { phone: string; type: string };
+const verifyAccessToken = (token: string): { phone: string; userId: string; type: string } => {
+  const decoded = jwt.verify(token, JWT_SECRET) as { phone: string; userId: string; type: string };
   if (decoded.type !== 'access') {
     throw new Error('Invalid token type');
   }
   return decoded;
 };
 
-const verifyRefreshToken = (token: string): { phone: string; type: string } => {
-  const decoded = jwt.verify(token, JWT_REFRESH_SECRET) as { phone: string; type: string };
+const verifyRefreshToken = (token: string): { phone: string; userId: string; type: string } => {
+  const decoded = jwt.verify(token, JWT_REFRESH_SECRET) as { phone: string; userId: string; type: string };
   if (decoded.type !== 'refresh') {
     throw new Error('Invalid token type');
   }
@@ -300,7 +300,7 @@ router.get('/me', async (req: Request, res: Response) => {
         const payload = verifyAccessToken(accessToken);
         return res.json({
           loggedIn: true,
-          user: { phone: payload.phone }
+          user: { phone: payload.phone, userId: payload.userId }
         });
       } catch (err) {
         // Token expired or invalid, fallthrough to refresh
@@ -334,7 +334,7 @@ router.get('/me', async (req: Request, res: Response) => {
 
       // Generate new access token
       const newAccessToken = jwt.sign(
-        { phone: payload.phone, type: 'access' },
+        { phone: payload.phone, userId: payload.userId, type: 'access' },
         JWT_SECRET,
         { expiresIn: ACCESS_TOKEN_EXPIRY }
       );
@@ -357,7 +357,7 @@ router.get('/me', async (req: Request, res: Response) => {
 
       return res.json({
         loggedIn: true,
-        user: { phone: payload.phone }
+        user: { phone: payload.phone, userId: payload.userId }
       });
     } catch (err) {
       // Refresh token invalid

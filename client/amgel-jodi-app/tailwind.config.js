@@ -6,6 +6,10 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-playfair)', 'Georgia', 'serif'],
+      },
       colors: {
         "myColor": {
           "50": "#f6effe",
@@ -17,11 +21,11 @@ module.exports = {
           "600": "#864fc1",
           "700": "#643b91",
           "800": "#432860",
-          "900": "#211430"
+          "900": "#211430",
+          "950": "#110a18"
         }
       }
     }
   },
   plugins: [],
 }
-
