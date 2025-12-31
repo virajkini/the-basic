@@ -47,3 +47,4 @@ export function calculateAge(dob: string): number {
 
   return age;
 }
+
