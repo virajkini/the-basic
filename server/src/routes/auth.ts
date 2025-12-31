@@ -1,7 +1,6 @@
 import express, { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
-import crypto from 'crypto';
 import { findUserByPhone, createUser } from '../services/userManager.js';
 
 const router = express.Router();
@@ -28,16 +27,17 @@ const otpRateLimiter = rateLimit({
 
 // Simple phone validation
 const isValidPhone = (phone: string): boolean => {
-  // Normalize phone number for comparison
-  const normalized = phone.replace(/\s+/g, '');
-  // For now, just check if it's the test phone number (with or without +91)
-  return normalized === '+918892043505' || normalized === '8892043505' || normalized === '918892043505';
+  // Remove spaces, dashes, and country code prefix
+  const normalized = phone.replace(/[\s\-]/g, '').replace(/^\+/, '');
+  // Check if it has at least 10 digits
+  const digitsOnly = normalized.replace(/\D/g, '');
+  return digitsOnly.length >= 10;
 };
 
-// Generate OTP
-const generateOTP = (): string => {
-  // For test phone, always return 1111
-  return '1111';
+// Generate OTP - returns last 4 digits of phone number
+const generateOTP = (phone: string): string => {
+  const digitsOnly = phone.replace(/\D/g, '');
+  return digitsOnly.slice(-4);
 };
 
 // Helper functions for token verification
@@ -69,13 +69,13 @@ router.post('/otp/send', otpRateLimiter, (req: Request, res: Response) => {
     // Normalize phone number (remove spaces, handle +91 format)
     const normalizedPhone = phone.replace(/\s+/g, '');
 
-    // Simple validation - for now only allow test number
+    // Validate phone number format
     if (!isValidPhone(normalizedPhone)) {
       return res.status(400).json({ error: 'Invalid phone number' });
     }
 
-    // Generate OTP
-    const otp = generateOTP();
+    // Generate OTP (last 4 digits of phone number)
+    const otp = generateOTP(normalizedPhone);
     const expiresAt = Date.now() + OTP_EXPIRY;
 
     // Store OTP
