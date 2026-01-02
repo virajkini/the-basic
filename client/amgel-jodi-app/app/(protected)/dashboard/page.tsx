@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
@@ -204,7 +205,7 @@ export default function Dashboard() {
               Create your profile to connect with the GSB Konkani community.
             </p>
 
-            <a
+            <Link
               href="/profile"
               className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-myColor-600 to-myColor-700 text-white rounded-xl font-semibold text-lg shadow-xl shadow-myColor-500/30 hover:shadow-2xl hover:shadow-myColor-500/40 transition-all duration-300 hover:scale-105 active:scale-95"
             >
@@ -212,7 +213,7 @@ export default function Dashboard() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
-            </a>
+            </Link>
 
             {/* Features */}
             <div className="grid md:grid-cols-3 gap-6 mt-12 pt-8 border-t border-myColor-100">
@@ -314,12 +315,12 @@ export default function Dashboard() {
 
             {/* Actions */}
             <div className="flex gap-3">
-              <a
+              <Link
                 href="/profile"
                 className="px-5 py-2.5 bg-myColor-100 text-myColor-700 rounded-xl font-medium hover:bg-myColor-200 transition-colors"
               >
                 Edit Profile
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -331,7 +332,7 @@ export default function Dashboard() {
               Your Photos ({images.length}/5)
             </h2>
             {images.length < 5 && (
-              <a
+              <Link
                 href="/profile"
                 className="text-myColor-600 hover:text-myColor-800 font-medium text-sm flex items-center gap-1"
               >
@@ -339,7 +340,7 @@ export default function Dashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 Add Photos
-              </a>
+              </Link>
             )}
           </div>
 
@@ -351,7 +352,7 @@ export default function Dashboard() {
                 </svg>
               </div>
               <p className="text-myColor-600 mb-4">No photos uploaded yet</p>
-              <a
+              <Link
                 href="/profile"
                 className="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-myColor-600 to-myColor-700 text-white rounded-xl font-medium shadow-lg shadow-myColor-500/30 hover:shadow-xl transition-all duration-200 hover:scale-105"
               >
@@ -359,7 +360,7 @@ export default function Dashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 Upload Photos
-              </a>
+              </Link>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">

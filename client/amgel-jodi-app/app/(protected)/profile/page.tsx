@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import imageCompression from 'browser-image-compression'
 import { useAuth } from '../../context/AuthContext'
+import Dropdown from '../../components/Dropdown'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
@@ -675,19 +676,15 @@ export default function ProfilePage() {
                   <label htmlFor="height" className="block text-sm font-medium text-myColor-700 mb-2">
                     Height <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <Dropdown
                     id="height"
+                    options={HEIGHT_OPTIONS.map((h) => ({ value: h, label: h }))}
                     value={formData.height}
-                    onChange={(e) => updateFormData('height', e.target.value)}
-                    className={`w-full px-4 py-3 bg-white border-2 rounded-xl transition-all duration-200 ${
-                      fieldErrors.height ? 'border-red-300' : 'border-myColor-100'
-                    }`}
-                  >
-                    <option value="">Select height</option>
-                    {HEIGHT_OPTIONS.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
+                    onChange={(value) => updateFormData('height', value)}
+                    placeholder="Select height"
+                    error={!!fieldErrors.height}
+                    searchable
+                  />
                   {fieldErrors.height && (
                     <p className="mt-1 text-sm text-red-500">{fieldErrors.height}</p>
                   )}
@@ -918,21 +915,20 @@ export default function ProfilePage() {
                       <label htmlFor="salaryRange" className="block text-sm font-medium text-myColor-700 mb-2">
                         Annual Salary (INR) <span className="text-red-500">*</span>
                       </label>
-                      <select
+                      <Dropdown
                         id="salaryRange"
+                        options={[
+                          { value: '<5L', label: 'Less than 5 Lakhs' },
+                          { value: '5-15L', label: '5 - 15 Lakhs' },
+                          { value: '15-30L', label: '15 - 30 Lakhs' },
+                          { value: '30-50L', label: '30 - 50 Lakhs' },
+                          { value: '>50L', label: 'More than 50 Lakhs' },
+                        ]}
                         value={formData.salaryRange}
-                        onChange={(e) => updateFormData('salaryRange', e.target.value)}
-                        className={`w-full px-4 py-3 bg-white border-2 rounded-xl transition-all duration-200 ${
-                          fieldErrors.salaryRange ? 'border-red-300' : 'border-myColor-100'
-                        }`}
-                      >
-                        <option value="">Select range</option>
-                        <option value="<5L">Less than 5 Lakhs</option>
-                        <option value="5-15L">5 - 15 Lakhs</option>
-                        <option value="15-30L">15 - 30 Lakhs</option>
-                        <option value="30-50L">30 - 50 Lakhs</option>
-                        <option value=">50L">More than 50 Lakhs</option>
-                      </select>
+                        onChange={(value) => updateFormData('salaryRange', value)}
+                        placeholder="Select range"
+                        error={!!fieldErrors.salaryRange}
+                      />
                       {fieldErrors.salaryRange && (
                         <p className="mt-1 text-sm text-red-500">{fieldErrors.salaryRange}</p>
                       )}
