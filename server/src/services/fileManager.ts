@@ -4,7 +4,7 @@ import { getSignedUrl as getCloudFrontSignedUrl } from '@aws-sdk/cloudfront-sign
 
 const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'amgel-jodi-s3';
 const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN || 'static.amgeljodi.com';
-const CLOUDFRONT_KEY_PAIR_ID = 'APKAYFCBGPYYNPO6LU6X';
+const CLOUDFRONT_KEY_PAIR_ID = 'K16SCVGULKTB9O';
 const CLOUDFRONT_PRIVATE_KEY = (process.env.CLOUD_FRONT_KEY || '').replace(/\\n/g, '\n');
 
 // Initialize S3 client
