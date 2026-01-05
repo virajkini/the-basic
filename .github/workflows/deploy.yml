@@ -1,4 +1,4 @@
-name: Deploy Server to AWS ECS
+name: Build and Push Server to ECR
 
 on:
   push:
@@ -14,8 +14,6 @@ on:
 env:
   AWS_REGION: ap-south-1
   ECR_REPOSITORY_SERVER: amgel-jodi-server
-  CLUSTER_NAME: amgel-jodi-cluster
-  SERVICE_NAME_SERVER: amgel-jodi-server-service-2k99cdf3
 
 jobs:
   check-changes:
@@ -37,11 +35,10 @@ jobs:
           filters: |
             server:
               - 'server/**'
-              - 'ecs/server-task-definition.json'
               - '.github/workflows/deploy.yml'
 
-  deploy:
-    name: Build and Deploy Server
+  build-and-push:
+    name: Build and Push Server Image
     runs-on: ubuntu-latest
     timeout-minutes: 15
     needs: check-changes
@@ -86,38 +83,12 @@ jobs:
           docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY_SERVER }}:latest
           cd ..
 
-      - name: Update server task definition
-        id: task-def-server
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: ecs/server-task-definition.json
-          container-name: amgel-jodi-server
-          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_SERVER }}:${{ github.sha }}
-
-      - name: Deploy server to Amazon ECS
-        timeout-minutes: 3
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def-server.outputs.task-definition }}
-          service: ${{ env.SERVICE_NAME_SERVER }}
-          cluster: ${{ env.CLUSTER_NAME }}
-          wait-for-service-stability: true
-
-      - name: Verify deployment
-        timeout-minutes: 2
-        run: |
-          echo "Verifying server deployment status..."
-          aws ecs describe-services \
-            --cluster ${{ env.CLUSTER_NAME }} \
-            --services ${{ env.SERVICE_NAME_SERVER }} \
-            --region ${{ env.AWS_REGION }} \
-            --query 'services[0].[serviceName,status,runningCount,desiredCount]' \
-            --output table
-
-      - name: Deployment Summary
+      - name: Push Summary
         if: success()
         run: |
-          echo "✅ Server deployment completed successfully!"
+          echo "✅ Server image pushed to ECR successfully!"
           echo "Commit SHA: ${{ github.sha }}"
           echo "Server Image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_SERVER }}:${{ github.sha }}"
+          echo "Server Image (latest): ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_SERVER }}:latest"
+          echo "ℹ️  App Runner will automatically deploy the new image if auto-deployment is enabled"
           echo "ℹ️  Client is deployed automatically via AWS Amplify"
