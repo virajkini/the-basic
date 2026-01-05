@@ -8,7 +8,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-        serif: ['var(--font-playfair)', 'Georgia', 'serif'],
+        heading: ['var(--font-dm-sans)', 'system-ui', 'sans-serif'],
       },
       colors: {
         "myColor": {
@@ -29,4 +29,5 @@ module.exports = {
   },
   plugins: [],
 }
+
 

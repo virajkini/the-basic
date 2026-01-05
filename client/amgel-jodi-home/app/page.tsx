@@ -115,7 +115,7 @@ export default function Home() {
           </div>
 
           {/* Main Title */}
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold text-white mb-6 animate-fade-in-up opacity-0 tracking-tight">
+          <h1 className="text-5xl md:text-7xl lg:text-8xl font-heading font-bold text-white mb-6 animate-fade-in-up opacity-0 tracking-tight">
             Amgel Jodi
           </h1>
 
@@ -180,7 +180,7 @@ export default function Home() {
             <span className="inline-block px-4 py-2 bg-myColor-100 text-myColor-700 rounded-full text-sm font-medium mb-4 animate-fade-in-up opacity-0">
               Why Amgel Jodi?
             </span>
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-myColor-900 mb-6 animate-fade-in-up delay-100 opacity-0">
+            <h2 className="text-4xl md:text-5xl font-heading font-bold text-myColor-900 mb-6 animate-fade-in-up delay-100 opacity-0">
               Built for Our Community
             </h2>
             <p className="text-lg text-myColor-600 max-w-2xl mx-auto animate-fade-in-up delay-200 opacity-0">
@@ -295,7 +295,7 @@ export default function Home() {
             <span className="inline-block px-4 py-2 bg-myColor-100 text-myColor-700 rounded-full text-sm font-medium mb-4 animate-fade-in-up opacity-0">
               Discover Profiles
             </span>
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-myColor-900 mb-6 animate-fade-in-up delay-100 opacity-0">
+            <h2 className="text-4xl md:text-5xl font-heading font-bold text-myColor-900 mb-6 animate-fade-in-up delay-100 opacity-0">
               Meet Our Community Members
             </h2>
             <p className="text-lg text-myColor-600 max-w-2xl mx-auto animate-fade-in-up delay-200 opacity-0">
@@ -378,7 +378,7 @@ export default function Home() {
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-white mb-6 animate-fade-in-up opacity-0">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-heading font-bold text-white mb-6 animate-fade-in-up opacity-0">
               Ready to Find Your{' '}
               <span className="text-myColor-300">Perfect Match?</span>
             </h2>
@@ -415,7 +415,7 @@ export default function Home() {
                     <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                 </div>
-                <span className="text-2xl font-serif font-bold">Amgel Jodi</span>
+                <span className="text-2xl font-heading font-bold">Amgel Jodi</span>
               </div>
               <p className="text-myColor-300 max-w-md">
                 The trusted matrimonial platform for the GSB Konkani community.

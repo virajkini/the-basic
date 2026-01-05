@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
-import { Playfair_Display, Inter } from 'next/font/google'
+import { DM_Sans, Inter } from 'next/font/google'
 import './globals.css'
 
-// Elegant serif font for headings
-const playfair = Playfair_Display({
+// Clean modern font for headings
+const dmSans = DM_Sans({
   subsets: ['latin'],
-  variable: '--font-playfair',
+  variable: '--font-dm-sans',
   display: 'swap',
+  weight: ['400', '500', '600', '700'],
 })
 
 // Clean sans-serif for body text
@@ -27,9 +28,10 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
+    <html lang="en" className={`${dmSans.variable} ${inter.variable}`}>
       <body className="font-sans antialiased">{children}</body>
     </html>
   )
 }
+
 

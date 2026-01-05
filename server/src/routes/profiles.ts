@@ -1,8 +1,9 @@
 import express from 'express';
-import { readProfile, createProfile, updateProfile } from '../services/profileManager.js';
+import { readProfile, createProfile, updateProfile, listProfiles, maskString } from '../services/profileManager.js';
 import { Profile, CreatingFor, Gender, SalaryRange, calculateAge } from '../models/profile.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { verifyUserOwnership, verifyUserIdMatch } from '../middleware/verifyOwnership.js';
+import { getOtherUserProfileImages } from '../services/fileManager.js';
 
 const router = express.Router();
 
@@ -10,6 +11,87 @@ const router = express.Router();
 const validCreatingFor: CreatingFor[] = ['self', 'daughter', 'son', 'other'];
 const validGenders: Gender[] = ['M', 'F'];
 const validSalaryRanges: SalaryRange[] = ['<5L', '5-15L', '15-30L', '30-50L', '>50L'];
+
+/**
+ * GET /api/profiles/discover
+ * Get profiles for discovery with images in a single call
+ * Returns masked data + blurred images for unverified users
+ * Returns full data + original images for verified users
+ * Query params: limit (default 20), skip (default 0)
+ */
+router.get('/discover',
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const currentUserId = req.authenticatedUserId;
+      // const isVerified = req.authenticatedUserVerified ?? false;
+      const isVerified = true; // TEMP: Allow all as verified for testing
+      const currentGender = req.authenticatedUserGender;
+
+      if (!currentUserId) {
+        return res.status(401).json({ error: 'User ID not found in token' });
+      }
+
+      const limit = Math.min(parseInt(req.query.limit as string) || 20, 50);
+      const skip = parseInt(req.query.skip as string) || 0;
+
+      // Get profiles (gender from JWT, no DB call needed)
+      const profiles = await listProfiles(currentUserId, currentGender ?? undefined, limit, skip);
+
+      // Fetch images for all profiles in parallel
+      const profilesWithImages = await Promise.all(
+        profiles.map(async (profile) => {
+          // Get images (blurred for unverified, original for verified)
+          const files = await getOtherUserProfileImages(profile._id, isVerified);
+          const images = files.map(f => f.url);
+
+          const age = profile.dob ? calculateAge(profile.dob) : profile.age;
+
+          if (isVerified) {
+            // Full data for verified users
+            return {
+              _id: profile._id,
+              firstName: profile.firstName,
+              age,
+              nativePlace: profile.nativePlace,
+              height: profile.height,
+              designation: profile.workingStatus ? profile.designation : null,
+              verified: profile.verified,
+              images,
+            };
+          } else {
+            // Masked data for unverified users
+            return {
+              _id: profile._id,
+              firstName: maskString(profile.firstName),
+              age,
+              nativePlace: maskString(profile.nativePlace),
+              height: profile.height,
+              designation: profile.workingStatus ? maskString(profile.designation) : null,
+              verified: profile.verified,
+              images, // Already blurred from getOtherUserProfileImages
+            };
+          }
+        })
+      );
+
+      res.status(200).json({
+        success: true,
+        profiles: profilesWithImages,
+        count: profilesWithImages.length,
+        isVerified,
+        skip,
+        limit
+      });
+    } catch (error) {
+      console.error('Error discovering profiles:', error);
+      res.status(500).json({
+        error: 'Failed to discover profiles',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+);
 
 /**
  * GET /api/profiles/:userId
@@ -52,6 +134,7 @@ router.get('/:userId',
           salaryRange: profile.salaryRange,
           aboutMe: profile.aboutMe,
           verified: profile.verified,
+          subscribed: profile.subscribed,
           createdAt: profile.createdAt,
           updatedAt: profile.updatedAt
         }
@@ -186,7 +269,8 @@ router.post('/',
         workLocation: workingStatus ? workLocation?.trim() : undefined,
         salaryRange: workingStatus ? salaryRange as SalaryRange : undefined,
         aboutMe: aboutMe?.trim() || undefined,
-        verified: false
+        verified: false,
+        subscribed: false
       };
 
       const profile = await createProfile(userId, profileData);
@@ -211,6 +295,7 @@ router.post('/',
           salaryRange: profile.salaryRange,
           aboutMe: profile.aboutMe,
           verified: profile.verified,
+          subscribed: profile.subscribed,
           createdAt: profile.createdAt,
           updatedAt: profile.updatedAt
         }
@@ -255,8 +340,7 @@ router.put('/:userId',
         designation,
         workLocation,
         salaryRange,
-        aboutMe,
-        verified
+        aboutMe
       } = req.body;
 
     // Build update object with only provided fields
@@ -364,12 +448,7 @@ router.put('/:userId',
       updateData.aboutMe = aboutMe?.trim() || undefined;
     }
 
-    if (verified !== undefined) {
-      if (typeof verified !== 'boolean') {
-        return res.status(400).json({ error: 'Verified must be a boolean' });
-      }
-      updateData.verified = verified;
-    }
+    // Note: verified and subscribed fields cannot be updated by users
 
     if (Object.keys(updateData).length === 0) {
       return res.status(400).json({ error: 'No valid fields to update' });
@@ -401,6 +480,7 @@ router.put('/:userId',
         salaryRange: updatedProfile.salaryRange,
         aboutMe: updatedProfile.aboutMe,
         verified: updatedProfile.verified,
+        subscribed: updatedProfile.subscribed,
         createdAt: updatedProfile.createdAt,
         updatedAt: updatedProfile.updatedAt
       }

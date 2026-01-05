@@ -1,8 +1,11 @@
 import { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { getSignedUrl as getCloudFrontSignedUrl } from '@aws-sdk/cloudfront-signer';
 
 const BUCKET_NAME = process.env.S3_BUCKET_NAME || 'amgel-jodi-s3';
 const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN || 'static.amgeljodi.com';
+const CLOUDFRONT_KEY_PAIR_ID = 'APKAYFCBGPYYNPO6LU6X';
+const CLOUDFRONT_PRIVATE_KEY = (process.env.CLOUD_FRONT_KEY || '').replace(/\\n/g, '\n');
 
 // Initialize S3 client
 const s3ClientConfig: {
@@ -37,7 +40,7 @@ function getCloudFrontUrl(key: string): string {
  */
 export async function getFileCount(userId: string): Promise<number> {
   try {
-    const prefix = `profiles/${userId}/`;
+    const prefix = `profiles/${userId}/original/`;
     const command = new ListObjectsV2Command({
       Bucket: BUCKET_NAME,
       Prefix: prefix,
@@ -95,9 +98,9 @@ export async function generateMultiplePresignedUrls(
         throw new Error(`Invalid file type: ${fileType}. Allowed types: jpeg, jpg, png, webp`);
       }
 
-      // Generate unique key: profiles/[userId]/[timestamp]-[index]-[random].[ext]
+      // Generate unique key: profiles/[userId]/original/[timestamp]-[index]-[random].[ext]
       const randomSuffix = Math.random().toString(36).substring(2, 9);
-      const key = `profiles/${userId}/${timestamp}-${index}-${randomSuffix}.${typeInfo.ext}`;
+      const key = `profiles/${userId}/original/${timestamp}-${index}-${randomSuffix}.${typeInfo.ext}`;
 
       // Generate presigned URL for PUT operation
       const command = new PutObjectCommand({
@@ -134,9 +137,9 @@ export async function generateMultiplePresignedUrls(
 }
 
 /**
- * Get all profile image URLs for a user
+ * Get all profile image URLs for a user (own profile - always returns original with signed URLs)
  * @param userId - User ID
- * @returns Array of file objects with CloudFront URLs
+ * @returns Array of file objects with signed CloudFront URLs
  */
 export async function getUserProfileImages(userId: string): Promise<Array<{
   key: string;
@@ -145,7 +148,7 @@ export async function getUserProfileImages(userId: string): Promise<Array<{
   lastModified?: Date;
 }>> {
   try {
-    const prefix = `profiles/${userId}/`;
+    const prefix = `profiles/${userId}/original/`;
     const command = new ListObjectsV2Command({
       Bucket: BUCKET_NAME,
       Prefix: prefix,
@@ -154,12 +157,22 @@ export async function getUserProfileImages(userId: string): Promise<Array<{
     const response = await s3Client.send(command);
 
     const files = (response.Contents || [])
+      .filter((item) => item.Key && item.Key !== prefix && item.Size && item.Size > 0)
       .map((item) => {
         if (!item.Key) return null;
 
+        // Generate signed CloudFront URL for original images
+        const cloudFrontUrl = `https://${CLOUDFRONT_DOMAIN}/${item.Key}`;
+        const signedUrl = getCloudFrontSignedUrl({
+          url: cloudFrontUrl,
+          keyPairId: CLOUDFRONT_KEY_PAIR_ID,
+          privateKey: CLOUDFRONT_PRIVATE_KEY,
+          dateLessThan: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
+        });
+
         return {
           key: item.Key,
-          url: getCloudFrontUrl(item.Key), // Use CloudFront URL
+          url: signedUrl,
           size: item.Size,
           lastModified: item.LastModified,
         };
@@ -174,6 +187,70 @@ export async function getUserProfileImages(userId: string): Promise<Array<{
 }
 
 /**
+ * Get profile images for another user based on viewer's verified status
+ * @param targetUserId - User ID of the profile being viewed
+ * @param viewerIsVerified - Whether the viewing user is verified
+ * @returns Array of file objects with appropriate URLs
+ */
+export async function getOtherUserProfileImages(
+  targetUserId: string,
+  viewerIsVerified: boolean
+): Promise<Array<{
+  key: string;
+  url: string;
+  size?: number;
+  lastModified?: Date;
+}>> {
+  try {
+    // Always list from original folder to get the file names
+    const prefix = `profiles/${targetUserId}/original/`;
+    const command = new ListObjectsV2Command({
+      Bucket: BUCKET_NAME,
+      Prefix: prefix,
+    });
+
+    const response = await s3Client.send(command);
+
+    const files = (response.Contents || [])
+      .filter((item) => item.Key && item.Key !== prefix && item.Size && item.Size > 0)
+      .map((item) => {
+        if (!item.Key) return null;
+
+        let imageUrl: string;
+
+        if (viewerIsVerified) {
+          // Generate signed URL for original image
+          const cloudFrontUrl = `https://${CLOUDFRONT_DOMAIN}/${item.Key}`;
+          imageUrl = getCloudFrontSignedUrl({
+            url: cloudFrontUrl,
+            keyPairId: CLOUDFRONT_KEY_PAIR_ID,
+            privateKey: CLOUDFRONT_PRIVATE_KEY,
+            dateLessThan: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
+          });
+        } else {
+          // Public blurred URL (no signature needed)
+          // Replace '/original/' with '/blurred/' in the key
+          const blurredKey = item.Key.replace('/original/', '/blurred/');
+          imageUrl = `https://${CLOUDFRONT_DOMAIN}/${blurredKey}`;
+        }
+
+        return {
+          key: item.Key,
+          url: imageUrl,
+          size: item.Size,
+          lastModified: item.LastModified,
+        };
+      })
+      .filter((file): file is NonNullable<typeof file> => file !== null);
+
+    return files;
+  } catch (error) {
+    console.error('Error getting other user profile images:', error);
+    throw error;
+  }
+}
+
+/**
  * Delete a file from S3
  * @param key - S3 object key
  * @param userId - User ID (for verification)
@@ -182,7 +259,7 @@ export async function getUserProfileImages(userId: string): Promise<Array<{
 export async function deleteFile(key: string, userId: string): Promise<void> {
   try {
     // Verify the file belongs to the user
-    const expectedPrefix = `profiles/${userId}/`;
+    const expectedPrefix = `profiles/${userId}/original/`;
     if (!key.startsWith(expectedPrefix)) {
       throw new Error('Access denied: File does not belong to this user');
     }

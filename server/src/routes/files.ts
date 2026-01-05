@@ -3,6 +3,7 @@ import { authenticateToken } from '../middleware/auth.js';
 import {
   generateMultiplePresignedUrls,
   getUserProfileImages,
+  getOtherUserProfileImages,
   deleteFile,
 } from '../services/fileManager.js';
 
@@ -123,6 +124,54 @@ router.get('/',
     } catch (error) {
       console.error('Error getting user profile images:', error);
       res.status(500).json({ 
+        error: 'Failed to get profile images',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/files/:userId
+ * Get profile images for another user
+ * Returns signed original URLs if viewer is verified, blurred public URLs otherwise
+ * If viewing own profile, always returns signed original URLs
+ */
+router.get('/:userId',
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const viewerUserId = req.authenticatedUserId;
+      const viewerIsVerified = req.authenticatedUserVerified ?? false;
+      const targetUserId = req.params.userId;
+
+      if (!viewerUserId) {
+        return res.status(401).json({ error: 'User ID not found in token' });
+      }
+
+      let images: string[];
+      let isBlurred = false;
+
+      // Check if viewing own profile
+      if (viewerUserId === targetUserId) {
+        // Own profile - always return original with signed URLs
+        const files = await getUserProfileImages(targetUserId);
+        images = files.map(file => file.url);
+      } else {
+        // Other user's profile - check if viewer is verified
+        const files = await getOtherUserProfileImages(targetUserId, viewerIsVerified);
+        images = files.map(file => file.url);
+        isBlurred = !viewerIsVerified;
+      }
+
+      res.json({
+        success: true,
+        images,
+        isBlurred,
+      });
+    } catch (error) {
+      console.error('Error getting profile images:', error);
+      res.status(500).json({
         error: 'Failed to get profile images',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
