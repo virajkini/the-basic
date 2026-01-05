@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import rateLimit from 'express-rate-limit';
 import { findUserByPhone, createUser } from '../services/userManager.js';
+import { readProfile } from '../services/profileManager.js';
 
 const router = express.Router();
 
@@ -134,15 +135,21 @@ router.post('/otp/verify', async (req: Request, res: Response) => {
       user = await createUser(normalizedPhone);
     }
 
-    // Generate tokens with userId included
+    // Fetch profile to get verified, subscribed, and gender status
+    const profile = await readProfile(user._id);
+    const verified = profile?.verified ?? false;
+    const subscribed = profile?.subscribed ?? false;
+    const gender = profile?.gender ?? null;
+
+    // Generate tokens with userId, verified, subscribed, and gender included
     const accessToken = jwt.sign(
-      { phone: normalizedPhone, userId: user._id, type: 'access' },
+      { phone: normalizedPhone, userId: user._id, verified, subscribed, gender, type: 'access' },
       JWT_SECRET,
       { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
 
     const refreshToken = jwt.sign(
-      { phone: normalizedPhone, userId: user._id, type: 'refresh' },
+      { phone: normalizedPhone, userId: user._id, verified, subscribed, gender, type: 'refresh' },
       JWT_REFRESH_SECRET,
       { expiresIn: REFRESH_TOKEN_EXPIRY }
     );
@@ -194,7 +201,7 @@ router.post('/otp/verify', async (req: Request, res: Response) => {
 });
 
 // POST /auth/refresh
-router.post('/refresh', (req: Request, res: Response) => {
+router.post('/refresh', async (req: Request, res: Response) => {
   try {
     const refreshToken = req.cookies?.refreshToken;
 
@@ -223,16 +230,22 @@ router.post('/refresh', (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Invalid refresh token' });
     }
 
-    // Generate new access token (include userId from decoded token)
+    // Fetch profile to get current verified, subscribed, and gender status
+    const profile = await readProfile(decoded.userId);
+    const verified = profile?.verified ?? false;
+    const subscribed = profile?.subscribed ?? false;
+    const gender = profile?.gender ?? null;
+
+    // Generate new access token (include userId, verified, subscribed, gender from decoded token)
     const newAccessToken = jwt.sign(
-      { phone: decoded.phone, userId: decoded.userId, type: 'access' },
+      { phone: decoded.phone, userId: decoded.userId, verified, subscribed, gender, type: 'access' },
       JWT_SECRET,
       { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
 
-    // Generate new refresh token (rotate, include userId)
+    // Generate new refresh token (rotate, include userId, verified, subscribed, gender)
     const newRefreshToken = jwt.sign(
-      { phone: decoded.phone, userId: decoded.userId, type: 'refresh' },
+      { phone: decoded.phone, userId: decoded.userId, verified, subscribed, gender, type: 'refresh' },
       JWT_REFRESH_SECRET,
       { expiresIn: REFRESH_TOKEN_EXPIRY }
     );
@@ -297,10 +310,10 @@ router.get('/me', async (req: Request, res: Response) => {
     // 2️⃣ Try access token
     if (accessToken) {
       try {
-        const payload = verifyAccessToken(accessToken);
+        const payload = verifyAccessToken(accessToken) as { phone: string; userId: string; verified?: boolean; subscribed?: boolean; type: string };
         return res.json({
           loggedIn: true,
-          user: { phone: payload.phone, userId: payload.userId }
+          user: { phone: payload.phone, userId: payload.userId, verified: payload.verified ?? false, subscribed: payload.subscribed ?? false }
         });
       } catch (err) {
         // Token expired or invalid, fallthrough to refresh
@@ -332,9 +345,15 @@ router.get('/me', async (req: Request, res: Response) => {
       // Verify JWT
       const payload = verifyRefreshToken(refreshToken);
 
+      // Fetch profile to get current verified, subscribed, and gender status
+      const meProfile = await readProfile(payload.userId);
+      const meVerified = meProfile?.verified ?? false;
+      const meSubscribed = meProfile?.subscribed ?? false;
+      const meGender = meProfile?.gender ?? null;
+
       // Generate new access token
       const newAccessToken = jwt.sign(
-        { phone: payload.phone, userId: payload.userId, type: 'access' },
+        { phone: payload.phone, userId: payload.userId, verified: meVerified, subscribed: meSubscribed, gender: meGender, type: 'access' },
         JWT_SECRET,
         { expiresIn: ACCESS_TOKEN_EXPIRY }
       );
@@ -357,7 +376,7 @@ router.get('/me', async (req: Request, res: Response) => {
 
       return res.json({
         loggedIn: true,
-        user: { phone: payload.phone, userId: payload.userId }
+        user: { phone: payload.phone, userId: payload.userId, verified: meVerified, subscribed: meSubscribed }
       });
     } catch (err) {
       // Refresh token invalid

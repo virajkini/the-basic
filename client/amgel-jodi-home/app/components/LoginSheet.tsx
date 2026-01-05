@@ -317,7 +317,7 @@ function SheetContent({
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-serif font-bold text-myColor-900">
+          <h2 className="text-2xl font-heading font-bold text-myColor-900">
             {step === 'phone' ? 'Welcome' : 'Verify OTP'}
           </h2>
           <p className="text-sm text-myColor-500 mt-1">

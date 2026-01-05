@@ -470,7 +470,7 @@ export default function ProfilePage() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-serif font-bold text-myColor-900 mb-2">
+          <h1 className="text-3xl md:text-4xl font-heading font-bold text-myColor-900 mb-2">
             {existingProfile ? 'Edit Your Profile' : 'Create Your Profile'}
           </h1>
           <p className="text-myColor-600">

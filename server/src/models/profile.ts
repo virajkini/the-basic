@@ -30,6 +30,7 @@ export interface Profile {
 
   // System fields
   verified: boolean;
+  subscribed: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,4 +48,5 @@ export function calculateAge(dob: string): number {
 
   return age;
 }
+
 

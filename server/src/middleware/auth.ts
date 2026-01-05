@@ -10,10 +10,16 @@ declare global {
       user?: {
         phone: string;
         userId: string;
+        verified: boolean;
+        subscribed: boolean;
+        gender: 'M' | 'F' | null;
         type: string;
       };
       authenticatedUserId?: string;
       authenticatedUserPhone?: string;
+      authenticatedUserVerified?: boolean;
+      authenticatedUserSubscribed?: boolean;
+      authenticatedUserGender?: 'M' | 'F' | null;
     }
   }
 }
@@ -29,7 +35,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     }
 
     // Verify the token
-    const decoded = jwt.verify(accessToken, JWT_SECRET) as { phone: string; userId: string; type: string };
+    const decoded = jwt.verify(accessToken, JWT_SECRET) as { phone: string; userId: string; verified?: boolean; subscribed?: boolean; gender?: 'M' | 'F' | null; type: string };
 
     // Check if it's an access token
     if (decoded.type !== 'access') {
@@ -40,12 +46,18 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     req.user = {
       phone: decoded.phone,
       userId: decoded.userId,
+      verified: decoded.verified ?? false,
+      subscribed: decoded.subscribed ?? false,
+      gender: decoded.gender ?? null,
       type: decoded.type,
     };
 
-    // Attach userId and phone directly to request for easy access
+    // Attach userId, phone, verified, subscribed, gender directly to request for easy access
     req.authenticatedUserId = decoded.userId;
     req.authenticatedUserPhone = decoded.phone;
+    req.authenticatedUserVerified = decoded.verified ?? false;
+    req.authenticatedUserSubscribed = decoded.subscribed ?? false;
+    req.authenticatedUserGender = decoded.gender ?? null;
 
     next();
   } catch (error) {

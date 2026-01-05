@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002'
 
 export default function AuthCheck({ children }: { children: React.ReactNode }) {
+  const hasChecked = useRef(false)
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -28,7 +30,11 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
       }
     }
 
-    checkAuth()
+    // Only check once on mount (prevents React Strict Mode double-call)
+    if (!hasChecked.current) {
+      hasChecked.current = true
+      checkAuth()
+    }
 
     // Listen for login events (when login sheet closes after successful login)
     const handleLoginSuccess = () => {
