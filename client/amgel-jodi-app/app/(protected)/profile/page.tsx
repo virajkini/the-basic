@@ -315,7 +315,7 @@ export default function ProfilePage() {
     const compressedFiles = await Promise.all(
       selectedFiles.map(async ({ file }, index) => {
         const compressionOptions = {
-          maxSizeMB: 1.5,
+          maxSizeMB: 1,
           maxWidthOrHeight: 1200,
           useWebWorker: true,
           fileType: file.type as string,
