@@ -17,6 +17,48 @@ const ACCESS_TOKEN_EXPIRY = '15m'; // 15 minutes
 const REFRESH_TOKEN_EXPIRY = '7d'; // 7 days
 const OTP_EXPIRY = 5 * 60 * 1000; // 5 minutes in milliseconds
 
+// Token payload type
+export interface TokenPayload {
+  phone: string;
+  userId: string;
+  verified: boolean;
+  subscribed: boolean;
+  gender: 'M' | 'F' | null;
+}
+
+// Generate access token
+export const generateAccessToken = (payload: TokenPayload): string => {
+  return jwt.sign(
+    { ...payload, type: 'access' },
+    JWT_SECRET,
+    { expiresIn: ACCESS_TOKEN_EXPIRY }
+  );
+};
+
+// Generate refresh token
+export const generateRefreshToken = (payload: TokenPayload): string => {
+  return jwt.sign(
+    { ...payload, type: 'refresh' },
+    JWT_REFRESH_SECRET,
+    { expiresIn: REFRESH_TOKEN_EXPIRY }
+  );
+};
+
+// Get cookie options for access token
+export const getAccessTokenCookieOptions = () => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const options: any = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'lax',
+    maxAge: 15 * 60 * 1000, // 15 minutes
+  };
+  if (isProduction) {
+    options.domain = '.amgeljodi.com';
+  }
+  return options;
+};
+
 // Rate limiter for OTP send endpoint
 const otpRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
