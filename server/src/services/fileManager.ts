@@ -191,6 +191,8 @@ export async function getUserProfileImages(userId: string): Promise<Array<{
  * @param targetUserId - User ID of the profile being viewed
  * @param viewerIsVerified - Whether the viewing user is verified
  * @returns Array of file objects with appropriate URLs
+ *          - Verified viewers: All original images with signed URLs
+ *          - Unverified viewers: Only first blurred image if it exists (public URL)
  */
 export async function getOtherUserProfileImages(
   targetUserId: string,
@@ -202,48 +204,63 @@ export async function getOtherUserProfileImages(
   lastModified?: Date;
 }>> {
   try {
-    // Always list from original folder to get the file names
-    const prefix = `profiles/${targetUserId}/original/`;
-    const command = new ListObjectsV2Command({
-      Bucket: BUCKET_NAME,
-      Prefix: prefix,
-    });
+    if (viewerIsVerified) {
+      // For verified viewers: return all original images with signed URLs
+      const prefix = `profiles/${targetUserId}/original/`;
+      const command = new ListObjectsV2Command({
+        Bucket: BUCKET_NAME,
+        Prefix: prefix,
+      });
 
-    const response = await s3Client.send(command);
+      const response = await s3Client.send(command);
 
-    const files = (response.Contents || [])
-      .filter((item) => item.Key && item.Key !== prefix && item.Size && item.Size > 0)
-      .map((item) => {
-        if (!item.Key) return null;
+      const items = (response.Contents || [])
+        .filter((item) => item.Key && item.Key !== prefix && item.Size && item.Size > 0)
+        .sort((a, b) => (a.Key || '').localeCompare(b.Key || ''));
 
-        let imageUrl: string;
-
-        if (viewerIsVerified) {
-          // Generate signed URL for original image
-          const cloudFrontUrl = `https://${CLOUDFRONT_DOMAIN}/${item.Key}`;
-          imageUrl = getCloudFrontSignedUrl({
-            url: cloudFrontUrl,
-            keyPairId: CLOUDFRONT_KEY_PAIR_ID,
-            privateKey: CLOUDFRONT_PRIVATE_KEY,
-            dateLessThan: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
-          });
-        } else {
-          // Public blurred URL (no signature needed)
-          // Replace '/original/' with '/blurred/' in the key
-          const blurredKey = item.Key.replace('/original/', '/blurred/');
-          imageUrl = `https://${CLOUDFRONT_DOMAIN}/${blurredKey}`;
-        }
+      return items.map((item) => {
+        const cloudFrontUrl = `https://${CLOUDFRONT_DOMAIN}/${item.Key}`;
+        const signedUrl = getCloudFrontSignedUrl({
+          url: cloudFrontUrl,
+          keyPairId: CLOUDFRONT_KEY_PAIR_ID,
+          privateKey: CLOUDFRONT_PRIVATE_KEY,
+          dateLessThan: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        });
 
         return {
-          key: item.Key,
-          url: imageUrl,
+          key: item.Key!,
+          url: signedUrl,
           size: item.Size,
           lastModified: item.LastModified,
         };
-      })
-      .filter((file): file is NonNullable<typeof file> => file !== null);
+      });
+    } else {
+      // For unverified viewers: check if blurred folder has images
+      const blurredPrefix = `profiles/${targetUserId}/blurred/`;
+      const blurredCommand = new ListObjectsV2Command({
+        Bucket: BUCKET_NAME,
+        Prefix: blurredPrefix,
+      });
 
-    return files;
+      const blurredResponse = await s3Client.send(blurredCommand);
+
+      const blurredItems = (blurredResponse.Contents || [])
+        .filter((item) => item.Key && item.Key !== blurredPrefix && item.Size && item.Size > 0)
+        .sort((a, b) => (a.Key || '').localeCompare(b.Key || ''));
+
+      // Return only the first blurred image if it exists
+      if (blurredItems.length === 0) {
+        return [];
+      }
+
+      const firstBlurred = blurredItems[0];
+      return [{
+        key: firstBlurred.Key!,
+        url: `https://${CLOUDFRONT_DOMAIN}/${firstBlurred.Key}`,
+        size: firstBlurred.Size,
+        lastModified: firstBlurred.LastModified,
+      }];
+    }
   } catch (error) {
     console.error('Error getting other user profile images:', error);
     throw error;
