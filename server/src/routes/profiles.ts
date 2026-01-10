@@ -4,6 +4,7 @@ import { Profile, CreatingFor, Gender, SalaryRange, calculateAge } from '../mode
 import { authenticateToken } from '../middleware/auth.js';
 import { verifyUserOwnership, verifyUserIdMatch } from '../middleware/verifyOwnership.js';
 import { getOtherUserProfileImages } from '../services/fileManager.js';
+import { generateAccessToken, getAccessTokenCookieOptions } from './auth.js';
 
 const router = express.Router();
 
@@ -24,8 +25,8 @@ router.get('/discover',
   async (req, res) => {
     try {
       const currentUserId = req.authenticatedUserId;
-      // const isVerified = req.authenticatedUserVerified ?? false;
-      const isVerified = true; // TEMP: Allow all as verified for testing
+      const isVerified = req.authenticatedUserVerified ?? false;
+      //const isVerified = true; // TEMP: Allow all as verified for testing
       const currentGender = req.authenticatedUserGender;
 
       if (!currentUserId) {
@@ -39,11 +40,16 @@ router.get('/discover',
       const profiles = await listProfiles(currentUserId, currentGender ?? undefined, limit, skip);
 
       // Fetch images for all profiles in parallel
-      const profilesWithImages = await Promise.all(
+      const profilesWithImages = (await Promise.all(
         profiles.map(async (profile) => {
           // Get images (blurred for unverified, original for verified)
           const files = await getOtherUserProfileImages(profile._id, isVerified);
           const images = files.map(f => f.url);
+
+          // Skip profiles with no images
+          if (images.length === 0) {
+            return null;
+          }
 
           const age = profile.dob ? calculateAge(profile.dob) : profile.age;
 
@@ -73,7 +79,7 @@ router.get('/discover',
             };
           }
         })
-      );
+      )).filter(profile => profile !== null);
 
       res.status(200).json({
         success: true,
@@ -109,6 +115,25 @@ router.get('/:userId',
 
       if (!profile) {
         return res.status(404).json({ error: 'Profile not found' });
+      }
+
+      // Check if verified or subscribed changed from token values
+      const tokenVerified = req.authenticatedUserVerified ?? false;
+      const tokenSubscribed = req.authenticatedUserSubscribed ?? false;
+      const dbVerified = profile.verified ?? false;
+      const dbSubscribed = profile.subscribed ?? false;
+
+      if (tokenVerified !== dbVerified || tokenSubscribed !== dbSubscribed) {
+        // Generate new access token with updated values
+        const newAccessToken = generateAccessToken({
+          phone: req.authenticatedUserPhone!,
+          userId: req.authenticatedUserId!,
+          verified: dbVerified,
+          subscribed: dbSubscribed,
+          gender: profile.gender ?? null,
+        });
+
+        res.cookie('accessToken', newAccessToken, getAccessTokenCookieOptions());
       }
 
       // Calculate age from DOB for response
