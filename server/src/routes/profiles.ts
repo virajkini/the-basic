@@ -100,6 +100,94 @@ router.get('/discover',
 );
 
 /**
+ * GET /api/profiles/view/:userId
+ * View another user's profile with full details
+ * Returns masked data for unverified viewers
+ * Returns full data for verified viewers
+ */
+router.get('/view/:userId',
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const { userId: targetUserId } = req.params;
+      const viewerUserId = req.authenticatedUserId;
+      const isVerified = req.authenticatedUserVerified ?? false;
+
+      if (!viewerUserId) {
+        return res.status(401).json({ error: 'User ID not found in token' });
+      }
+
+      // Don't allow viewing own profile through this endpoint
+      if (targetUserId === viewerUserId) {
+        return res.status(400).json({ error: 'Use /api/profiles/:userId to view your own profile' });
+      }
+
+      const profile = await readProfile(targetUserId);
+
+      if (!profile) {
+        return res.status(404).json({ error: 'Profile not found' });
+      }
+
+      // Get images (blurred for unverified, original for verified)
+      const files = await getOtherUserProfileImages(targetUserId, isVerified);
+      const images = files.map(f => f.url);
+
+      const age = profile.dob ? calculateAge(profile.dob) : profile.age;
+
+      if (isVerified) {
+        // Full data for verified viewers
+        res.status(200).json({
+          success: true,
+          profile: {
+            _id: profile._id,
+            firstName: profile.firstName,
+            lastName: profile.lastName,
+            age,
+            nativePlace: profile.nativePlace,
+            height: profile.height,
+            workingStatus: profile.workingStatus,
+            company: profile.workingStatus ? profile.company : null,
+            designation: profile.workingStatus ? profile.designation : null,
+            workLocation: profile.workingStatus ? profile.workLocation : null,
+            salaryRange: profile.workingStatus ? profile.salaryRange : null,
+            aboutMe: profile.aboutMe || null,
+            verified: profile.verified,
+            images,
+          }
+        });
+      } else {
+        // Masked data for unverified viewers
+        res.status(200).json({
+          success: true,
+          profile: {
+            _id: profile._id,
+            firstName: maskString(profile.firstName),
+            lastName: maskString(profile.lastName),
+            age,
+            nativePlace: maskString(profile.nativePlace),
+            height: profile.height,
+            workingStatus: profile.workingStatus,
+            company: profile.workingStatus ? maskString(profile.company) : null,
+            designation: profile.workingStatus ? maskString(profile.designation) : null,
+            workLocation: profile.workingStatus ? maskString(profile.workLocation) : null,
+            salaryRange: profile.workingStatus ? profile.salaryRange : null, // Salary range not masked (it's a range)
+            aboutMe: profile.aboutMe ? maskString(profile.aboutMe) : null,
+            verified: profile.verified,
+            images, // Already blurred from getOtherUserProfileImages
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error viewing profile:', error);
+      res.status(500).json({
+        error: 'Failed to view profile',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+);
+
+/**
  * GET /api/profiles/:userId
  * Read a profile by user ID (only own profile)
  */
