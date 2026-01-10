@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { authFetch } from '../app/utils/authFetch'
+import ConnectionButton from './ConnectionButton'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 const MOBILE_BREAKPOINT = 768
@@ -340,6 +341,9 @@ export default function ProfileDetailView({ profileId, images, onClose }: Profil
                 <p className="text-gray-700 leading-relaxed">{profile.aboutMe}</p>
               </div>
             )}
+
+            {/* Connection Button */}
+            <ConnectionButton targetUserId={profile._id} />
 
             <div className="h-6" />
           </div>
