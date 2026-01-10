@@ -42,7 +42,7 @@ router.get('/discover',
       // Fetch images for all profiles in parallel
       const profilesWithImages = (await Promise.all(
         profiles.map(async (profile) => {
-          // Get images (blurred for unverified, original for verified)
+          // Get images (blurred for unverified, compressed for verified)
           const files = await getOtherUserProfileImages(profile._id, isVerified);
           const images = files.map(f => f.url);
 
@@ -128,7 +128,7 @@ router.get('/view/:userId',
         return res.status(404).json({ error: 'Profile not found' });
       }
 
-      // Get images (blurred for unverified, original for verified)
+      // Get images (blurred for unverified, compressed for verified)
       const files = await getOtherUserProfileImages(targetUserId, isVerified);
       const images = files.map(f => f.url);
 
