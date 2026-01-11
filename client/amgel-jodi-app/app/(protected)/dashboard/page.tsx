@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, memo } from 'react'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
 import { authFetch } from '../../utils/authFetch'
@@ -283,7 +283,7 @@ export default function Dashboard() {
                 <ProfileCard
                   key={discoverProfile._id}
                   profile={discoverProfile}
-                  onSelect={() => setSelectedProfile(discoverProfile)}
+                  onSelect={setSelectedProfile}
                 />
               ))}
             </div>
@@ -304,12 +304,22 @@ export default function Dashboard() {
 }
 
 // Profile Card Component with Image Carousel
-function ProfileCard({ profile, onSelect }: { profile: DiscoverProfile; onSelect: () => void }) {
+const ProfileCard = memo(function ProfileCard({
+  profile,
+  onSelect
+}: {
+  profile: DiscoverProfile
+  onSelect: (profile: DiscoverProfile) => void
+}) {
   const carouselRef = useRef<HTMLDivElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [isInView, setIsInView] = useState(false)
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set([0]))
+
+  const handleSelect = useCallback(() => {
+    onSelect(profile)
+  }, [onSelect, profile])
 
   // Observe when card enters viewport
   useEffect(() => {
@@ -347,6 +357,7 @@ function ProfileCard({ profile, onSelect }: { profile: DiscoverProfile; onSelect
     })
   }, [profile.images.length])
 
+
   const scrollToIndex = (index: number) => {
     if (!carouselRef.current) return
     const width = carouselRef.current.offsetWidth
@@ -364,7 +375,7 @@ function ProfileCard({ profile, onSelect }: { profile: DiscoverProfile; onSelect
   return (
     <div
       ref={cardRef}
-      onClick={onSelect}
+      onClick={handleSelect}
       className="group relative bg-white rounded-3xl overflow-hidden shadow-lg shadow-myColor-900/10 hover:shadow-2xl hover:shadow-myColor-900/20 transition-all duration-500 hover:-translate-y-1 cursor-pointer"
     >
       {/* Image Carousel */}
@@ -477,4 +488,4 @@ function ProfileCard({ profile, onSelect }: { profile: DiscoverProfile; onSelect
       <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-black/5 group-hover:ring-myColor-500/20 transition-all duration-500 pointer-events-none" />
     </div>
   )
-}
+})

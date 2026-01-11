@@ -18,30 +18,46 @@ interface Notification {
   createdAt: string
 }
 
+// Module-level tracking to survive React Strict Mode remounts
+let globalCountFetched = false
+let globalEventSource: EventSource | null = null
+
 export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [hasLoadedNotifications, setHasLoadedNotifications] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const eventSourceRef = useRef<EventSource | null>(null)
-  const hasFetchedRef = useRef(false)
+  const setUnreadCountRef = useRef(setUnreadCount)
+  const setHasLoadedRef = useRef(setHasLoadedNotifications)
 
-  // Fetch data function (not memoized, used via ref pattern)
-  const fetchData = async () => {
+  // Keep refs updated
+  setUnreadCountRef.current = setUnreadCount
+  setHasLoadedRef.current = setHasLoadedNotifications
+
+  // Fetch unread count only
+  const fetchUnreadCount = async () => {
     try {
-      const [notifRes, countRes] = await Promise.all([
-        authFetch(`${API_BASE}/notifications?limit=10`),
-        authFetch(`${API_BASE}/notifications/unread-count`),
-      ])
-
-      if (notifRes.ok) {
-        const data = await notifRes.json()
-        setNotifications(data.notifications)
-      }
-      if (countRes.ok) {
-        const data = await countRes.json()
+      const response = await authFetch(`${API_BASE}/notifications/unread-count`)
+      if (response.ok) {
+        const data = await response.json()
         setUnreadCount(data.count)
+      }
+    } catch (error) {
+      console.error('Error fetching unread count:', error)
+    }
+  }
+
+  // Fetch notifications (called when dropdown opens)
+  const fetchNotifications = async () => {
+    setLoading(true)
+    try {
+      const response = await authFetch(`${API_BASE}/notifications?limit=10`)
+      if (response.ok) {
+        const data = await response.json()
+        setNotifications(data.notifications)
+        setHasLoadedNotifications(true)
       }
     } catch (error) {
       console.error('Error fetching notifications:', error)
@@ -50,43 +66,59 @@ export default function NotificationBell() {
     }
   }
 
-  // Initial fetch - only once
+  // Initial fetch - only unread count (once globally)
   useEffect(() => {
-    if (hasFetchedRef.current) return
-    hasFetchedRef.current = true
-    fetchData()
+    if (globalCountFetched) return
+    globalCountFetched = true
+    fetchUnreadCount()
   }, [])
 
-  // SSE connection for real-time updates
+  // Fetch notifications when dropdown opens for the first time
   useEffect(() => {
+    if (isOpen && !hasLoadedNotifications) {
+      fetchNotifications()
+    }
+  }, [isOpen, hasLoadedNotifications])
+
+  // SSE connection for real-time updates (single global connection)
+  useEffect(() => {
+    if (globalEventSource) return
+
     let reconnectTimeout: NodeJS.Timeout
 
     const connectSSE = () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close()
-      }
-
       const eventSource = new EventSource(`${API_BASE}/notifications/stream`, {
         withCredentials: true,
       })
 
-      eventSource.addEventListener('NEW_NOTIFICATION', () => {
-        fetchData()
+      eventSource.addEventListener('NEW_NOTIFICATION', async () => {
+        // Fetch fresh count
+        try {
+          const response = await authFetch(`${API_BASE}/notifications/unread-count`)
+          if (response.ok) {
+            const data = await response.json()
+            setUnreadCountRef.current(data.count)
+          }
+        } catch (e) {
+          // ignore
+        }
+        setHasLoadedRef.current(false)
       })
 
       eventSource.onerror = () => {
         eventSource.close()
+        globalEventSource = null
         reconnectTimeout = setTimeout(connectSSE, 5000)
       }
 
-      eventSourceRef.current = eventSource
+      globalEventSource = eventSource
     }
 
     connectSSE()
 
     return () => {
       clearTimeout(reconnectTimeout)
-      eventSourceRef.current?.close()
+      // Don't close on unmount - keep connection alive
     }
   }, [])
 

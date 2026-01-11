@@ -1,6 +1,9 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 const HOME_URL = process.env.NEXT_PUBLIC_HOME_URL || 'http://localhost:3000'
 
+// Singleton refresh promise to prevent multiple simultaneous refresh calls
+let refreshPromise: Promise<boolean> | null = null
+
 /**
  * Wrapper around fetch that handles 401 errors by:
  * 1. Trying to refresh the token
@@ -33,19 +36,33 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
 }
 
 /**
- * Try to refresh the access token
+ * Try to refresh the access token (singleton - only one refresh at a time)
  */
 async function tryRefreshToken(): Promise<boolean> {
-  try {
-    const response = await fetch(`${API_BASE}/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-    })
-
-    return response.ok
-  } catch {
-    return false
+  // If already refreshing, wait for that to complete
+  if (refreshPromise) {
+    return refreshPromise
   }
+
+  // Start new refresh
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      return response.ok
+    } catch {
+      return false
+    } finally {
+      // Clear the promise after a short delay to allow batched requests
+      setTimeout(() => {
+        refreshPromise = null
+      }, 100)
+    }
+  })()
+
+  return refreshPromise
 }
 
 /**

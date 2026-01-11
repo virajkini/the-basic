@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { useAuth } from '../app/context/AuthContext'
 import { authFetch } from '../app/utils/authFetch'
 
@@ -19,40 +19,65 @@ interface ConnectionButtonProps {
   onStatusChange?: (status: ConnectionStatus) => void
 }
 
-export default function ConnectionButton({ targetUserId, onStatusChange }: ConnectionButtonProps) {
+// Module-level tracking - stores Promise so second mount can await it
+const inFlightRequests = new Map<string, Promise<ConnectionState>>()
+const defaultState: ConnectionState = { status: null, connectionId: null, isSender: false }
+
+function ConnectionButton({ targetUserId, onStatusChange }: ConnectionButtonProps) {
   const { user } = useAuth()
-  const [connectionState, setConnectionState] = useState<ConnectionState>({
-    status: null,
-    connectionId: null,
-    isSender: false,
-  })
+  const [connectionState, setConnectionState] = useState<ConnectionState>(defaultState)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
 
-  // Fetch current connection status
+  // Fetch current connection status (no caching - always fetch fresh)
   useEffect(() => {
+    if (!user?.userId || !targetUserId) {
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
+
     const fetchStatus = async () => {
-      try {
-        const response = await authFetch(`${API_BASE}/connections/status/${targetUserId}`)
-        if (response.ok) {
-          const data = await response.json()
-          setConnectionState({
-            status: data.status,
-            connectionId: data.connection?._id || null,
-            isSender: data.isSender ?? false,
-          })
-        }
-      } catch (error) {
-        console.error('Error fetching connection status:', error)
-      } finally {
+      // Check if request already in flight
+      let request = inFlightRequests.get(targetUserId)
+
+      if (!request) {
+        // Start new request
+        request = (async () => {
+          try {
+            const response = await authFetch(`${API_BASE}/connections/status/${targetUserId}`)
+            if (response.ok) {
+              const data = await response.json()
+              return {
+                status: data.status,
+                connectionId: data.connection?._id || null,
+                isSender: data.isSender ?? false,
+              }
+            }
+            return defaultState
+          } catch (error) {
+            console.error('Error fetching connection status:', error)
+            return defaultState
+          } finally {
+            inFlightRequests.delete(targetUserId)
+          }
+        })()
+
+        inFlightRequests.set(targetUserId, request)
+      }
+
+      const result = await request
+      if (!cancelled) {
+        setConnectionState(result)
         setLoading(false)
       }
     }
 
-    if (user?.userId && targetUserId) {
-      fetchStatus()
-    } else {
-      setLoading(false)
+    fetchStatus()
+
+    return () => {
+      cancelled = true
     }
   }, [user?.userId, targetUserId])
 
@@ -118,10 +143,7 @@ export default function ConnectionButton({ targetUserId, onStatusChange }: Conne
       })
 
       if (response.ok) {
-        setConnectionState((prev) => ({
-          ...prev,
-          status: 'ACCEPTED',
-        }))
+        setConnectionState((prev) => ({ ...prev, status: 'ACCEPTED' }))
         onStatusChange?.('ACCEPTED')
       }
     } catch (error) {
@@ -300,3 +322,5 @@ export default function ConnectionButton({ targetUserId, onStatusChange }: Conne
     </div>
   )
 }
+
+export default memo(ConnectionButton)
