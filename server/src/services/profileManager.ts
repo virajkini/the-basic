@@ -113,4 +113,20 @@ export async function listProfiles(
   return profiles;
 }
 
+/**
+ * Get all profiles (admin only)
+ * @returns Array of all profiles
+ */
+export async function getAllProfiles(): Promise<Profile[]> {
+  const db = await getDatabase();
+  const collection = db.collection<Profile>('profiles');
+
+  const profiles = await collection
+    .find({})
+    .sort({ createdAt: -1 })
+    .toArray();
+
+  return profiles;
+}
+
 

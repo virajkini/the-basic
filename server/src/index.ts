@@ -8,6 +8,7 @@ import profileRoutes from './routes/profiles.js';
 import fileRoutes from './routes/files.js';
 import connectionRoutes from './routes/connections.js';
 import notificationRoutes from './routes/notifications.js';
+import adminRoutes from './routes/admin.js';
 import { authenticateToken } from './middleware/auth.js';
 
 const app = express();
@@ -100,6 +101,9 @@ app.use('/api/connections', connectionRoutes);
 
 // Notification routes
 app.use('/api/notifications', notificationRoutes);
+
+// Admin routes (protected by authenticateToken and requireAdmin middleware)
+app.use('/api/admin', adminRoutes);
 
 // Apply authentication middleware to all other API routes (excluding /api/auth and /health)
 app.use((req, res, next) => {
