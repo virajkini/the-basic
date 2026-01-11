@@ -12,14 +12,7 @@ export interface Notification {
   type: NotificationType;
   refId: string;
   actorUserId: string;
+  actorName?: string;
   read: boolean;
   createdAt: Date;
-}
-
-export interface NotificationWithActor extends Notification {
-  actor?: {
-    userId: string;
-    name: string;
-    profilePictureUrl?: string;
-  };
 }

@@ -10,6 +10,7 @@ import {
 } from '../services/connectionManager.js';
 import { createNotification } from '../services/notificationManager.js';
 import { sendToUser } from '../services/sseManager.js';
+import { readProfile } from '../services/profileManager.js';
 import { ConnectionStatus } from '../models/connection.js';
 import { NotificationType } from '../models/notification.js';
 
@@ -38,12 +39,17 @@ router.post('/',
       // Create connection request
       const connection = await sendRequest(fromUserId, toUserId);
 
+      // Get sender's profile for notification
+      const senderProfile = await readProfile(fromUserId);
+      const senderName = senderProfile?.firstName || undefined;
+
       // Create notification for recipient
       const notification = await createNotification(
         toUserId,
         NotificationType.REQUEST_RECEIVED,
         connection._id!.toString(),
-        fromUserId
+        fromUserId,
+        senderName
       );
 
       // Send real-time SSE event to recipient
@@ -118,12 +124,17 @@ router.patch('/:id',
         notificationType = NotificationType.REQUEST_REJECTED;
       }
 
+      // Get responder's profile for notification
+      const responderProfile = await readProfile(userId);
+      const responderName = responderProfile?.firstName || undefined;
+
       // Create notification for the sender (fromUserId)
       const notification = await createNotification(
         connection.fromUserId,
         notificationType,
         connection._id!.toString(),
-        userId
+        userId,
+        responderName
       );
 
       // Send real-time SSE event to sender

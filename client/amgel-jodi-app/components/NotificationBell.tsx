@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
 import { authFetch } from '../app/utils/authFetch'
 
@@ -13,9 +13,9 @@ interface Notification {
   type: NotificationType
   refId: string
   actorUserId: string
+  actorName?: string
   read: boolean
   createdAt: string
-  actorName?: string
 }
 
 export default function NotificationBell() {
@@ -25,63 +25,58 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(true)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const eventSourceRef = useRef<EventSource | null>(null)
+  const hasFetchedRef = useRef(false)
 
-  // Fetch notifications
-  const fetchNotifications = useCallback(async () => {
+  // Fetch data function (not memoized, used via ref pattern)
+  const fetchData = async () => {
     try {
-      const response = await authFetch(`${API_BASE}/notifications?limit=10`)
-      if (response.ok) {
-        const data = await response.json()
+      const [notifRes, countRes] = await Promise.all([
+        authFetch(`${API_BASE}/notifications?limit=10`),
+        authFetch(`${API_BASE}/notifications/unread-count`),
+      ])
+
+      if (notifRes.ok) {
+        const data = await notifRes.json()
         setNotifications(data.notifications)
+      }
+      if (countRes.ok) {
+        const data = await countRes.json()
+        setUnreadCount(data.count)
       }
     } catch (error) {
       console.error('Error fetching notifications:', error)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }
 
-  // Fetch unread count
-  const fetchUnreadCount = useCallback(async () => {
-    try {
-      const response = await authFetch(`${API_BASE}/notifications/unread-count`)
-      if (response.ok) {
-        const data = await response.json()
-        setUnreadCount(data.count)
-      }
-    } catch (error) {
-      console.error('Error fetching unread count:', error)
-    }
-  }, [])
-
-  // Initial fetch
+  // Initial fetch - only once
   useEffect(() => {
-    fetchUnreadCount()
-    fetchNotifications()
-  }, [fetchUnreadCount, fetchNotifications])
+    if (hasFetchedRef.current) return
+    hasFetchedRef.current = true
+    fetchData()
+  }, [])
 
   // SSE connection for real-time updates
   useEffect(() => {
+    let reconnectTimeout: NodeJS.Timeout
+
     const connectSSE = () => {
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close()
+      }
+
       const eventSource = new EventSource(`${API_BASE}/notifications/stream`, {
         withCredentials: true,
       })
 
-      eventSource.addEventListener('connected', () => {
-        console.log('SSE connected')
-      })
-
       eventSource.addEventListener('NEW_NOTIFICATION', () => {
-        // Refetch notifications and count when new notification arrives
-        fetchNotifications()
-        fetchUnreadCount()
+        fetchData()
       })
 
-      eventSource.onerror = (error) => {
-        console.error('SSE error:', error)
+      eventSource.onerror = () => {
         eventSource.close()
-        // Reconnect after 5 seconds
-        setTimeout(connectSSE, 5000)
+        reconnectTimeout = setTimeout(connectSSE, 5000)
       }
 
       eventSourceRef.current = eventSource
@@ -90,9 +85,10 @@ export default function NotificationBell() {
     connectSSE()
 
     return () => {
+      clearTimeout(reconnectTimeout)
       eventSourceRef.current?.close()
     }
-  }, [fetchNotifications, fetchUnreadCount])
+  }, [])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -266,7 +262,7 @@ export default function NotificationBell() {
                     {getNotificationIcon(notification.type)}
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-gray-900">
-                        <span className="font-medium">Someone</span>{' '}
+                        <span className="font-medium">{notification.actorName || 'Someone'}</span>{' '}
                         {getNotificationMessage(notification.type)}
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">

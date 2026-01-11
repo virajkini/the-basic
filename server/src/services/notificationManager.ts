@@ -10,13 +10,15 @@ const COLLECTION_NAME = 'notifications';
  * @param type - Type of notification
  * @param refId - Reference ID (e.g., connectionId)
  * @param actorUserId - User who triggered the notification
+ * @param actorName - Name of the user who triggered the notification (for display)
  * @returns Created notification object
  */
 export async function createNotification(
   userId: string,
   type: NotificationType,
   refId: string,
-  actorUserId: string
+  actorUserId: string,
+  actorName?: string
 ): Promise<Notification> {
   const db = await getDatabase();
   const collection = db.collection<Notification>(COLLECTION_NAME);
@@ -26,6 +28,7 @@ export async function createNotification(
     type,
     refId,
     actorUserId,
+    actorName,
     read: false,
     createdAt: new Date(),
   };
