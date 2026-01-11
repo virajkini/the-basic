@@ -191,7 +191,7 @@ export async function getUserProfileImages(userId: string): Promise<Array<{
  * @param targetUserId - User ID of the profile being viewed
  * @param viewerIsVerified - Whether the viewing user is verified
  * @returns Array of file objects with appropriate URLs
- *          - Verified viewers: All original images with signed URLs
+ *          - Verified viewers: All compressed images (WebP) with signed URLs
  *          - Unverified viewers: Only first blurred image if it exists (public URL)
  */
 export async function getOtherUserProfileImages(
@@ -205,8 +205,8 @@ export async function getOtherUserProfileImages(
 }>> {
   try {
     if (viewerIsVerified) {
-      // For verified viewers: return all original images with signed URLs
-      const prefix = `profiles/${targetUserId}/original/`;
+      // For verified viewers: return all compressed images with signed URLs
+      const prefix = `profiles/${targetUserId}/compressed/`;
       const command = new ListObjectsV2Command({
         Bucket: BUCKET_NAME,
         Prefix: prefix,
@@ -217,6 +217,38 @@ export async function getOtherUserProfileImages(
       const items = (response.Contents || [])
         .filter((item) => item.Key && item.Key !== prefix && item.Size && item.Size > 0)
         .sort((a, b) => (a.Key || '').localeCompare(b.Key || ''));
+
+      // If no compressed images exist yet, fall back to original folder
+      if (items.length === 0) {
+        const originalPrefix = `profiles/${targetUserId}/original/`;
+        const originalCommand = new ListObjectsV2Command({
+          Bucket: BUCKET_NAME,
+          Prefix: originalPrefix,
+        });
+
+        const originalResponse = await s3Client.send(originalCommand);
+
+        const originalItems = (originalResponse.Contents || [])
+          .filter((item) => item.Key && item.Key !== originalPrefix && item.Size && item.Size > 0)
+          .sort((a, b) => (a.Key || '').localeCompare(b.Key || ''));
+
+        return originalItems.map((item) => {
+          const cloudFrontUrl = `https://${CLOUDFRONT_DOMAIN}/${item.Key}`;
+          const signedUrl = getCloudFrontSignedUrl({
+            url: cloudFrontUrl,
+            keyPairId: CLOUDFRONT_KEY_PAIR_ID,
+            privateKey: CLOUDFRONT_PRIVATE_KEY,
+            dateLessThan: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          });
+
+          return {
+            key: item.Key!,
+            url: signedUrl,
+            size: item.Size,
+            lastModified: item.LastModified,
+          };
+        });
+      }
 
       return items.map((item) => {
         const cloudFrontUrl = `https://${CLOUDFRONT_DOMAIN}/${item.Key}`;

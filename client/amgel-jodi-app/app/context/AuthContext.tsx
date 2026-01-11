@@ -5,6 +5,8 @@ import { createContext, useContext, ReactNode } from 'react'
 interface User {
   phone: string
   userId: string
+  verified: boolean
+  subscribed: boolean
 }
 
 interface AuthContextType {

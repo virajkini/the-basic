@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, memo } from 'react'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
+import { authFetch } from '../../utils/authFetch'
+import ProfileDetailView from '../../../components/ProfileDetailView'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
@@ -45,6 +47,7 @@ export default function Dashboard() {
   const [images, setImages] = useState<ImageFile[]>([])
   const [discoverProfiles, setDiscoverProfiles] = useState<DiscoverProfile[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [selectedProfile, setSelectedProfile] = useState<DiscoverProfile | null>(null)
   const hasFetched = useRef(false)
 
   useEffect(() => {
@@ -63,15 +66,9 @@ export default function Dashboard() {
 
       // Fetch own profile, own images, and discover profiles (with images) in parallel
       const [profileRes, imagesRes, discoverRes] = await Promise.all([
-        fetch(`${API_BASE}/profiles/${user.userId}`, {
-          credentials: 'include',
-        }),
-        fetch(`${API_BASE}/files`, {
-          credentials: 'include',
-        }),
-        fetch(`${API_BASE}/profiles/discover`, {
-          credentials: 'include',
-        }),
+        authFetch(`${API_BASE}/profiles/${user.userId}`),
+        authFetch(`${API_BASE}/files`),
+        authFetch(`${API_BASE}/profiles/discover`),
       ])
 
       // Handle profile response
@@ -283,23 +280,46 @@ export default function Dashboard() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {discoverProfiles.map((discoverProfile) => (
-                <ProfileCard key={discoverProfile._id} profile={discoverProfile} />
+                <ProfileCard
+                  key={discoverProfile._id}
+                  profile={discoverProfile}
+                  onSelect={setSelectedProfile}
+                />
               ))}
             </div>
           )}
         </div>
+
+        {/* Profile Detail View Modal */}
+        {selectedProfile && (
+          <ProfileDetailView
+            profileId={selectedProfile._id}
+            images={selectedProfile.images}
+            onClose={() => setSelectedProfile(null)}
+          />
+        )}
       </div>
     </div>
   )
 }
 
 // Profile Card Component with Image Carousel
-function ProfileCard({ profile }: { profile: DiscoverProfile }) {
+const ProfileCard = memo(function ProfileCard({
+  profile,
+  onSelect
+}: {
+  profile: DiscoverProfile
+  onSelect: (profile: DiscoverProfile) => void
+}) {
   const carouselRef = useRef<HTMLDivElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
   const [isInView, setIsInView] = useState(false)
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set([0]))
+
+  const handleSelect = useCallback(() => {
+    onSelect(profile)
+  }, [onSelect, profile])
 
   // Observe when card enters viewport
   useEffect(() => {
@@ -337,6 +357,7 @@ function ProfileCard({ profile }: { profile: DiscoverProfile }) {
     })
   }, [profile.images.length])
 
+
   const scrollToIndex = (index: number) => {
     if (!carouselRef.current) return
     const width = carouselRef.current.offsetWidth
@@ -352,7 +373,11 @@ function ProfileCard({ profile }: { profile: DiscoverProfile }) {
   const shouldLoadImage = (idx: number) => isInView && loadedImages.has(idx)
 
   return (
-    <div ref={cardRef} className="group relative bg-white rounded-3xl overflow-hidden shadow-lg shadow-myColor-900/10 hover:shadow-2xl hover:shadow-myColor-900/20 transition-all duration-500 hover:-translate-y-1">
+    <div
+      ref={cardRef}
+      onClick={handleSelect}
+      className="group relative bg-white rounded-3xl overflow-hidden shadow-lg shadow-myColor-900/10 hover:shadow-2xl hover:shadow-myColor-900/20 transition-all duration-500 hover:-translate-y-1 cursor-pointer"
+    >
       {/* Image Carousel */}
       <div className="relative aspect-[4/5] bg-gradient-to-br from-myColor-100 to-myColor-200">
         {hasImages ? (
@@ -361,6 +386,7 @@ function ProfileCard({ profile }: { profile: DiscoverProfile }) {
             <div
               ref={carouselRef}
               onScroll={handleScroll}
+              onClick={(e) => e.stopPropagation()}
               className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
@@ -388,7 +414,10 @@ function ProfileCard({ profile }: { profile: DiscoverProfile }) {
                 {profile.images.map((_, idx) => (
                   <button
                     key={idx}
-                    onClick={() => scrollToIndex(idx)}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      scrollToIndex(idx)
+                    }}
                     className={`w-2 h-2 rounded-full transition-all duration-300 ${
                       idx === activeIndex
                         ? 'bg-white w-4 shadow-md'
@@ -459,4 +488,4 @@ function ProfileCard({ profile }: { profile: DiscoverProfile }) {
       <div className="absolute inset-0 rounded-3xl ring-1 ring-inset ring-black/5 group-hover:ring-myColor-500/20 transition-all duration-500 pointer-events-none" />
     </div>
   )
-}
+})
