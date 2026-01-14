@@ -22,6 +22,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Amgel Jodi - GSB Konkani Matrimony',
   description: 'Find your perfect match in the GSB Konkani community',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/logo.svg',
+  },
 }
 
 export default function RootLayout({
