@@ -333,20 +333,20 @@ export default function ConnectionsPage() {
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 mb-6">
-          <div className="flex">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-1.5 mb-6">
+          <div className="flex gap-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 py-4 px-4 text-sm font-medium transition-colors border-b-2 ${
+                className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium rounded-lg transition-all ${
                   activeTab === tab.id
-                    ? 'text-myColor-600 border-myColor-500 bg-myColor-50/50'
-                    : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50'
+                    ? 'text-myColor-700 bg-myColor-100 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 {tab.icon}
-                <span className="hidden sm:inline">{tab.label}</span>
+                <span>{tab.label}</span>
               </button>
             ))}
           </div>

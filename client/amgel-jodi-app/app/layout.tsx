@@ -20,6 +20,12 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'Amgel Jodi - Dashboard',
   description: 'Your matrimony dashboard',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: '/logo.svg',
+  },
 }
 
 export default function RootLayout({
