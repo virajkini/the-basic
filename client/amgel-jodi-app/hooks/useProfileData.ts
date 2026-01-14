@@ -19,6 +19,7 @@ export interface FullProfile {
   salaryRange: string | null
   aboutMe: string | null
   verified: boolean
+  updatedAt?: string
 }
 
 // Module-level cache - persists across component lifecycle

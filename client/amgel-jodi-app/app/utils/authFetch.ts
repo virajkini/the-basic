@@ -37,8 +37,9 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
 
 /**
  * Try to refresh the access token (singleton - only one refresh at a time)
+ * Exported for use by SSE connections that can't use authFetch
  */
-async function tryRefreshToken(): Promise<boolean> {
+export async function tryRefreshToken(): Promise<boolean> {
   // If already refreshing, wait for that to complete
   if (refreshPromise) {
     return refreshPromise

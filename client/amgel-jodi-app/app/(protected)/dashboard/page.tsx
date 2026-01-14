@@ -33,18 +33,11 @@ interface DiscoverProfile {
   images: string[]
 }
 
-interface ImageFile {
-  key: string
-  url: string
-  size?: number
-  lastModified?: Date
-}
 
 export default function Dashboard() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<Profile | null>(null)
-  const [images, setImages] = useState<ImageFile[]>([])
   const [discoverProfiles, setDiscoverProfiles] = useState<DiscoverProfile[]>([])
   const [error, setError] = useState<string | null>(null)
   const [selectedProfile, setSelectedProfile] = useState<DiscoverProfile | null>(null)
@@ -64,10 +57,9 @@ export default function Dashboard() {
       setLoading(true)
       setError(null)
 
-      // Fetch own profile, own images, and discover profiles (with images) in parallel
-      const [profileRes, imagesRes, discoverRes] = await Promise.all([
+      // Fetch own profile and discover profiles in parallel
+      const [profileRes, discoverRes] = await Promise.all([
         authFetch(`${API_BASE}/profiles/${user.userId}`),
-        authFetch(`${API_BASE}/files`),
         authFetch(`${API_BASE}/profiles/discover`),
       ])
 
@@ -76,14 +68,6 @@ export default function Dashboard() {
         const profileData = await profileRes.json()
         if (profileData.success && profileData.profile) {
           setProfile(profileData.profile)
-        }
-      }
-
-      // Handle images response
-      if (imagesRes.ok) {
-        const imagesData = await imagesRes.json()
-        if (imagesData.success && imagesData.files) {
-          setImages(imagesData.files)
         }
       }
 
@@ -182,13 +166,13 @@ export default function Dashboard() {
     )
   }
 
-  // Has profile - Show Welcome Back + Other Profiles
+  // Has profile - Show Discover Profiles
   return (
-    <div className="container mx-auto px-4 py-6 md:py-8">
+    <div className="container mx-auto px-4 py-4 md:py-6 pb-20 md:pb-6">
       <div className="max-w-6xl mx-auto">
         {/* Error Message */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-100 text-red-700 rounded-xl flex items-center gap-3">
+          <div className="mb-4 p-4 bg-red-50 border border-red-100 text-red-700 rounded-xl flex items-center gap-3">
             <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -201,60 +185,15 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Welcome Card */}
-        <div className="glass-card rounded-2xl p-6 md:p-8 mb-8 animate-fade-in-up">
-          <div className="flex flex-col md:flex-row md:items-center gap-6">
-            {/* Profile Photo or Placeholder */}
-            <div className="flex-shrink-0">
-              {images.length > 0 ? (
-                <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl overflow-hidden border-2 border-myColor-200 shadow-lg">
-                  <img
-                    src={images[0].url}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : (
-                <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-myColor-100 to-myColor-200 rounded-2xl flex items-center justify-center">
-                  <svg className="w-10 h-10 md:w-12 md:h-12 text-myColor-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-              )}
-            </div>
-
-            {/* Welcome Text */}
-            <div className="flex-1">
-              <h1 className="text-2xl md:text-3xl font-heading font-bold text-myColor-900 mb-2">
-                Welcome back, {profile.firstName}!
-              </h1>
-              <p className="text-myColor-600">
-                {profile.age} years old • {profile.nativePlace}
-                {profile.workingStatus && profile.designation && (
-                  <span> • {profile.designation}</span>
-                )}
-              </p>
-              {!profile.verified && (
-                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-yellow-50 text-yellow-700 rounded-full text-sm">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  Profile pending verification
-                </div>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3">
-              <Link
-                href="/profile"
-                className="px-5 py-2.5 bg-myColor-100 text-myColor-700 rounded-xl font-medium hover:bg-myColor-200 transition-colors"
-              >
-                Edit Profile
-              </Link>
-            </div>
+        {/* Verification Warning - Compact */}
+        {!profile.verified && (
+          <div className="mb-4 flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-sm">
+            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>Profile pending verification</span>
           </div>
-        </div>
+        )}
 
         {/* Discover Profiles Section */}
         <div className="animate-fade-in-up delay-100">
@@ -441,19 +380,47 @@ const ProfileCard = memo(function ProfileCard({
         {/* Gradient Overlay at Bottom */}
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none" />
 
-        {/* Verified Badge */}
-        {profile.verified && (
-          <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm rounded-full p-1.5 shadow-lg">
-            <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-            </svg>
-          </div>
+        {/* Left/Right Navigation Arrows (Desktop Only) */}
+        {profile.images.length > 1 && (
+          <>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                if (activeIndex > 0) scrollToIndex(activeIndex - 1)
+              }}
+              className={`absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 hidden md:flex items-center justify-center bg-black/20 hover:bg-black/40 rounded-full transition-all ${activeIndex === 0 ? 'opacity-30 cursor-not-allowed' : 'opacity-70 hover:opacity-100'}`}
+              disabled={activeIndex === 0}
+              aria-label="Previous image"
+            >
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                if (activeIndex < profile.images.length - 1) scrollToIndex(activeIndex + 1)
+              }}
+              className={`absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 hidden md:flex items-center justify-center bg-black/20 hover:bg-black/40 rounded-full transition-all ${activeIndex === profile.images.length - 1 ? 'opacity-30 cursor-not-allowed' : 'opacity-70 hover:opacity-100'}`}
+              disabled={activeIndex === profile.images.length - 1}
+              aria-label="Next image"
+            >
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </>
         )}
 
         {/* Profile Info on Image */}
         <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-          <h3 className="text-xl font-semibold tracking-wide">
+          <h3 className="text-xl font-semibold tracking-wide flex items-center gap-2">
             {profile.firstName}, {profile.age}
+            {profile.verified && (
+              <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            )}
           </h3>
           <div className="flex items-center gap-1.5 mt-1 text-white/90 text-sm">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -481,6 +448,13 @@ const ProfileCard = memo(function ProfileCard({
             )}
           </div>
           <div className="text-sm text-myColor-500">{profile.height}</div>
+        </div>
+        {/* View Profile Hint */}
+        <div className="flex items-center justify-center gap-1.5 mt-3 pt-3 border-t border-myColor-100 text-myColor-500 group-hover:text-myColor-600 transition-colors">
+          <span className="text-xs font-medium">View Full Profile</span>
+          <svg className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         </div>
       </div>
 
