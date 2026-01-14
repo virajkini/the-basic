@@ -1,0 +1,33 @@
+# Robots.txt for Amgel Jodi
+# https://amgeljodi.com
+
+User-agent: *
+Allow: /
+
+# Disallow admin and private areas
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /private/
+
+# Allow important pages
+Allow: /privacy
+Allow: /terms
+Allow: /contact
+Allow: /about
+
+# Sitemap location
+Sitemap: https://amgeljodi.com/sitemap.xml
+
+# Crawl delay for politeness
+Crawl-delay: 1
+
+# Google specific
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0
+
+# Bing specific
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1

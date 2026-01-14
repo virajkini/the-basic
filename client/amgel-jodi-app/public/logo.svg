@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#a763f1"/>
+      <stop offset="100%" stop-color="#864fc1"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded rectangle background -->
+  <rect width="512" height="512" rx="96" fill="url(#bgGradient)"/>
+  <!-- Heart icon -->
+  <path
+    d="M158.5 185.5C138.5 205.5 138.5 238 158.5 258L256 355.5L353.5 258C373.5 238 373.5 205.5 353.5 185.5C333.5 165.5 301 165.5 281 185.5L256 210.5L231 185.5C211 165.5 178.5 165.5 158.5 185.5Z"
+    stroke="white"
+    stroke-width="24"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+  />
+</svg>

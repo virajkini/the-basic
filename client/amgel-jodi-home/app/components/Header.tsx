@@ -77,31 +77,62 @@ export default function Header() {
               </span>
             </a>
 
-            {/* Login Button */}
+            {/* Navigation Links */}
+            <nav className="hidden md:flex items-center gap-8">
+              <a
+                href="/about"
+                className={`font-medium transition-colors duration-300 ${
+                  isScrolled ? 'text-myColor-700 hover:text-myColor-900' : 'text-white/80 hover:text-white'
+                }`}
+              >
+                About
+              </a>
+              <a
+                href="/contact"
+                className={`font-medium transition-colors duration-300 ${
+                  isScrolled ? 'text-myColor-700 hover:text-myColor-900' : 'text-white/80 hover:text-white'
+                }`}
+              >
+                Contact
+              </a>
+              {/* Login Button */}
+              <button
+                onClick={() => setIsLoginOpen(true)}
+                className={`group relative px-5 py-2.5 md:px-6 md:py-2.5 rounded-full font-medium text-sm md:text-base transition-all duration-300 overflow-hidden ${
+                  isScrolled
+                    ? 'bg-myColor-600 text-white hover:bg-myColor-700 shadow-lg shadow-myColor-500/30 hover:shadow-xl hover:shadow-myColor-500/40'
+                    : 'bg-white/10 backdrop-blur-sm text-white border border-white/30 hover:bg-white/20 hover:border-white/50'
+                } hover:scale-105 active:scale-95`}
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  Login
+                  <svg
+                    className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 8l4 4m0 0l-4 4m4-4H3"
+                    />
+                  </svg>
+                </span>
+              </button>
+            </nav>
+
+            {/* Mobile Login Button */}
             <button
               onClick={() => setIsLoginOpen(true)}
-              className={`group relative px-5 py-2.5 md:px-6 md:py-2.5 rounded-full font-medium text-sm md:text-base transition-all duration-300 overflow-hidden ${
+              className={`md:hidden group relative px-5 py-2.5 rounded-full font-medium text-sm transition-all duration-300 overflow-hidden ${
                 isScrolled
-                  ? 'bg-myColor-600 text-white hover:bg-myColor-700 shadow-lg shadow-myColor-500/30 hover:shadow-xl hover:shadow-myColor-500/40'
-                  : 'bg-white/10 backdrop-blur-sm text-white border border-white/30 hover:bg-white/20 hover:border-white/50'
+                  ? 'bg-myColor-600 text-white hover:bg-myColor-700 shadow-lg shadow-myColor-500/30'
+                  : 'bg-white/10 backdrop-blur-sm text-white border border-white/30 hover:bg-white/20'
               } hover:scale-105 active:scale-95`}
             >
-              <span className="relative z-10 flex items-center gap-2">
-                Login
-                <svg
-                  className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 8l4 4m0 0l-4 4m4-4H3"
-                  />
-                </svg>
-              </span>
+              <span className="relative z-10">Login</span>
             </button>
           </div>
         </div>
