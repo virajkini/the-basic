@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
-import { authFetch } from '../app/utils/authFetch'
+import { authFetch, tryRefreshToken } from '../app/utils/authFetch'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
@@ -85,13 +85,22 @@ export default function NotificationBell() {
     if (globalEventSource) return
 
     let reconnectTimeout: NodeJS.Timeout
+    let consecutiveErrors = 0
+    const MAX_RETRIES = 3
 
-    const connectSSE = () => {
+    const connectSSE = async () => {
+      // If we've had too many consecutive errors, stop trying
+      if (consecutiveErrors >= MAX_RETRIES) {
+        console.warn('SSE: Max retries reached, stopping reconnection attempts')
+        return
+      }
+
       const eventSource = new EventSource(`${API_BASE}/notifications/stream`, {
         withCredentials: true,
       })
 
       eventSource.addEventListener('NEW_NOTIFICATION', async () => {
+        consecutiveErrors = 0 // Reset on successful message
         // Fetch fresh count
         try {
           const response = await authFetch(`${API_BASE}/notifications/unread-count`)
@@ -105,10 +114,26 @@ export default function NotificationBell() {
         setHasLoadedRef.current(false)
       })
 
-      eventSource.onerror = () => {
+      eventSource.onopen = () => {
+        consecutiveErrors = 0 // Reset on successful connection
+      }
+
+      eventSource.onerror = async () => {
         eventSource.close()
         globalEventSource = null
-        reconnectTimeout = setTimeout(connectSSE, 5000)
+        consecutiveErrors++
+
+        // Try to refresh token before reconnecting
+        const refreshed = await tryRefreshToken()
+
+        if (refreshed && consecutiveErrors < MAX_RETRIES) {
+          // Token refreshed, try reconnecting after a short delay
+          reconnectTimeout = setTimeout(connectSSE, 2000)
+        } else if (consecutiveErrors < MAX_RETRIES) {
+          // Refresh failed but still have retries, wait longer
+          reconnectTimeout = setTimeout(connectSSE, 10000)
+        }
+        // If max retries reached, don't reconnect
       }
 
       globalEventSource = eventSource

@@ -152,6 +152,7 @@ router.get('/view/:userId',
             salaryRange: profile.workingStatus ? profile.salaryRange : null,
             aboutMe: profile.aboutMe || null,
             verified: profile.verified,
+            updatedAt: profile.updatedAt,
             images,
           }
         });
@@ -173,6 +174,7 @@ router.get('/view/:userId',
             salaryRange: profile.workingStatus ? profile.salaryRange : null, // Salary range not masked (it's a range)
             aboutMe: profile.aboutMe ? maskString(profile.aboutMe) : null,
             verified: profile.verified,
+            updatedAt: profile.updatedAt,
             images, // Already blurred from getOtherUserProfileImages
           }
         });

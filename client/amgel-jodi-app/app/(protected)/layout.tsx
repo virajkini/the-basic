@@ -2,6 +2,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { AuthProvider } from '../context/AuthContext'
 import Header from '../../components/Header'
+import BottomNav from '../../components/BottomNav'
 
 export const dynamic = 'force-dynamic'
 
@@ -45,14 +46,17 @@ export default async function ProtectedLayout({
 
   return (
     <div className="min-h-screen">
-      <Header userPhone={user.user?.phone} />
+      <Header />
 
       {/* Main Content */}
-      <main className="pb-8">
+      <main>
         <AuthProvider user={user.user}>
           {children}
         </AuthProvider>
       </main>
+
+      {/* Bottom Navigation - Mobile Only */}
+      <BottomNav />
     </div>
   )
 }

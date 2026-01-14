@@ -9,13 +9,29 @@ interface ProfileDetailsProps {
   isMobile: boolean
 }
 
+// Format date to relative time or readable format
+const formatLastUpdated = (dateString?: string) => {
+  if (!dateString) return null
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffDays === 0) return 'Updated today'
+  if (diffDays === 1) return 'Updated yesterday'
+  if (diffDays < 7) return `Updated ${diffDays} days ago`
+  if (diffDays < 30) return `Updated ${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? 's' : ''} ago`
+  if (diffDays < 365) return `Updated ${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) > 1 ? 's' : ''} ago`
+  return `Updated ${date.toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}`
+}
+
 const ProfileDetails = memo(({ profile, isMobile }: ProfileDetailsProps) => (
   <div className={`p-5 space-y-4 ${!isMobile ? 'flex-1 overflow-y-auto' : ''}`}>
     {/* Basic Info Row */}
     <div className="flex flex-wrap gap-3">
       <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-xl text-sm">
-        <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+        <svg className="w-4 h-4 text-gray-500" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M6 2a1 1 0 00-1 1v18a1 1 0 001 1h2a1 1 0 001-1v-1h2v1a1 1 0 001 1h2a1 1 0 001-1V3a1 1 0 00-1-1H6zm1 2h6v3h-2V6H9v1H7V4zm0 5h2v1h2V9h2v3h-2v-1H9v1H7V9zm0 5h2v1h2v-1h2v3h-2v-1H9v1H7v-3z"/>
         </svg>
         <span className="text-gray-700">{profile.height}</span>
       </div>
@@ -83,6 +99,16 @@ const ProfileDetails = memo(({ profile, isMobile }: ProfileDetailsProps) => (
 
     {/* Connection Button */}
     <ConnectionButton targetUserId={profile._id} />
+
+    {/* Last Updated */}
+    {profile.updatedAt && (
+      <div className="pt-3 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-400">
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{formatLastUpdated(profile.updatedAt)}</span>
+      </div>
+    )}
 
     <div className="h-6" />
   </div>
