@@ -239,11 +239,12 @@ export default function Dashboard() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {discoverProfiles.map((discoverProfile) => (
+              {discoverProfiles.map((discoverProfile, index) => (
                 <ProfileCard
                   key={discoverProfile._id}
                   profile={discoverProfile}
                   onSelect={setSelectedProfile}
+                  priority={index < 3}
                 />
               ))}
             </div>
@@ -266,23 +267,27 @@ export default function Dashboard() {
 // Profile Card Component with Image Carousel
 const ProfileCard = memo(function ProfileCard({
   profile,
-  onSelect
+  onSelect,
+  priority = false
 }: {
   profile: DiscoverProfile
   onSelect: (profile: DiscoverProfile) => void
+  priority?: boolean
 }) {
   const carouselRef = useRef<HTMLDivElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
-  const [isInView, setIsInView] = useState(false)
+  const [isInView, setIsInView] = useState(priority) // Priority cards are "in view" immediately
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set([0]))
 
   const handleSelect = useCallback(() => {
     onSelect(profile)
   }, [onSelect, profile])
 
-  // Observe when card enters viewport
+  // Observe when card enters viewport (skip for priority cards)
   useEffect(() => {
+    if (priority) return // Priority cards load immediately
+
     const card = cardRef.current
     if (!card) return
 
@@ -298,7 +303,7 @@ const ProfileCard = memo(function ProfileCard({
 
     observer.observe(card)
     return () => observer.disconnect()
-  }, [])
+  }, [priority])
 
   const handleScroll = useCallback(() => {
     if (!carouselRef.current) return
@@ -360,6 +365,7 @@ const ProfileCard = memo(function ProfileCard({
                       src={url}
                       alt={`${profile.firstName} photo ${idx + 1}`}
                       className="w-full h-full object-cover"
+                      fetchPriority={priority && idx === 0 ? 'high' : 'auto'}
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-myColor-100 to-myColor-200" />
