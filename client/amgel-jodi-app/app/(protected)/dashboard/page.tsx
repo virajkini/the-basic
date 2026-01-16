@@ -43,6 +43,11 @@ export default function Dashboard() {
   const [selectedProfile, setSelectedProfile] = useState<DiscoverProfile | null>(null)
   const hasFetched = useRef(false)
 
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
+
   useEffect(() => {
     if (user?.userId && !hasFetched.current) {
       hasFetched.current = true
@@ -87,11 +92,27 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto">
-          <div className="glass-card rounded-2xl p-8 text-center">
-            <div className="w-12 h-12 border-4 border-myColor-200 border-t-myColor-600 rounded-full animate-spin mx-auto mb-4" />
-            <p className="text-myColor-600">Loading your dashboard...</p>
+      <div className="container mx-auto px-4 py-4 md:py-6 pb-20 md:pb-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <div className="h-8 w-40 bg-gray-200 rounded-lg animate-pulse" />
+            <div className="h-5 w-28 bg-gray-200 rounded animate-pulse" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-white rounded-3xl overflow-hidden shadow-lg animate-pulse">
+                <div className="aspect-[4/5] bg-gradient-to-br from-gray-200 to-gray-300" />
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="h-4 w-24 bg-gray-200 rounded" />
+                    <div className="h-4 w-12 bg-gray-200 rounded" />
+                  </div>
+                  <div className="flex items-center justify-center gap-1.5 pt-3 border-t border-gray-100">
+                    <div className="h-3 w-20 bg-gray-200 rounded" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
@@ -413,7 +434,7 @@ const ProfileCard = memo(function ProfileCard({
         )}
 
         {/* Profile Info on Image */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+        <div className="absolute bottom-0 left-0 right-0 p-4 text-white pointer-events-none">
           <h3 className="text-xl font-semibold tracking-wide flex items-center gap-2">
             {profile.firstName}, {profile.age}
             {profile.verified && (
@@ -452,8 +473,8 @@ const ProfileCard = memo(function ProfileCard({
         {/* View Profile Hint */}
         <div className="flex items-center justify-center gap-1.5 mt-3 pt-3 border-t border-myColor-100 text-myColor-500 group-hover:text-myColor-600 transition-colors">
           <span className="text-xs font-medium">View Full Profile</span>
-          <svg className="w-3.5 h-3.5 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          <svg className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </div>
       </div>

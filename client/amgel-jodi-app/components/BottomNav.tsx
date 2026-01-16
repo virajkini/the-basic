@@ -9,7 +9,7 @@ export default function BottomNav() {
   const isActive = (path: string) => pathname === path
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 safe-area-bottom">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-40 safe-area-bottom shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
       <div className="flex items-center justify-around h-16">
         {/* Discover Tab */}
         <Link

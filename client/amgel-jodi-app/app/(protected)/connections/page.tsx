@@ -34,6 +34,11 @@ export default function ConnectionsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [selectedProfile, setSelectedProfile] = useState<{ id: string; images: string[] } | null>(null)
 
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
+
   // Fetch connections based on active tab
   useEffect(() => {
     const fetchConnections = async () => {
