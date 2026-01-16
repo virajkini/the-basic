@@ -20,6 +20,11 @@ export interface FullProfile {
   aboutMe: string | null
   verified: boolean
   updatedAt?: string
+  // Jatak/Kundali fields (optional)
+  placeOfBirth?: string | null
+  birthTiming?: string | null
+  gothra?: string | null
+  nakshatra?: string | null
 }
 
 // Module-level cache - persists across component lifecycle

@@ -151,6 +151,10 @@ router.get('/view/:userId',
             workLocation: profile.workingStatus ? profile.workLocation : null,
             salaryRange: profile.workingStatus ? profile.salaryRange : null,
             aboutMe: profile.aboutMe || null,
+            placeOfBirth: profile.placeOfBirth || null,
+            birthTiming: profile.birthTiming || null,
+            gothra: profile.gothra || null,
+            nakshatra: profile.nakshatra || null,
             verified: profile.verified,
             updatedAt: profile.updatedAt,
             images,
@@ -173,6 +177,10 @@ router.get('/view/:userId',
             workLocation: profile.workingStatus ? maskString(profile.workLocation) : null,
             salaryRange: profile.workingStatus ? profile.salaryRange : null, // Salary range not masked (it's a range)
             aboutMe: profile.aboutMe ? maskString(profile.aboutMe) : null,
+            placeOfBirth: profile.placeOfBirth ? maskString(profile.placeOfBirth) : null,
+            birthTiming: profile.birthTiming || null, // Time not masked (it's a standard format)
+            gothra: profile.gothra || null, // Gothra not masked (it's a standard value)
+            nakshatra: profile.nakshatra || null, // Nakshatra not masked (it's a standard value)
             verified: profile.verified,
             updatedAt: profile.updatedAt,
             images, // Already blurred from getOtherUserProfileImages
@@ -248,6 +256,10 @@ router.get('/:userId',
           workLocation: profile.workLocation,
           salaryRange: profile.salaryRange,
           aboutMe: profile.aboutMe,
+          placeOfBirth: profile.placeOfBirth,
+          birthTiming: profile.birthTiming,
+          gothra: profile.gothra,
+          nakshatra: profile.nakshatra,
           verified: profile.verified,
           subscribed: profile.subscribed,
           createdAt: profile.createdAt,
@@ -287,7 +299,12 @@ router.post('/',
         designation,
         workLocation,
         salaryRange,
-        aboutMe
+        aboutMe,
+        // Jatak/Kundali fields (optional)
+        placeOfBirth,
+        birthTiming,
+        gothra,
+        nakshatra
       } = req.body;
 
       const authenticatedUserId = req.authenticatedUserId;
@@ -384,6 +401,11 @@ router.post('/',
         workLocation: workingStatus ? workLocation?.trim() : undefined,
         salaryRange: workingStatus ? salaryRange as SalaryRange : undefined,
         aboutMe: aboutMe?.trim() || undefined,
+        // Jatak/Kundali fields (optional)
+        placeOfBirth: placeOfBirth?.trim() || undefined,
+        birthTiming: birthTiming || undefined,
+        gothra: gothra || undefined,
+        nakshatra: nakshatra || undefined,
         verified: false,
         subscribed: false
       };
@@ -409,6 +431,10 @@ router.post('/',
           workLocation: profile.workLocation,
           salaryRange: profile.salaryRange,
           aboutMe: profile.aboutMe,
+          placeOfBirth: profile.placeOfBirth,
+          birthTiming: profile.birthTiming,
+          gothra: profile.gothra,
+          nakshatra: profile.nakshatra,
           verified: profile.verified,
           subscribed: profile.subscribed,
           createdAt: profile.createdAt,
@@ -455,7 +481,12 @@ router.put('/:userId',
         designation,
         workLocation,
         salaryRange,
-        aboutMe
+        aboutMe,
+        // Jatak/Kundali fields (optional)
+        placeOfBirth,
+        birthTiming,
+        gothra,
+        nakshatra
       } = req.body;
 
     // Build update object with only provided fields
@@ -563,6 +594,23 @@ router.put('/:userId',
       updateData.aboutMe = aboutMe?.trim() || undefined;
     }
 
+    // Jatak/Kundali fields (optional)
+    if (placeOfBirth !== undefined) {
+      updateData.placeOfBirth = placeOfBirth?.trim() || undefined;
+    }
+
+    if (birthTiming !== undefined) {
+      updateData.birthTiming = birthTiming || undefined;
+    }
+
+    if (gothra !== undefined) {
+      updateData.gothra = gothra || undefined;
+    }
+
+    if (nakshatra !== undefined) {
+      updateData.nakshatra = nakshatra || undefined;
+    }
+
     // Note: verified and subscribed fields cannot be updated by users
 
     if (Object.keys(updateData).length === 0) {
@@ -594,6 +642,10 @@ router.put('/:userId',
         workLocation: updatedProfile.workLocation,
         salaryRange: updatedProfile.salaryRange,
         aboutMe: updatedProfile.aboutMe,
+        placeOfBirth: updatedProfile.placeOfBirth,
+        birthTiming: updatedProfile.birthTiming,
+        gothra: updatedProfile.gothra,
+        nakshatra: updatedProfile.nakshatra,
         verified: updatedProfile.verified,
         subscribed: updatedProfile.subscribed,
         createdAt: updatedProfile.createdAt,

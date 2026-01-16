@@ -24,6 +24,12 @@ export interface Profile {
   // Additional
   aboutMe?: string;
 
+  // Jatak/Kundali Information (optional)
+  placeOfBirth?: string;
+  birthTiming?: string; // Format: "HH:MM" (24-hour)
+  gothra?: string;
+  nakshatra?: string;
+
   // Legacy fields for backwards compatibility
   name?: string; // Will be derived from firstName + lastName
   age?: number; // Will be calculated from dob

@@ -25,6 +25,11 @@ interface FormData {
   workLocation: string
   salaryRange: SalaryRange | ''
   aboutMe: string
+  // Jatak/Kundali fields (optional)
+  placeOfBirth: string
+  birthTiming: string
+  gothra: string
+  nakshatra: string
 }
 
 interface FileWithPreview {
@@ -53,6 +58,11 @@ interface Profile {
   workLocation?: string
   salaryRange?: SalaryRange
   aboutMe?: string
+  // Jatak/Kundali fields (optional)
+  placeOfBirth?: string
+  birthTiming?: string
+  gothra?: string
+  nakshatra?: string
 }
 
 const STEPS = ['Basic Info', 'Photos', 'Work & About']
@@ -63,6 +73,20 @@ const HEIGHT_OPTIONS = [
   "5'6\" (168 cm)", "5'7\" (170 cm)", "5'8\" (173 cm)", "5'9\" (175 cm)", "5'10\" (178 cm)", "5'11\" (180 cm)",
   "6'0\" (183 cm)", "6'1\" (185 cm)", "6'2\" (188 cm)", "6'3\" (191 cm)", "6'4\" (193 cm)", "6'5\" (196 cm)",
   "6'6\" (198 cm)", "6'7\" (201 cm)", "6'8\" (203 cm)"
+]
+
+const GOTHRA_OPTIONS = [
+  "Agastya", "Angirasa", "Atri", "Bharadwaja", "Bhrigu", "Gautama", "Kashyapa", "Vasishta",
+  "Vishvamitra", "Jamadagni", "Kanva", "Kutsa", "Kaundinya", "Gargi", "Vats", "Sandilya",
+  "Maudgalya", "Sankriti", "Bhadarayana", "Shatamarshana", "Kaushika", "Kaushal", "Katyayana",
+  "Upamanyu", "Panini", "Garge", "Kamsha", "Vacch", "Other"
+]
+
+const NAKSHATRA_OPTIONS = [
+  "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashirsha", "Ardra", "Punarvasu", "Pushya",
+  "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati",
+  "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana",
+  "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"
 ]
 
 export default function ProfilePage() {
@@ -82,7 +106,12 @@ export default function ProfilePage() {
     workLocation: '',
     salaryRange: '',
     aboutMe: '',
+    placeOfBirth: '',
+    birthTiming: '',
+    gothra: '',
+    nakshatra: '',
   })
+  const [showKundaliSection, setShowKundaliSection] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<FileWithPreview[]>([])
   const [existingImages, setExistingImages] = useState<ExistingImage[]>([])
   const [existingProfile, setExistingProfile] = useState<Profile | null>(null)
@@ -139,7 +168,15 @@ export default function ProfilePage() {
             workLocation: p.workLocation || '',
             salaryRange: p.salaryRange || '',
             aboutMe: p.aboutMe || '',
+            placeOfBirth: p.placeOfBirth || '',
+            birthTiming: p.birthTiming || '',
+            gothra: p.gothra || '',
+            nakshatra: p.nakshatra || '',
           })
+          // Auto-expand Kundali section if any field has data
+          if (p.placeOfBirth || p.birthTiming || p.gothra || p.nakshatra) {
+            setShowKundaliSection(true)
+          }
         }
       }
 
@@ -413,6 +450,11 @@ export default function ProfilePage() {
         workLocation: formData.workingStatus ? formData.workLocation.trim() : undefined,
         salaryRange: formData.workingStatus ? formData.salaryRange : undefined,
         aboutMe: formData.aboutMe.trim() || undefined,
+        // Jatak/Kundali fields (optional)
+        placeOfBirth: formData.placeOfBirth.trim() || undefined,
+        birthTiming: formData.birthTiming || undefined,
+        gothra: formData.gothra || undefined,
+        nakshatra: formData.nakshatra || undefined,
       }
 
       setUploadProgress(80)
@@ -466,7 +508,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 md:py-8">
+    <div className="container mx-auto px-4 py-6 md:py-8 pb-24 md:pb-8">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -689,6 +731,98 @@ export default function ProfilePage() {
                     <p className="mt-1 text-sm text-red-500">{fieldErrors.height}</p>
                   )}
                 </div>
+              </div>
+
+              {/* Jatak/Kundali Information - Optional Collapsible Section */}
+              <div className="mt-8 pt-6 border-t border-myColor-100">
+                <button
+                  type="button"
+                  onClick={() => setShowKundaliSection(!showKundaliSection)}
+                  className="w-full flex items-center justify-between p-4 bg-myColor-50 hover:bg-myColor-100 rounded-xl transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                      <svg className="w-5 h-5 text-myColor-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium text-myColor-800">Jatak / Kundali Information</p>
+                      <p className="text-xs text-myColor-500">Optional - Helps find more compatible matches</p>
+                    </div>
+                  </div>
+                  <svg
+                    className={`w-5 h-5 text-myColor-500 transition-transform duration-200 ${showKundaliSection ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {showKundaliSection && (
+                  <div className="mt-4 space-y-4 p-4 bg-myColor-50/50 rounded-xl animate-fade-in">
+                    {/* Place of Birth & Birth Timing */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="placeOfBirth" className="block text-sm font-medium text-myColor-700 mb-2">
+                          Place of Birth
+                        </label>
+                        <input
+                          id="placeOfBirth"
+                          type="text"
+                          value={formData.placeOfBirth}
+                          onChange={(e) => updateFormData('placeOfBirth', e.target.value)}
+                          className="w-full px-4 py-3 bg-white border-2 border-myColor-100 rounded-xl transition-all duration-200"
+                          placeholder="e.g., Mumbai, Mangalore"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="birthTiming" className="block text-sm font-medium text-myColor-700 mb-2">
+                          Birth Timing
+                        </label>
+                        <input
+                          id="birthTiming"
+                          type="time"
+                          value={formData.birthTiming}
+                          onChange={(e) => updateFormData('birthTiming', e.target.value)}
+                          className="w-full px-4 py-3 bg-white border-2 border-myColor-100 rounded-xl transition-all duration-200"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Gothra & Nakshatra */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="gothra" className="block text-sm font-medium text-myColor-700 mb-2">
+                          Gothra
+                        </label>
+                        <Dropdown
+                          id="gothra"
+                          options={GOTHRA_OPTIONS.map((g) => ({ value: g, label: g }))}
+                          value={formData.gothra}
+                          onChange={(value) => updateFormData('gothra', value)}
+                          placeholder="Select gothra"
+                          searchable
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="nakshatra" className="block text-sm font-medium text-myColor-700 mb-2">
+                          Nakshatra
+                        </label>
+                        <Dropdown
+                          id="nakshatra"
+                          options={NAKSHATRA_OPTIONS.map((n) => ({ value: n, label: n }))}
+                          value={formData.nakshatra}
+                          onChange={(value) => updateFormData('nakshatra', value)}
+                          placeholder="Select nakshatra"
+                          searchable
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
