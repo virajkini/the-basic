@@ -1120,7 +1120,7 @@ export default function ProfilePage() {
               {/* Terms Agreement - Only for new profiles */}
               {!existingProfile && (
                 <div className="mt-6 p-4 bg-myColor-50 rounded-xl">
-                  <label className="flex items-start gap-3 cursor-pointer">
+                  <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={agreedToTerms}
@@ -1128,7 +1128,7 @@ export default function ProfilePage() {
                         setAgreedToTerms(e.target.checked)
                         setFieldErrors(prev => ({ ...prev, terms: '' }))
                       }}
-                      className="mt-1 w-5 h-5 rounded border-myColor-300 text-myColor-600 focus:ring-myColor-500"
+                      className="w-5 h-5 rounded border-myColor-300 text-myColor-600 focus:ring-myColor-500 flex-shrink-0"
                     />
                     <span className="text-sm text-myColor-700">
                       I agree to the{' '}

@@ -1,15 +1,17 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002'
 
 export default function AuthCheck({ children }: { children: React.ReactNode }) {
   const hasChecked = useRef(false)
+  const pathname = usePathname()
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkAuthAndRedirect = async () => {
       try {
         const response = await fetch(`${API_BASE}/auth/me`, {
           credentials: 'include',
@@ -19,26 +21,24 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
         if (response.ok) {
           const data = await response.json()
           if (data.loggedIn) {
-            // User is logged in, redirect to app
             window.location.href = APP_URL
           }
         }
-        // If 401, user is not logged in, stay on homepage
       } catch (error) {
-        // Network error, stay on page
         console.error('Auth check failed:', error)
       }
     }
 
-    // Only check once on mount (prevents React Strict Mode double-call)
-    if (!hasChecked.current) {
+    // Only redirect from homepage (not from legal pages like /privacy, /terms, /contact)
+    const isHomepage = pathname === '/'
+    if (isHomepage && !hasChecked.current) {
       hasChecked.current = true
-      checkAuth()
+      checkAuthAndRedirect()
     }
 
-    // Listen for login events (when login sheet closes after successful login)
+    // Listen for login events - redirect after successful login from login sheet
     const handleLoginSuccess = () => {
-      checkAuth()
+      window.location.href = APP_URL
     }
 
     window.addEventListener('loginSuccess', handleLoginSuccess)
@@ -46,7 +46,7 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
     return () => {
       window.removeEventListener('loginSuccess', handleLoginSuccess)
     }
-  }, [])
+  }, [pathname])
 
   return <>{children}</>
 }
