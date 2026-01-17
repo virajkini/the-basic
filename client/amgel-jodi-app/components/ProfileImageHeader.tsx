@@ -9,7 +9,7 @@ interface ProfileImageHeaderProps {
   loading: boolean
   profile?: {
     firstName: string
-    lastName?: string
+    lastName?: string | null  // Only shown when connected
     age: number
     nativePlace: string
     verified: boolean
@@ -42,7 +42,7 @@ const ProfileImageHeader = memo(({
         <div className="absolute bottom-4 left-4 right-4 text-white pointer-events-none">
           <div className="flex items-center gap-2">
             <h2 className="text-2xl font-bold">
-              {profile.firstName} {profile.lastName}, {profile.age}
+              {profile.firstName}{profile.lastName ? ` ${profile.lastName}` : ''}, {profile.age}
             </h2>
             {profile.verified && (
               <svg className="w-6 h-6 text-blue-400" fill="currentColor" viewBox="0 0 20 20">

@@ -7,7 +7,7 @@ import ProfileDetailView from '../../../components/ProfileDetailView'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
-type TabType = 'received' | 'sent' | 'accepted'
+type TabType = 'accepted' | 'received' | 'sent'
 
 interface Connection {
   _id: string
@@ -28,7 +28,7 @@ interface Connection {
 
 export default function ConnectionsPage() {
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<TabType>('received')
+  const [activeTab, setActiveTab] = useState<TabType>('accepted')
   const [connections, setConnections] = useState<Connection[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -158,8 +158,17 @@ export default function ConnectionsPage() {
 
   const tabs: { id: TabType; label: string; icon: JSX.Element }[] = [
     {
+      id: 'accepted',
+      label: 'Connected',
+      icon: (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+    },
+    {
       id: 'received',
-      label: 'Received',
+      label: 'Requests',
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -168,19 +177,10 @@ export default function ConnectionsPage() {
     },
     {
       id: 'sent',
-      label: 'Sent',
+      label: 'Pending',
       icon: (
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-        </svg>
-      ),
-    },
-    {
-      id: 'accepted',
-      label: 'Connected',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
     },
@@ -193,14 +193,12 @@ export default function ConnectionsPage() {
     return (
       <div
         key={connection._id}
-        className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow"
+        onClick={() => setSelectedProfile({ id: profile._id, images: profile.images })}
+        className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
       >
         <div className="flex gap-4 p-4">
           {/* Profile Image */}
-          <button
-            onClick={() => setSelectedProfile({ id: profile._id, images: profile.images })}
-            className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-gray-100"
-          >
+          <div className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-gray-100">
             {profile.images?.[0] ? (
               <img
                 src={profile.images[0]}
@@ -214,16 +212,13 @@ export default function ConnectionsPage() {
                 </svg>
               </div>
             )}
-          </button>
+          </div>
 
           {/* Profile Info */}
           <div className="flex-1 min-w-0">
-            <button
-              onClick={() => setSelectedProfile({ id: profile._id, images: profile.images })}
-              className="text-left"
-            >
+            <div>
               <h3 className="font-semibold text-gray-900 truncate">
-                {profile.firstName} {profile.lastName && profile.lastName}, {profile.age}
+                {profile.firstName}{profile.lastName ? ` ${profile.lastName}` : ''}, {profile.age}
               </h3>
               <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -231,10 +226,10 @@ export default function ConnectionsPage() {
                 </svg>
                 {profile.nativePlace}
               </p>
-            </button>
+            </div>
 
             {/* Action Buttons */}
-            <div className="mt-3 flex gap-2">
+            <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
               {activeTab === 'received' && (
                 <>
                   <button
@@ -265,23 +260,31 @@ export default function ConnectionsPage() {
               )}
 
               {activeTab === 'sent' && (
-                <button
-                  onClick={() => handleCancel(connection._id)}
-                  disabled={actionLoading === connection._id}
-                  className="px-3 py-1.5 text-sm text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1"
-                >
-                  {actionLoading === connection._id ? (
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                  ) : (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="px-3 py-1.5 text-sm text-amber-700 bg-amber-50 rounded-lg flex items-center gap-1.5">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                  )}
-                  Cancel Request
-                </button>
+                    Waiting for response
+                  </span>
+                  <button
+                    onClick={() => handleCancel(connection._id)}
+                    disabled={actionLoading === connection._id}
+                    className="px-3 py-1.5 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1"
+                  >
+                    {actionLoading === connection._id ? (
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                    Cancel
+                  </button>
+                </div>
               )}
 
               {activeTab === 'accepted' && (
@@ -302,28 +305,41 @@ export default function ConnectionsPage() {
   const renderEmptyState = () => {
     const messages = {
       received: {
-        title: 'No pending requests',
-        subtitle: 'When someone sends you a request, it will appear here',
+        title: 'No new requests',
+        subtitle: 'When someone wants to connect with you, their request will show up here',
+        icon: (
+          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
+        ),
       },
       sent: {
-        title: 'No sent requests',
-        subtitle: 'Requests you send will appear here while pending',
+        title: 'No pending requests',
+        subtitle: 'Requests you send will appear here while waiting for the other person to accept',
+        icon: (
+          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        ),
       },
       accepted: {
         title: 'No connections yet',
-        subtitle: 'Start exploring profiles and send connection requests',
+        subtitle: 'When you and another person both accept each other, you\'ll be connected and appear here',
+        icon: (
+          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        ),
       },
     }
 
     return (
       <div className="text-center py-12">
         <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
+          {messages[activeTab].icon}
         </div>
         <h3 className="font-medium text-gray-900 mb-1">{messages[activeTab].title}</h3>
-        <p className="text-sm text-gray-500">{messages[activeTab].subtitle}</p>
+        <p className="text-sm text-gray-500 max-w-xs mx-auto">{messages[activeTab].subtitle}</p>
       </div>
     )
   }
@@ -334,11 +350,11 @@ export default function ConnectionsPage() {
         {/* Page Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Connections</h1>
-          <p className="text-gray-500 mt-1">Manage your connection requests</p>
+          <p className="text-gray-500 mt-1">Your matches and connection requests</p>
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-1.5 mb-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-1.5 mb-4">
           <div className="flex gap-1">
             {tabs.map((tab) => (
               <button
@@ -356,6 +372,29 @@ export default function ConnectionsPage() {
             ))}
           </div>
         </div>
+
+        {/* Tab Info Banner */}
+        {activeTab === 'sent' && connections.length > 0 && (
+          <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl">
+            <p className="text-sm text-amber-800 flex items-start gap-2">
+              <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>These requests are waiting for the other person to accept. Once they accept, you'll both be connected.</span>
+            </p>
+          </div>
+        )}
+
+        {activeTab === 'received' && connections.length > 0 && (
+          <div className="mb-4 px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl">
+            <p className="text-sm text-blue-800 flex items-start gap-2">
+              <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>These people want to connect with you. Accept to become connected and see their full profile.</span>
+            </p>
+          </div>
+        )}
 
         {/* Content */}
         {loading ? (

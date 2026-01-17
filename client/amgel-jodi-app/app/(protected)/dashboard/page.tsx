@@ -119,7 +119,7 @@ export default function Dashboard() {
     )
   }
 
-  // No profile - Show Register Now
+  // No profile - Show Create Profile
   if (!profile) {
     return (
       <div className="container mx-auto px-4 py-8 md:py-12">
@@ -127,58 +127,48 @@ export default function Dashboard() {
           {/* Welcome Card */}
           <div className="glass-card rounded-2xl p-8 md:p-12 text-center animate-fade-in-up">
             {/* Icon */}
-            <div className="w-24 h-24 bg-gradient-to-br from-myColor-100 to-myColor-200 rounded-full mx-auto mb-6 flex items-center justify-center">
-              <svg className="w-12 h-12 text-myColor-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-20 h-20 bg-gradient-to-br from-myColor-100 to-myColor-200 rounded-full mx-auto mb-6 flex items-center justify-center">
+              <svg className="w-10 h-10 text-myColor-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
 
-            <h1 className="text-3xl md:text-4xl font-heading font-bold text-myColor-900 mb-4">
-              Welcome to Amgel Jodi
+            <h1 className="text-2xl md:text-3xl font-heading font-bold text-myColor-900 mb-3">
+              Let's Get You Started!
             </h1>
-            <p className="text-lg text-myColor-600 mb-8 max-w-xl mx-auto">
-              Your journey to finding your perfect life partner begins here.
-              Create your profile to connect with the GSB Konkani community.
+            <p className="text-sm text-myColor-500 mb-8">
+              It's quick, simple, and you can always update later.
             </p>
 
             <Link
               href="/profile"
               className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-myColor-600 to-myColor-700 text-white rounded-xl font-semibold text-lg shadow-xl shadow-myColor-500/30 hover:shadow-2xl hover:shadow-myColor-500/40 transition-all duration-300 hover:scale-105 active:scale-95"
             >
-              <span>Register Now</span>
+              <span>Create My Profile</span>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
               </svg>
             </Link>
 
-            {/* Features */}
-            <div className="grid md:grid-cols-3 gap-6 mt-12 pt-8 border-t border-myColor-100">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-myColor-100 rounded-xl mx-auto mb-3 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-myColor-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-myColor-900 mb-1">Verified Profiles</h3>
-                <p className="text-sm text-myColor-500">Authentic community members</p>
+            {/* Quick highlights */}
+            <div className="flex flex-wrap justify-center gap-4 mt-8 pt-6 border-t border-myColor-100">
+              <div className="flex items-center gap-2 text-sm text-myColor-600">
+                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Takes 2-3 minutes</span>
               </div>
-              <div className="text-center">
-                <div className="w-12 h-12 bg-myColor-100 rounded-xl mx-auto mb-3 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-myColor-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-myColor-900 mb-1">Secure & Private</h3>
-                <p className="text-sm text-myColor-500">Your data is protected</p>
+              <div className="flex items-center gap-2 text-sm text-myColor-600">
+                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>100% Free</span>
               </div>
-              <div className="text-center">
-                <div className="w-12 h-12 bg-myColor-100 rounded-xl mx-auto mb-3 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-myColor-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-myColor-900 mb-1">GSB Konkani Focus</h3>
-                <p className="text-sm text-myColor-500">Built for our community</p>
+              <div className="flex items-center gap-2 text-sm text-myColor-600">
+                <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>GSB Community Only</span>
               </div>
             </div>
           </div>

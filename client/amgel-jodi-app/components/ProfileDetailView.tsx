@@ -111,7 +111,7 @@ function ProfileDetailView({ profileId, images, onClose }: ProfileDetailViewProp
                     {profile.height}
                   </span>
                   {/* Designation */}
-                  {profile.workingStatus && profile.designation && (
+                  {(profile.workingStatus === 'employed' || profile.workingStatus === 'self-employed' || profile.workingStatus === true) && profile.designation && (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full text-sm text-gray-700 border border-gray-200">
                       <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -119,7 +119,7 @@ function ProfileDetailView({ profileId, images, onClose }: ProfileDetailViewProp
                       <span className="truncate max-w-[140px]">{profile.designation}</span>
                     </span>
                   )}
-                  {!profile.workingStatus && (
+                  {(profile.workingStatus === 'not-working' || profile.workingStatus === false) && (
                     <span className="text-sm text-gray-500">Not working</span>
                   )}
                 </div>
@@ -161,7 +161,7 @@ function ProfileDetailView({ profileId, images, onClose }: ProfileDetailViewProp
           ) : profile ? (
             <div className="p-5 pb-8 space-y-5">
               {/* Work Details */}
-              {profile.workingStatus && (
+              {(profile.workingStatus === 'employed' || profile.workingStatus === 'self-employed' || profile.workingStatus === true) && (
                 <div className="space-y-4">
                   {profile.company && (
                     <div className="flex items-start gap-3">
@@ -322,7 +322,7 @@ function ProfileDetailView({ profileId, images, onClose }: ProfileDetailViewProp
                       <span className="text-gray-700">{profile.height}</span>
                     </div>
 
-                    {profile.workingStatus && profile.designation && (
+                    {(profile.workingStatus === 'employed' || profile.workingStatus === 'self-employed' || profile.workingStatus === true) && profile.designation && (
                       <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-xl text-sm">
                         <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -333,7 +333,7 @@ function ProfileDetailView({ profileId, images, onClose }: ProfileDetailViewProp
                   </div>
 
                   {/* Work Details */}
-                  {profile.workingStatus ? (
+                  {(profile.workingStatus === 'employed' || profile.workingStatus === 'self-employed' || profile.workingStatus === true) ? (
                     <div className="space-y-3">
                       {profile.company && (
                         <div className="flex items-start gap-3">
