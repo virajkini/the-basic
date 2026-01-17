@@ -1,6 +1,7 @@
 export type CreatingFor = 'self' | 'daughter' | 'son' | 'other';
 export type Gender = 'M' | 'F';
 export type SalaryRange = '<5L' | '5-15L' | '15-30L' | '30-50L' | '>50L';
+export type WorkingStatus = 'employed' | 'self-employed' | 'not-working';
 
 export interface Profile {
   _id: string; // Same as user id: "u_12345"
@@ -14,15 +15,22 @@ export interface Profile {
   nativePlace: string;
   height: string; // e.g., "5'8"" or "173 cm"
 
-  // Work Information (optional based on workingStatus)
-  workingStatus: boolean;
+  // Work Information (all optional)
+  workingStatus: WorkingStatus | boolean; // Support legacy boolean
   company?: string;
   designation?: string;
   workLocation?: string;
   salaryRange?: SalaryRange;
 
   // Additional
+  education?: string;
   aboutMe?: string;
+
+  // Jatak/Kundali Information (optional)
+  placeOfBirth?: string;
+  birthTiming?: string; // Format: "HH:MM" (24-hour)
+  gothra?: string;
+  nakshatra?: string;
 
   // Legacy fields for backwards compatibility
   name?: string; // Will be derived from firstName + lastName

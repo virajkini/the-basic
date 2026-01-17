@@ -10,6 +10,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/
 type CreatingFor = 'self' | 'daughter' | 'son' | 'other'
 type Gender = 'M' | 'F'
 type SalaryRange = '<5L' | '5-15L' | '15-30L' | '30-50L' | '>50L'
+type WorkingStatus = 'employed' | 'self-employed' | 'not-working'
 
 interface FormData {
   creatingFor: CreatingFor | ''
@@ -19,12 +20,18 @@ interface FormData {
   gender: Gender | ''
   nativePlace: string
   height: string
-  workingStatus: boolean | null
+  workingStatus: WorkingStatus | ''
   company: string
   designation: string
   workLocation: string
   salaryRange: SalaryRange | ''
   aboutMe: string
+  education: string
+  // Jatak/Kundali fields (optional)
+  placeOfBirth: string
+  birthTiming: string
+  gothra: string
+  nakshatra: string
 }
 
 interface FileWithPreview {
@@ -47,12 +54,18 @@ interface Profile {
   gender: Gender
   nativePlace: string
   height: string
-  workingStatus: boolean
+  workingStatus: WorkingStatus | boolean // Support legacy boolean
   company?: string
   designation?: string
   workLocation?: string
   salaryRange?: SalaryRange
   aboutMe?: string
+  education?: string
+  // Jatak/Kundali fields (optional)
+  placeOfBirth?: string
+  birthTiming?: string
+  gothra?: string
+  nakshatra?: string
 }
 
 const STEPS = ['Basic Info', 'Photos', 'Work & About']
@@ -63,6 +76,20 @@ const HEIGHT_OPTIONS = [
   "5'6\" (168 cm)", "5'7\" (170 cm)", "5'8\" (173 cm)", "5'9\" (175 cm)", "5'10\" (178 cm)", "5'11\" (180 cm)",
   "6'0\" (183 cm)", "6'1\" (185 cm)", "6'2\" (188 cm)", "6'3\" (191 cm)", "6'4\" (193 cm)", "6'5\" (196 cm)",
   "6'6\" (198 cm)", "6'7\" (201 cm)", "6'8\" (203 cm)"
+]
+
+const GOTHRA_OPTIONS = [
+  "Agastya", "Angirasa", "Atri", "Bharadwaja", "Bhrigu", "Gautama", "Kashyapa", "Vasishta",
+  "Vishvamitra", "Jamadagni", "Kanva", "Kutsa", "Kaundinya", "Gargi", "Vats", "Sandilya",
+  "Maudgalya", "Sankriti", "Bhadarayana", "Shatamarshana", "Kaushika", "Kaushal", "Katyayana",
+  "Upamanyu", "Panini", "Garge", "Kamsha", "Vacch", "Other"
+]
+
+const NAKSHATRA_OPTIONS = [
+  "Ashwini", "Bharani", "Krittika", "Rohini", "Mrigashirsha", "Ardra", "Punarvasu", "Pushya",
+  "Ashlesha", "Magha", "Purva Phalguni", "Uttara Phalguni", "Hasta", "Chitra", "Swati",
+  "Vishakha", "Anuradha", "Jyeshtha", "Mula", "Purva Ashadha", "Uttara Ashadha", "Shravana",
+  "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"
 ]
 
 export default function ProfilePage() {
@@ -76,13 +103,19 @@ export default function ProfilePage() {
     gender: '',
     nativePlace: '',
     height: '',
-    workingStatus: null,
+    workingStatus: '',
     company: '',
     designation: '',
     workLocation: '',
     salaryRange: '',
     aboutMe: '',
+    education: '',
+    placeOfBirth: '',
+    birthTiming: '',
+    gothra: '',
+    nakshatra: '',
   })
+  const [showKundaliSection, setShowKundaliSection] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<FileWithPreview[]>([])
   const [existingImages, setExistingImages] = useState<ExistingImage[]>([])
   const [existingProfile, setExistingProfile] = useState<Profile | null>(null)
@@ -125,6 +158,13 @@ export default function ProfilePage() {
         if (profileData.success && profileData.profile) {
           const p = profileData.profile
           setExistingProfile(p)
+          // Convert legacy boolean workingStatus to new string format
+          let workingStatusValue: WorkingStatus | '' = ''
+          if (typeof p.workingStatus === 'boolean') {
+            workingStatusValue = p.workingStatus ? 'employed' : 'not-working'
+          } else if (p.workingStatus) {
+            workingStatusValue = p.workingStatus as WorkingStatus
+          }
           setFormData({
             creatingFor: p.creatingFor || '',
             firstName: p.firstName || '',
@@ -133,13 +173,22 @@ export default function ProfilePage() {
             gender: p.gender || '',
             nativePlace: p.nativePlace || '',
             height: p.height || '',
-            workingStatus: p.workingStatus ?? null,
+            workingStatus: workingStatusValue,
             company: p.company || '',
             designation: p.designation || '',
             workLocation: p.workLocation || '',
             salaryRange: p.salaryRange || '',
             aboutMe: p.aboutMe || '',
+            education: p.education || '',
+            placeOfBirth: p.placeOfBirth || '',
+            birthTiming: p.birthTiming || '',
+            gothra: p.gothra || '',
+            nakshatra: p.nakshatra || '',
           })
+          // Auto-expand Kundali section if any field has data
+          if (p.placeOfBirth || p.birthTiming || p.gothra || p.nakshatra) {
+            setShowKundaliSection(true)
+          }
         }
       }
 
@@ -281,15 +330,10 @@ export default function ProfilePage() {
     }
 
     if (step === 2) {
-      if (formData.workingStatus === null) {
+      if (!formData.workingStatus) {
         errors.workingStatus = 'Please select working status'
       }
-      if (formData.workingStatus === true) {
-        if (!formData.company.trim()) errors.company = 'Company is required'
-        if (!formData.designation.trim()) errors.designation = 'Designation is required'
-        if (!formData.workLocation.trim()) errors.workLocation = 'Work location is required'
-        if (!formData.salaryRange) errors.salaryRange = 'Please select salary range'
-      }
+      // Work details are now optional - no validation required
     }
 
     setFieldErrors(errors)
@@ -398,6 +442,7 @@ export default function ProfilePage() {
       }
 
       // Prepare profile data
+      const isWorking = formData.workingStatus === 'employed' || formData.workingStatus === 'self-employed'
       const profilePayload = {
         userId: user.userId,
         creatingFor: formData.creatingFor,
@@ -408,11 +453,17 @@ export default function ProfilePage() {
         nativePlace: formData.nativePlace.trim(),
         height: formData.height,
         workingStatus: formData.workingStatus,
-        company: formData.workingStatus ? formData.company.trim() : undefined,
-        designation: formData.workingStatus ? formData.designation.trim() : undefined,
-        workLocation: formData.workingStatus ? formData.workLocation.trim() : undefined,
-        salaryRange: formData.workingStatus ? formData.salaryRange : undefined,
+        company: isWorking && formData.company.trim() ? formData.company.trim() : undefined,
+        designation: isWorking && formData.designation.trim() ? formData.designation.trim() : undefined,
+        workLocation: isWorking && formData.workLocation.trim() ? formData.workLocation.trim() : undefined,
+        salaryRange: isWorking && formData.salaryRange ? formData.salaryRange : undefined,
+        education: formData.education.trim() || undefined,
         aboutMe: formData.aboutMe.trim() || undefined,
+        // Jatak/Kundali fields (optional)
+        placeOfBirth: formData.placeOfBirth.trim() || undefined,
+        birthTiming: formData.birthTiming || undefined,
+        gothra: formData.gothra || undefined,
+        nakshatra: formData.nakshatra || undefined,
       }
 
       setUploadProgress(80)
@@ -466,7 +517,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 md:py-8">
+    <div className="container mx-auto px-4 py-6 md:py-8 pb-24 md:pb-8">
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -629,18 +680,20 @@ export default function ProfilePage() {
                 <div>
                   <label className="block text-sm font-medium text-myColor-700 mb-2">
                     Gender <span className="text-red-500">*</span>
+                    {existingProfile && <span className="text-xs text-myColor-400 ml-2">(cannot be changed)</span>}
                   </label>
                   <div className="grid grid-cols-2 gap-3">
                     {(['M', 'F'] as Gender[]).map((g) => (
                       <button
                         key={g}
                         type="button"
-                        onClick={() => updateFormData('gender', g)}
+                        onClick={() => !existingProfile && updateFormData('gender', g)}
+                        disabled={!!existingProfile}
                         className={`py-3 px-4 rounded-xl border-2 font-medium transition-all duration-200 ${
                           formData.gender === g
                             ? 'border-myColor-600 bg-myColor-50 text-myColor-700'
                             : 'border-myColor-100 hover:border-myColor-300 text-myColor-600'
-                        }`}
+                        } ${existingProfile ? 'opacity-60 cursor-not-allowed' : ''}`}
                       >
                         {g === 'M' ? 'Male' : 'Female'}
                       </button>
@@ -689,6 +742,98 @@ export default function ProfilePage() {
                     <p className="mt-1 text-sm text-red-500">{fieldErrors.height}</p>
                   )}
                 </div>
+              </div>
+
+              {/* Jatak/Kundali Information - Optional Collapsible Section */}
+              <div className="mt-8 pt-6 border-t border-myColor-100">
+                <button
+                  type="button"
+                  onClick={() => setShowKundaliSection(!showKundaliSection)}
+                  className="w-full flex items-center justify-between p-4 bg-myColor-50 hover:bg-myColor-100 rounded-xl transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                      <svg className="w-5 h-5 text-myColor-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <p className="font-medium text-myColor-800">Jatak / Kundali </p>
+                      <p className="text-xs text-myColor-500">Optional - But helps find more compatible matches</p>
+                    </div>
+                  </div>
+                  <svg
+                    className={`w-5 h-5 text-myColor-500 transition-transform duration-200 ${showKundaliSection ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {showKundaliSection && (
+                  <div className="mt-4 space-y-4 p-4 bg-myColor-50/50 rounded-xl animate-fade-in">
+                    {/* Place of Birth & Birth Timing */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="placeOfBirth" className="block text-sm font-medium text-myColor-700 mb-2">
+                          Place of Birth
+                        </label>
+                        <input
+                          id="placeOfBirth"
+                          type="text"
+                          value={formData.placeOfBirth}
+                          onChange={(e) => updateFormData('placeOfBirth', e.target.value)}
+                          className="w-full px-4 py-3 bg-white border-2 border-myColor-100 rounded-xl transition-all duration-200"
+                          placeholder="e.g., Mumbai, Mangalore"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="birthTiming" className="block text-sm font-medium text-myColor-700 mb-2">
+                          Birth Timing
+                        </label>
+                        <input
+                          id="birthTiming"
+                          type="time"
+                          value={formData.birthTiming}
+                          onChange={(e) => updateFormData('birthTiming', e.target.value)}
+                          className="w-full px-4 py-3 bg-white border-2 border-myColor-100 rounded-xl transition-all duration-200"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Gothra & Nakshatra */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="gothra" className="block text-sm font-medium text-myColor-700 mb-2">
+                          Gothra
+                        </label>
+                        <Dropdown
+                          id="gothra"
+                          options={GOTHRA_OPTIONS.map((g) => ({ value: g, label: g }))}
+                          value={formData.gothra}
+                          onChange={(value) => updateFormData('gothra', value)}
+                          placeholder="Select gothra"
+                          searchable
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="nakshatra" className="block text-sm font-medium text-myColor-700 mb-2">
+                          Nakshatra
+                        </label>
+                        <Dropdown
+                          id="nakshatra"
+                          options={NAKSHATRA_OPTIONS.map((n) => ({ value: n, label: n }))}
+                          value={formData.nakshatra}
+                          onChange={(value) => updateFormData('nakshatra', value)}
+                          placeholder="Select nakshatra"
+                          searchable
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -820,30 +965,41 @@ export default function ProfilePage() {
               {/* Working Status */}
               <div>
                 <label className="block text-sm font-medium text-myColor-700 mb-3">
-                  Are you currently working? <span className="text-red-500">*</span>
+                  Employment Status <span className="text-red-500">*</span>
                 </label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <button
                     type="button"
-                    onClick={() => updateFormData('workingStatus', true)}
+                    onClick={() => updateFormData('workingStatus', 'employed')}
                     className={`py-3 px-4 rounded-xl border-2 font-medium transition-all duration-200 ${
-                      formData.workingStatus === true
+                      formData.workingStatus === 'employed'
                         ? 'border-myColor-600 bg-myColor-50 text-myColor-700'
                         : 'border-myColor-100 hover:border-myColor-300 text-myColor-600'
                     }`}
                   >
-                    Yes, I'm working
+                    Employed
                   </button>
                   <button
                     type="button"
-                    onClick={() => updateFormData('workingStatus', false)}
+                    onClick={() => updateFormData('workingStatus', 'self-employed')}
                     className={`py-3 px-4 rounded-xl border-2 font-medium transition-all duration-200 ${
-                      formData.workingStatus === false
+                      formData.workingStatus === 'self-employed'
                         ? 'border-myColor-600 bg-myColor-50 text-myColor-700'
                         : 'border-myColor-100 hover:border-myColor-300 text-myColor-600'
                     }`}
                   >
-                    Not working
+                    Self Employed
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateFormData('workingStatus', 'not-working')}
+                    className={`py-3 px-4 rounded-xl border-2 font-medium transition-all duration-200 ${
+                      formData.workingStatus === 'not-working'
+                        ? 'border-myColor-600 bg-myColor-50 text-myColor-700'
+                        : 'border-myColor-100 hover:border-myColor-300 text-myColor-600'
+                    }`}
+                  >
+                    Not Working
                   </button>
                 </div>
                 {fieldErrors.workingStatus && (
@@ -852,68 +1008,54 @@ export default function ProfilePage() {
               </div>
 
               {/* Work Details (conditional) */}
-              {formData.workingStatus === true && (
+              {(formData.workingStatus === 'employed' || formData.workingStatus === 'self-employed') && (
                 <div className="space-y-4 p-4 bg-myColor-50 rounded-xl animate-fade-in">
+                  <p className="text-xs text-myColor-500">All fields below are optional</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="company" className="block text-sm font-medium text-myColor-700 mb-2">
-                        Company <span className="text-red-500">*</span>
+                        {formData.workingStatus === 'self-employed' ? 'Business Name' : 'Company'}
                       </label>
                       <input
                         id="company"
                         type="text"
                         value={formData.company}
                         onChange={(e) => updateFormData('company', e.target.value)}
-                        className={`w-full px-4 py-3 bg-white border-2 rounded-xl transition-all duration-200 ${
-                          fieldErrors.company ? 'border-red-300' : 'border-myColor-100'
-                        }`}
-                        placeholder="Company name"
+                        className="w-full px-4 py-3 bg-white border-2 border-myColor-100 rounded-xl transition-all duration-200"
+                        placeholder={formData.workingStatus === 'self-employed' ? 'Your business name' : 'Company name'}
                       />
-                      {fieldErrors.company && (
-                        <p className="mt-1 text-sm text-red-500">{fieldErrors.company}</p>
-                      )}
                     </div>
                     <div>
                       <label htmlFor="designation" className="block text-sm font-medium text-myColor-700 mb-2">
-                        Designation <span className="text-red-500">*</span>
+                        {formData.workingStatus === 'self-employed' ? 'Role / Title' : 'Designation'}
                       </label>
                       <input
                         id="designation"
                         type="text"
                         value={formData.designation}
                         onChange={(e) => updateFormData('designation', e.target.value)}
-                        className={`w-full px-4 py-3 bg-white border-2 rounded-xl transition-all duration-200 ${
-                          fieldErrors.designation ? 'border-red-300' : 'border-myColor-100'
-                        }`}
-                        placeholder="Your role"
+                        className="w-full px-4 py-3 bg-white border-2 border-myColor-100 rounded-xl transition-all duration-200"
+                        placeholder={formData.workingStatus === 'self-employed' ? 'e.g., Founder, Owner' : 'Your role'}
                       />
-                      {fieldErrors.designation && (
-                        <p className="mt-1 text-sm text-red-500">{fieldErrors.designation}</p>
-                      )}
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label htmlFor="workLocation" className="block text-sm font-medium text-myColor-700 mb-2">
-                        Work Location <span className="text-red-500">*</span>
+                        Work Location
                       </label>
                       <input
                         id="workLocation"
                         type="text"
                         value={formData.workLocation}
                         onChange={(e) => updateFormData('workLocation', e.target.value)}
-                        className={`w-full px-4 py-3 bg-white border-2 rounded-xl transition-all duration-200 ${
-                          fieldErrors.workLocation ? 'border-red-300' : 'border-myColor-100'
-                        }`}
+                        className="w-full px-4 py-3 bg-white border-2 border-myColor-100 rounded-xl transition-all duration-200"
                         placeholder="City / Country"
                       />
-                      {fieldErrors.workLocation && (
-                        <p className="mt-1 text-sm text-red-500">{fieldErrors.workLocation}</p>
-                      )}
                     </div>
                     <div>
                       <label htmlFor="salaryRange" className="block text-sm font-medium text-myColor-700 mb-2">
-                        Annual Salary (INR) <span className="text-red-500">*</span>
+                        Annual Income (INR)
                       </label>
                       <Dropdown
                         id="salaryRange"
@@ -927,15 +1069,26 @@ export default function ProfilePage() {
                         value={formData.salaryRange}
                         onChange={(value) => updateFormData('salaryRange', value)}
                         placeholder="Select range"
-                        error={!!fieldErrors.salaryRange}
                       />
-                      {fieldErrors.salaryRange && (
-                        <p className="mt-1 text-sm text-red-500">{fieldErrors.salaryRange}</p>
-                      )}
                     </div>
                   </div>
                 </div>
               )}
+
+              {/* Education */}
+              <div>
+                <label htmlFor="education" className="block text-sm font-medium text-myColor-700 mb-2">
+                  Education <span className="text-myColor-400">(Optional)</span>
+                </label>
+                <input
+                  id="education"
+                  type="text"
+                  value={formData.education}
+                  onChange={(e) => updateFormData('education', e.target.value)}
+                  className="w-full px-4 py-3 bg-white border-2 border-myColor-100 rounded-xl transition-all duration-200"
+                  placeholder="e.g., B.Tech from IIT Mumbai, MBA from IIM"
+                />
+              </div>
 
               {/* About Me */}
               <div>

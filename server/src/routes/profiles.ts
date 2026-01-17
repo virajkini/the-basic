@@ -1,10 +1,11 @@
 import express from 'express';
 import { readProfile, createProfile, updateProfile, listProfiles, maskString } from '../services/profileManager.js';
-import { Profile, CreatingFor, Gender, SalaryRange, calculateAge } from '../models/profile.js';
+import { Profile, CreatingFor, Gender, SalaryRange, WorkingStatus, calculateAge } from '../models/profile.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { verifyUserOwnership, verifyUserIdMatch } from '../middleware/verifyOwnership.js';
 import { getOtherUserProfileImages } from '../services/fileManager.js';
 import { generateAccessToken, getAccessTokenCookieOptions } from './auth.js';
+import { getConnectionBetweenUsers } from '../services/connectionManager.js';
 
 const router = express.Router();
 
@@ -12,6 +13,7 @@ const router = express.Router();
 const validCreatingFor: CreatingFor[] = ['self', 'daughter', 'son', 'other'];
 const validGenders: Gender[] = ['M', 'F'];
 const validSalaryRanges: SalaryRange[] = ['<5L', '5-15L', '15-30L', '30-50L', '>50L'];
+const validWorkingStatuses: WorkingStatus[] = ['employed', 'self-employed', 'not-working'];
 
 /**
  * GET /api/profiles/discover
@@ -53,31 +55,22 @@ router.get('/discover',
 
           const age = profile.dob ? calculateAge(profile.dob) : profile.age;
 
-          if (isVerified) {
-            // Full data for verified users
-            return {
-              _id: profile._id,
-              firstName: profile.firstName,
-              age,
-              nativePlace: profile.nativePlace,
-              height: profile.height,
-              designation: profile.workingStatus ? profile.designation : null,
-              verified: profile.verified,
-              images,
-            };
-          } else {
-            // Masked data for unverified users
-            return {
-              _id: profile._id,
-              firstName: maskString(profile.firstName),
-              age,
-              nativePlace: maskString(profile.nativePlace),
-              height: profile.height,
-              designation: profile.workingStatus ? maskString(profile.designation) : null,
-              verified: profile.verified,
-              images, // Already blurred from getOtherUserProfileImages
-            };
-          }
+          // Determine if working (handles both legacy boolean and new string format)
+          const isWorking = profile.workingStatus === true ||
+                            profile.workingStatus === 'employed' ||
+                            profile.workingStatus === 'self-employed';
+
+          // Show full data for all users (images are blurred for unverified)
+          return {
+            _id: profile._id,
+            firstName: profile.firstName,
+            age,
+            nativePlace: profile.nativePlace,
+            height: profile.height,
+            designation: isWorking ? profile.designation : null,
+            verified: profile.verified,
+            images,
+          };
         })
       )).filter(profile => profile !== null);
 
@@ -128,57 +121,49 @@ router.get('/view/:userId',
         return res.status(404).json({ error: 'Profile not found' });
       }
 
+      // Check if users are connected (to show lastName)
+      const connection = await getConnectionBetweenUsers(viewerUserId, targetUserId);
+      const isConnected = connection?.status === 'ACCEPTED';
+
       // Get images (blurred for unverified, compressed for verified)
       const files = await getOtherUserProfileImages(targetUserId, isVerified);
       const images = files.map(f => f.url);
 
       const age = profile.dob ? calculateAge(profile.dob) : profile.age;
 
-      if (isVerified) {
-        // Full data for verified viewers
-        res.status(200).json({
-          success: true,
-          profile: {
-            _id: profile._id,
-            firstName: profile.firstName,
-            lastName: profile.lastName,
-            age,
-            nativePlace: profile.nativePlace,
-            height: profile.height,
-            workingStatus: profile.workingStatus,
-            company: profile.workingStatus ? profile.company : null,
-            designation: profile.workingStatus ? profile.designation : null,
-            workLocation: profile.workingStatus ? profile.workLocation : null,
-            salaryRange: profile.workingStatus ? profile.salaryRange : null,
-            aboutMe: profile.aboutMe || null,
-            verified: profile.verified,
-            updatedAt: profile.updatedAt,
-            images,
-          }
-        });
-      } else {
-        // Masked data for unverified viewers
-        res.status(200).json({
-          success: true,
-          profile: {
-            _id: profile._id,
-            firstName: maskString(profile.firstName),
-            lastName: maskString(profile.lastName),
-            age,
-            nativePlace: maskString(profile.nativePlace),
-            height: profile.height,
-            workingStatus: profile.workingStatus,
-            company: profile.workingStatus ? maskString(profile.company) : null,
-            designation: profile.workingStatus ? maskString(profile.designation) : null,
-            workLocation: profile.workingStatus ? maskString(profile.workLocation) : null,
-            salaryRange: profile.workingStatus ? profile.salaryRange : null, // Salary range not masked (it's a range)
-            aboutMe: profile.aboutMe ? maskString(profile.aboutMe) : null,
-            verified: profile.verified,
-            updatedAt: profile.updatedAt,
-            images, // Already blurred from getOtherUserProfileImages
-          }
-        });
-      }
+      // Determine if working (handles both legacy boolean and new string format)
+      const isWorking = profile.workingStatus === true ||
+                        profile.workingStatus === 'employed' ||
+                        profile.workingStatus === 'self-employed';
+
+      // Show full profile data for all users (images are blurred for unverified)
+      // Only show lastName when connection is accepted
+      res.status(200).json({
+        success: true,
+        profile: {
+          _id: profile._id,
+          firstName: profile.firstName,
+          lastName: isConnected ? profile.lastName : null, // Show only when connected
+          age,
+          nativePlace: profile.nativePlace,
+          height: profile.height,
+          workingStatus: profile.workingStatus,
+          company: isWorking ? profile.company : null,
+          designation: isWorking ? profile.designation : null,
+          workLocation: isWorking ? profile.workLocation : null,
+          salaryRange: isWorking ? profile.salaryRange : null,
+          education: profile.education || null,
+          aboutMe: profile.aboutMe || null,
+          placeOfBirth: profile.placeOfBirth || null,
+          birthTiming: profile.birthTiming || null,
+          gothra: profile.gothra || null,
+          nakshatra: profile.nakshatra || null,
+          verified: profile.verified,
+          updatedAt: profile.updatedAt,
+          images,
+        },
+        isConnected
+      });
     } catch (error) {
       console.error('Error viewing profile:', error);
       res.status(500).json({
@@ -207,20 +192,22 @@ router.get('/:userId',
         return res.status(404).json({ error: 'Profile not found' });
       }
 
-      // Check if verified or subscribed changed from token values
+      // Check if verified, subscribed, or gender changed from token values
       const tokenVerified = req.authenticatedUserVerified ?? false;
       const tokenSubscribed = req.authenticatedUserSubscribed ?? false;
+      const tokenGender = req.authenticatedUserGender ?? null;
       const dbVerified = profile.verified ?? false;
       const dbSubscribed = profile.subscribed ?? false;
+      const dbGender = profile.gender ?? null;
 
-      if (tokenVerified !== dbVerified || tokenSubscribed !== dbSubscribed) {
+      if (tokenVerified !== dbVerified || tokenSubscribed !== dbSubscribed || tokenGender !== dbGender) {
         // Generate new access token with updated values
         const newAccessToken = generateAccessToken({
           phone: req.authenticatedUserPhone!,
           userId: req.authenticatedUserId!,
           verified: dbVerified,
           subscribed: dbSubscribed,
-          gender: profile.gender ?? null,
+          gender: dbGender,
         });
 
         res.cookie('accessToken', newAccessToken, getAccessTokenCookieOptions());
@@ -247,7 +234,12 @@ router.get('/:userId',
           designation: profile.designation,
           workLocation: profile.workLocation,
           salaryRange: profile.salaryRange,
+          education: profile.education,
           aboutMe: profile.aboutMe,
+          placeOfBirth: profile.placeOfBirth,
+          birthTiming: profile.birthTiming,
+          gothra: profile.gothra,
+          nakshatra: profile.nakshatra,
           verified: profile.verified,
           subscribed: profile.subscribed,
           createdAt: profile.createdAt,
@@ -287,7 +279,13 @@ router.post('/',
         designation,
         workLocation,
         salaryRange,
-        aboutMe
+        education,
+        aboutMe,
+        // Jatak/Kundali fields (optional)
+        placeOfBirth,
+        birthTiming,
+        gothra,
+        nakshatra
       } = req.body;
 
       const authenticatedUserId = req.authenticatedUserId;
@@ -348,26 +346,17 @@ router.post('/',
         return res.status(400).json({ error: 'Height is required' });
       }
 
-      // Validate workingStatus and related fields
-      if (typeof workingStatus !== 'boolean') {
-        return res.status(400).json({ error: 'Working status is required' });
+      // Validate workingStatus
+      if (!workingStatus || !validWorkingStatuses.includes(workingStatus)) {
+        return res.status(400).json({ error: 'Working status must be one of: employed, self-employed, not-working' });
       }
 
-      if (workingStatus) {
-        if (!company || typeof company !== 'string' || company.trim().length === 0) {
-          return res.status(400).json({ error: 'Company is required when working' });
-        }
-        if (!designation || typeof designation !== 'string' || designation.trim().length === 0) {
-          return res.status(400).json({ error: 'Designation is required when working' });
-        }
-        if (!workLocation || typeof workLocation !== 'string' || workLocation.trim().length === 0) {
-          return res.status(400).json({ error: 'Work location is required when working' });
-        }
-        if (!salaryRange || !validSalaryRanges.includes(salaryRange)) {
-          return res.status(400).json({ error: 'Valid salary range is required when working' });
-        }
+      // Work details are optional - validate salaryRange only if provided
+      if (salaryRange && !validSalaryRanges.includes(salaryRange)) {
+        return res.status(400).json({ error: 'Invalid salary range' });
       }
 
+      const isWorking = workingStatus === 'employed' || workingStatus === 'self-employed';
       const profileData: Omit<Profile, '_id' | 'createdAt' | 'updatedAt'> = {
         creatingFor: creatingFor as CreatingFor,
         firstName: firstName.trim(),
@@ -378,17 +367,33 @@ router.post('/',
         age: age,
         nativePlace: nativePlace.trim(),
         height: height.trim(),
-        workingStatus: workingStatus,
-        company: workingStatus ? company?.trim() : undefined,
-        designation: workingStatus ? designation?.trim() : undefined,
-        workLocation: workingStatus ? workLocation?.trim() : undefined,
-        salaryRange: workingStatus ? salaryRange as SalaryRange : undefined,
+        workingStatus: workingStatus as WorkingStatus,
+        company: isWorking && company?.trim() ? company.trim() : undefined,
+        designation: isWorking && designation?.trim() ? designation.trim() : undefined,
+        workLocation: isWorking && workLocation?.trim() ? workLocation.trim() : undefined,
+        salaryRange: isWorking && salaryRange ? salaryRange as SalaryRange : undefined,
+        education: education?.trim() || undefined,
         aboutMe: aboutMe?.trim() || undefined,
+        // Jatak/Kundali fields (optional)
+        placeOfBirth: placeOfBirth?.trim() || undefined,
+        birthTiming: birthTiming || undefined,
+        gothra: gothra || undefined,
+        nakshatra: nakshatra || undefined,
         verified: false,
         subscribed: false
       };
 
       const profile = await createProfile(userId, profileData);
+
+      // Generate new access token with gender included
+      const newAccessToken = generateAccessToken({
+        phone: req.authenticatedUserPhone!,
+        userId: req.authenticatedUserId!,
+        verified: profile.verified ?? false,
+        subscribed: profile.subscribed ?? false,
+        gender: profile.gender ?? null,
+      });
+      res.cookie('accessToken', newAccessToken, getAccessTokenCookieOptions());
 
       res.status(201).json({
         success: true,
@@ -408,7 +413,12 @@ router.post('/',
           designation: profile.designation,
           workLocation: profile.workLocation,
           salaryRange: profile.salaryRange,
+          education: profile.education,
           aboutMe: profile.aboutMe,
+          placeOfBirth: profile.placeOfBirth,
+          birthTiming: profile.birthTiming,
+          gothra: profile.gothra,
+          nakshatra: profile.nakshatra,
           verified: profile.verified,
           subscribed: profile.subscribed,
           createdAt: profile.createdAt,
@@ -455,7 +465,13 @@ router.put('/:userId',
         designation,
         workLocation,
         salaryRange,
-        aboutMe
+        education,
+        aboutMe,
+        // Jatak/Kundali fields (optional)
+        placeOfBirth,
+        birthTiming,
+        gothra,
+        nakshatra
       } = req.body;
 
     // Build update object with only provided fields
@@ -526,13 +542,13 @@ router.put('/:userId',
     }
 
     if (workingStatus !== undefined) {
-      if (typeof workingStatus !== 'boolean') {
-        return res.status(400).json({ error: 'Working status must be a boolean' });
+      if (!validWorkingStatuses.includes(workingStatus)) {
+        return res.status(400).json({ error: 'Working status must be one of: employed, self-employed, not-working' });
       }
-      updateData.workingStatus = workingStatus;
+      updateData.workingStatus = workingStatus as WorkingStatus;
 
       // If switching to not working, clear work fields
-      if (!workingStatus) {
+      if (workingStatus === 'not-working') {
         updateData.company = undefined;
         updateData.designation = undefined;
         updateData.workLocation = undefined;
@@ -559,8 +575,29 @@ router.put('/:userId',
       updateData.salaryRange = salaryRange as SalaryRange | undefined;
     }
 
+    if (education !== undefined) {
+      updateData.education = education?.trim() || undefined;
+    }
+
     if (aboutMe !== undefined) {
       updateData.aboutMe = aboutMe?.trim() || undefined;
+    }
+
+    // Jatak/Kundali fields (optional)
+    if (placeOfBirth !== undefined) {
+      updateData.placeOfBirth = placeOfBirth?.trim() || undefined;
+    }
+
+    if (birthTiming !== undefined) {
+      updateData.birthTiming = birthTiming || undefined;
+    }
+
+    if (gothra !== undefined) {
+      updateData.gothra = gothra || undefined;
+    }
+
+    if (nakshatra !== undefined) {
+      updateData.nakshatra = nakshatra || undefined;
     }
 
     // Note: verified and subscribed fields cannot be updated by users
@@ -593,7 +630,12 @@ router.put('/:userId',
         designation: updatedProfile.designation,
         workLocation: updatedProfile.workLocation,
         salaryRange: updatedProfile.salaryRange,
+        education: updatedProfile.education,
         aboutMe: updatedProfile.aboutMe,
+        placeOfBirth: updatedProfile.placeOfBirth,
+        birthTiming: updatedProfile.birthTiming,
+        gothra: updatedProfile.gothra,
+        nakshatra: updatedProfile.nakshatra,
         verified: updatedProfile.verified,
         subscribed: updatedProfile.subscribed,
         createdAt: updatedProfile.createdAt,
