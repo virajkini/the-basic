@@ -146,7 +146,7 @@ const jsonLd = {
       ],
       contactPoint: {
         '@type': 'ContactPoint',
-        email: 'support@amgeljodi.com',
+        email: 'amgeljodi26@gmail.com',
         contactType: 'customer service',
         availableLanguage: ['English', 'Hindi', 'Konkani'],
       },
