@@ -4,13 +4,27 @@ const HOME_URL = process.env.NEXT_PUBLIC_HOME_URL || 'http://localhost:3000'
 // Singleton refresh promise to prevent multiple simultaneous refresh calls
 let refreshPromise: Promise<boolean> | null = null
 
+// Track if we're already redirecting to prevent multiple redirects
+let isRedirecting = false
+
+// Track last successful refresh time to prevent rapid refresh loops
+let lastRefreshTime = 0
+const MIN_REFRESH_INTERVAL = 5000 // 5 seconds minimum between refresh attempts
+
 /**
- * Wrapper around fetch that handles 401 errors by:
- * 1. Trying to refresh the token
- * 2. Retrying the original request
- * 3. Redirecting to home if refresh fails
+ * Centralized API client wrapper that handles:
+ * 1. Authentication via cookies (credentials: 'include')
+ * 2. Automatic token refresh on 401 errors
+ * 3. Retry of original request after successful refresh
+ * 4. Redirect to home page if refresh fails
+ * 5. Prevention of redirect loops and rapid refresh attempts
  */
 export async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  // If already redirecting, don't make more API calls
+  if (isRedirecting) {
+    throw new Error('Session expired')
+  }
+
   const fetchOptions: RequestInit = {
     ...options,
     credentials: 'include',
@@ -23,11 +37,17 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
     const refreshed = await tryRefreshToken()
 
     if (refreshed) {
-      // Retry the original request
+      // Retry the original request with fresh token
       response = await fetch(url, fetchOptions)
+
+      // If still 401 after refresh, something is wrong - redirect
+      if (response.status === 401) {
+        handleAuthFailure()
+        throw new Error('Session expired')
+      }
     } else {
       // Refresh failed, redirect to home
-      redirectToHome()
+      handleAuthFailure()
       throw new Error('Session expired')
     }
   }
@@ -36,13 +56,23 @@ export async function authFetch(url: string, options: RequestInit = {}): Promise
 }
 
 /**
- * Try to refresh the access token (singleton - only one refresh at a time)
- * Exported for use by SSE connections that can't use authFetch
+ * Try to refresh the access token
+ * - Singleton pattern: only one refresh at a time
+ * - Rate limiting: prevents rapid refresh attempts after success
+ * - Exported for use by SSE connections that can't use authFetch
  */
 export async function tryRefreshToken(): Promise<boolean> {
   // If already refreshing, wait for that to complete
   if (refreshPromise) {
     return refreshPromise
+  }
+
+  // Prevent rapid refresh attempts only after a recent successful refresh
+  // This allows retries on failure but prevents unnecessary refreshes
+  const now = Date.now()
+  if (lastRefreshTime > 0 && now - lastRefreshTime < MIN_REFRESH_INTERVAL) {
+    // Recent successful refresh - token should still be valid
+    return true
   }
 
   // Start new refresh
@@ -52,8 +82,21 @@ export async function tryRefreshToken(): Promise<boolean> {
         method: 'POST',
         credentials: 'include',
       })
-      return response.ok
-    } catch {
+
+      if (response.ok) {
+        lastRefreshTime = Date.now()
+        return true
+      }
+
+      // Log failure reason in development
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[authFetch] Token refresh failed:', response.status)
+      }
+      return false
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[authFetch] Token refresh error:', error)
+      }
       return false
     } finally {
       // Clear the promise after a short delay to allow batched requests
@@ -67,10 +110,26 @@ export async function tryRefreshToken(): Promise<boolean> {
 }
 
 /**
- * Redirect to home page
+ * Handle authentication failure - redirect to home page
  */
-function redirectToHome() {
-  if (typeof window !== 'undefined') {
-    window.location.href = HOME_URL
+function handleAuthFailure() {
+  if (typeof window === 'undefined' || isRedirecting) {
+    return
   }
+
+  isRedirecting = true
+
+  // Small delay to allow any pending state updates
+  setTimeout(() => {
+    window.location.href = HOME_URL
+  }, 100)
+}
+
+/**
+ * Reset auth state - useful for testing or manual logout
+ */
+export function resetAuthState() {
+  isRedirecting = false
+  refreshPromise = null
+  lastRefreshTime = 0
 }
