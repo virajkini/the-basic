@@ -64,15 +64,16 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
       { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
       { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
     ],
     apple: [
       { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
     ],
     other: [
-      { rel: 'mask-icon', url: '/safari-pinned-tab.svg', color: '#a763f1' },
+      { rel: 'mask-icon', url: '/favicon.svg', color: '#a763f1' },
     ],
   },
   manifest: '/manifest.json',
@@ -145,7 +146,7 @@ const jsonLd = {
       ],
       contactPoint: {
         '@type': 'ContactPoint',
-        email: 'support@amgeljodi.com',
+        email: 'amgeljodi26@gmail.com',
         contactType: 'customer service',
         availableLanguage: ['English', 'Hindi', 'Konkani'],
       },

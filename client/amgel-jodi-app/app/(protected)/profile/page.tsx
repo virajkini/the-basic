@@ -125,8 +125,11 @@ export default function ProfilePage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [dragActive, setDragActive] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const hasFetched = useRef(false)
+
+  const HOME_URL = process.env.NEXT_PUBLIC_HOME_URL || 'https://amgeljodi.com'
 
   const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
   const maxFiles = 5
@@ -334,6 +337,11 @@ export default function ProfilePage() {
         errors.workingStatus = 'Please select working status'
       }
       // Work details are now optional - no validation required
+
+      // Terms agreement required for new profiles only
+      if (!existingProfile && !agreedToTerms) {
+        errors.terms = 'Please agree to the Terms of Service and Privacy Policy'
+      }
     }
 
     setFieldErrors(errors)
@@ -1108,6 +1116,46 @@ export default function ProfilePage() {
                   {formData.aboutMe.length}/500 characters
                 </p>
               </div>
+
+              {/* Terms Agreement - Only for new profiles */}
+              {!existingProfile && (
+                <div className="mt-6 p-4 bg-myColor-50 rounded-xl">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => {
+                        setAgreedToTerms(e.target.checked)
+                        setFieldErrors(prev => ({ ...prev, terms: '' }))
+                      }}
+                      className="w-5 h-5 rounded border-myColor-300 text-myColor-600 focus:ring-myColor-500 flex-shrink-0"
+                    />
+                    <span className="text-sm text-myColor-700">
+                      I agree to the{' '}
+                      <a
+                        href={`${HOME_URL}/terms`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-myColor-600 hover:text-myColor-800 underline font-medium"
+                      >
+                        Terms of Service
+                      </a>{' '}
+                      and{' '}
+                      <a
+                        href={`${HOME_URL}/privacy`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-myColor-600 hover:text-myColor-800 underline font-medium"
+                      >
+                        Privacy Policy
+                      </a>
+                    </span>
+                  </label>
+                  {fieldErrors.terms && (
+                    <p className="mt-2 text-sm text-red-500">{fieldErrors.terms}</p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

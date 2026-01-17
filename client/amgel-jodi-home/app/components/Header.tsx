@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import LoginSheet from './LoginSheet'
 
 export default function Header() {
@@ -8,6 +9,11 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isVisible, setIsVisible] = useState(true)
   const [lastScrollY, setLastScrollY] = useState(0)
+  const pathname = usePathname()
+
+  // Only use transparent header on homepage (which has dark hero)
+  const isHomepage = pathname === '/'
+  const showSolidHeader = !isHomepage || isScrolled
 
   // Listen for openLoginSheet event from page CTAs
   useEffect(() => {
@@ -44,7 +50,7 @@ export default function Header() {
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isVisible ? 'translate-y-0' : '-translate-y-full'
         } ${
-          isScrolled
+          showSolidHeader
             ? 'bg-white/80 backdrop-blur-lg shadow-lg shadow-myColor-900/5'
             : 'bg-transparent'
         }`}
@@ -54,13 +60,13 @@ export default function Header() {
             {/* Logo */}
             <a href="/" className="flex items-center gap-3 group">
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                isScrolled
+                showSolidHeader
                   ? 'bg-myColor-600 shadow-lg shadow-myColor-500/30'
                   : 'bg-white/10 backdrop-blur-sm border border-white/20'
               }`}>
                 <svg
                   className={`w-6 h-6 transition-colors duration-300 ${
-                    isScrolled ? 'text-white' : 'text-white'
+                    showSolidHeader ? 'text-white' : 'text-white'
                   }`}
                   viewBox="0 0 24 24"
                   fill="none"
@@ -71,7 +77,7 @@ export default function Header() {
                 </svg>
               </div>
               <span className={`text-xl md:text-2xl font-heading font-bold transition-colors duration-300 ${
-                isScrolled ? 'text-myColor-900' : 'text-white'
+                showSolidHeader ? 'text-myColor-900' : 'text-white'
               }`}>
                 Amgel Jodi
               </span>
@@ -82,7 +88,7 @@ export default function Header() {
               <a
                 href="/about"
                 className={`font-medium transition-colors duration-300 ${
-                  isScrolled ? 'text-myColor-700 hover:text-myColor-900' : 'text-white/80 hover:text-white'
+                  showSolidHeader ? 'text-myColor-700 hover:text-myColor-900' : 'text-white/80 hover:text-white'
                 }`}
               >
                 About
@@ -90,50 +96,54 @@ export default function Header() {
               <a
                 href="/contact"
                 className={`font-medium transition-colors duration-300 ${
-                  isScrolled ? 'text-myColor-700 hover:text-myColor-900' : 'text-white/80 hover:text-white'
+                  showSolidHeader ? 'text-myColor-700 hover:text-myColor-900' : 'text-white/80 hover:text-white'
                 }`}
               >
                 Contact
               </a>
-              {/* Login Button */}
-              <button
-                onClick={() => setIsLoginOpen(true)}
-                className={`group relative px-5 py-2.5 md:px-6 md:py-2.5 rounded-full font-medium text-sm md:text-base transition-all duration-300 overflow-hidden ${
-                  isScrolled
-                    ? 'bg-myColor-600 text-white hover:bg-myColor-700 shadow-lg shadow-myColor-500/30 hover:shadow-xl hover:shadow-myColor-500/40'
-                    : 'bg-white/10 backdrop-blur-sm text-white border border-white/30 hover:bg-white/20 hover:border-white/50'
-                } hover:scale-105 active:scale-95`}
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  Login
-                  <svg
-                    className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 8l4 4m0 0l-4 4m4-4H3"
-                    />
-                  </svg>
-                </span>
-              </button>
+              {/* Login Button - only show on homepage */}
+              {isHomepage && (
+                <button
+                  onClick={() => setIsLoginOpen(true)}
+                  className={`group relative px-5 py-2.5 md:px-6 md:py-2.5 rounded-full font-medium text-sm md:text-base transition-all duration-300 overflow-hidden ${
+                    showSolidHeader
+                      ? 'bg-myColor-600 text-white hover:bg-myColor-700 shadow-lg shadow-myColor-500/30 hover:shadow-xl hover:shadow-myColor-500/40'
+                      : 'bg-white/10 backdrop-blur-sm text-white border border-white/30 hover:bg-white/20 hover:border-white/50'
+                  } hover:scale-105 active:scale-95`}
+                >
+                  <span className="relative z-10 flex items-center gap-2">
+                    Login
+                    <svg
+                      className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 8l4 4m0 0l-4 4m4-4H3"
+                      />
+                    </svg>
+                  </span>
+                </button>
+              )}
             </nav>
 
-            {/* Mobile Login Button */}
-            <button
-              onClick={() => setIsLoginOpen(true)}
-              className={`md:hidden group relative px-5 py-2.5 rounded-full font-medium text-sm transition-all duration-300 overflow-hidden ${
-                isScrolled
-                  ? 'bg-myColor-600 text-white hover:bg-myColor-700 shadow-lg shadow-myColor-500/30'
-                  : 'bg-white/10 backdrop-blur-sm text-white border border-white/30 hover:bg-white/20'
-              } hover:scale-105 active:scale-95`}
-            >
-              <span className="relative z-10">Login</span>
-            </button>
+            {/* Mobile Login Button - only show on homepage */}
+            {isHomepage && (
+              <button
+                onClick={() => setIsLoginOpen(true)}
+                className={`md:hidden group relative px-5 py-2.5 rounded-full font-medium text-sm transition-all duration-300 overflow-hidden ${
+                  showSolidHeader
+                    ? 'bg-myColor-600 text-white hover:bg-myColor-700 shadow-lg shadow-myColor-500/30'
+                    : 'bg-white/10 backdrop-blur-sm text-white border border-white/30 hover:bg-white/20'
+                } hover:scale-105 active:scale-95`}
+              >
+                <span className="relative z-10">Login</span>
+              </button>
+            )}
           </div>
         </div>
       </header>

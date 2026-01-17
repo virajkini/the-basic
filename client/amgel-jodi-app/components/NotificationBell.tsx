@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
-import { authFetch, tryRefreshToken } from '../app/utils/authFetch'
+import { authFetch } from '../app/utils/authFetch'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
@@ -118,20 +118,15 @@ export default function NotificationBell() {
         consecutiveErrors = 0 // Reset on successful connection
       }
 
-      eventSource.onerror = async () => {
+      eventSource.onerror = () => {
         eventSource.close()
         globalEventSource = null
         consecutiveErrors++
 
-        // Try to refresh token before reconnecting
-        const refreshed = await tryRefreshToken()
-
-        if (refreshed && consecutiveErrors < MAX_RETRIES) {
-          // Token refreshed, try reconnecting after a short delay
-          reconnectTimeout = setTimeout(connectSSE, 2000)
-        } else if (consecutiveErrors < MAX_RETRIES) {
-          // Refresh failed but still have retries, wait longer
-          reconnectTimeout = setTimeout(connectSSE, 10000)
+        // Reconnect with exponential backoff
+        if (consecutiveErrors < MAX_RETRIES) {
+          const delay = Math.min(2000 * Math.pow(2, consecutiveErrors - 1), 30000)
+          reconnectTimeout = setTimeout(connectSSE, delay)
         }
         // If max retries reached, don't reconnect
       }

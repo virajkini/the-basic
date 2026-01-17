@@ -186,7 +186,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-myColor-900">Email Us</h3>
-                      <p className="text-myColor-600">support@amgeljodi.com</p>
+                      <p className="text-myColor-600">amgeljodi26@gmail.com</p>
                       <p className="text-myColor-500 text-sm">We respond within 24 hours</p>
                     </div>
                   </div>

@@ -172,7 +172,7 @@ export default function TermsOfService() {
                 If you have any questions about these Terms, please contact us at:
               </p>
               <div className="bg-myColor-50 rounded-xl p-6">
-                <p className="mb-2"><strong>Email:</strong> legal@amgeljodi.com</p>
+                <p className="mb-2"><strong>Email:</strong> amgeljodi26@gmail.com</p>
                 <p className="mb-2"><strong>Address:</strong> Amgel Jodi, India</p>
               </div>
             </section>
