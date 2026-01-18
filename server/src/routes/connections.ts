@@ -11,10 +11,41 @@ import {
 import { createNotification } from '../services/notificationManager.js';
 import { sendToUser } from '../services/sseManager.js';
 import { readProfile } from '../services/profileManager.js';
+import { canSendRequest, consumeCredit, getQuotaStatus } from '../services/quotaManager.js';
 import { ConnectionStatus } from '../models/connection.js';
 import { NotificationType } from '../models/notification.js';
 
 const router = express.Router();
+
+/**
+ * GET /api/connections/quota
+ * Get current user's connection request quota status
+ */
+router.get('/quota',
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const userId = req.authenticatedUserId;
+
+      if (!userId) {
+        return res.status(401).json({ error: 'User ID not found in token' });
+      }
+
+      const quota = await getQuotaStatus(userId);
+
+      res.status(200).json({
+        success: true,
+        quota,
+      });
+    } catch (error) {
+      console.error('Error getting quota:', error);
+      res.status(500).json({
+        error: 'Failed to get quota',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
 
 /**
  * POST /api/connections
@@ -36,8 +67,27 @@ router.post('/',
         return res.status(400).json({ error: 'toUserId is required' });
       }
 
+      // Check quota before sending
+      const quotaCheck = await canSendRequest(fromUserId);
+      if (!quotaCheck.allowed) {
+        const errorMessages = {
+          DAILY_LIMIT_EXCEEDED: 'You have reached your daily connection request limit. Please try again tomorrow.',
+          NO_CREDITS: 'You have no connection credits remaining.',
+        };
+
+        return res.status(429).json({
+          success: false,
+          error: quotaCheck.reason,
+          message: errorMessages[quotaCheck.reason!],
+          quota: quotaCheck.quota,
+        });
+      }
+
       // Create connection request
       const connection = await sendRequest(fromUserId, toUserId);
+
+      // Consume one credit after successful request
+      const updatedQuota = await consumeCredit(fromUserId);
 
       // Get sender's profile for notification
       const senderProfile = await readProfile(fromUserId);
@@ -71,6 +121,7 @@ router.post('/',
           createdAt: connection.createdAt,
           updatedAt: connection.updatedAt,
         },
+        quota: updatedQuota,
       });
     } catch (error) {
       console.error('Error sending connection request:', error);

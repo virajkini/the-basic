@@ -22,6 +22,9 @@ interface Notification {
 let globalCountFetched = false
 let globalEventSource: EventSource | null = null
 
+// Custom event name for broadcasting notification updates
+const NOTIFICATION_UPDATE_EVENT = 'notificationCountUpdate'
+
 export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
@@ -29,12 +32,6 @@ export default function NotificationBell() {
   const [loading, setLoading] = useState(false)
   const [hasLoadedNotifications, setHasLoadedNotifications] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
-  const setUnreadCountRef = useRef(setUnreadCount)
-  const setHasLoadedRef = useRef(setHasLoadedNotifications)
-
-  // Keep refs updated
-  setUnreadCountRef.current = setUnreadCount
-  setHasLoadedRef.current = setHasLoadedNotifications
 
   // Fetch unread count only
   const fetchUnreadCount = async () => {
@@ -43,10 +40,12 @@ export default function NotificationBell() {
       if (response.ok) {
         const data = await response.json()
         setUnreadCount(data.count)
+        return data.count
       }
     } catch (error) {
       console.error('Error fetching unread count:', error)
     }
+    return null
   }
 
   // Fetch notifications (called when dropdown opens)
@@ -65,6 +64,19 @@ export default function NotificationBell() {
       setLoading(false)
     }
   }
+
+  // Listen for notification update broadcasts from other instances
+  useEffect(() => {
+    const handleCountUpdate = (event: CustomEvent<{ count: number }>) => {
+      setUnreadCount(event.detail.count)
+      setHasLoadedNotifications(false) // Trigger refetch when dropdown opens
+    }
+
+    window.addEventListener(NOTIFICATION_UPDATE_EVENT, handleCountUpdate as EventListener)
+    return () => {
+      window.removeEventListener(NOTIFICATION_UPDATE_EVENT, handleCountUpdate as EventListener)
+    }
+  }, [])
 
   // Initial fetch - only unread count (once globally)
   useEffect(() => {
@@ -101,17 +113,19 @@ export default function NotificationBell() {
 
       eventSource.addEventListener('NEW_NOTIFICATION', async () => {
         consecutiveErrors = 0 // Reset on successful message
-        // Fetch fresh count
+        // Fetch fresh count and broadcast to all instances
         try {
           const response = await authFetch(`${API_BASE}/notifications/unread-count`)
           if (response.ok) {
             const data = await response.json()
-            setUnreadCountRef.current(data.count)
+            // Broadcast to ALL NotificationBell instances via custom event
+            window.dispatchEvent(
+              new CustomEvent(NOTIFICATION_UPDATE_EVENT, { detail: { count: data.count } })
+            )
           }
         } catch (e) {
           // ignore
         }
-        setHasLoadedRef.current(false)
       })
 
       eventSource.onopen = () => {

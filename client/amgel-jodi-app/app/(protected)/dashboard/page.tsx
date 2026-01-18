@@ -55,6 +55,9 @@ export default function Dashboard() {
   const [showFilterSheet, setShowFilterSheet] = useState(false)
   const [layout, setLayout] = useState<LayoutType>('default')
 
+  // Track if initial data load is complete (not just started)
+  const initialLoadComplete = useRef(false)
+
   // Load layout preference from localStorage
   useEffect(() => {
     const saved = localStorage.getItem(LAYOUT_STORAGE_KEY)
@@ -77,13 +80,15 @@ export default function Dashboard() {
   useEffect(() => {
     if (user?.userId && !hasFetched.current) {
       hasFetched.current = true
-      fetchData()
+      fetchData().then(() => {
+        initialLoadComplete.current = true
+      })
     }
   }, [user?.userId])
 
-  // Refetch when sort or filter changes
+  // Refetch when sort or filter changes (only after initial load is complete)
   useEffect(() => {
-    if (hasFetched.current && user?.userId) {
+    if (initialLoadComplete.current && user?.userId) {
       fetchDiscoverProfiles()
     }
   }, [sortBy, filters])
