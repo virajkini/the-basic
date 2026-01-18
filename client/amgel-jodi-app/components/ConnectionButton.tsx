@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, memo } from 'react'
+import { useState, useEffect, memo, useCallback } from 'react'
 import { useAuth } from '../app/context/AuthContext'
 import { authFetch } from '../app/utils/authFetch'
 
@@ -12,6 +12,13 @@ interface ConnectionState {
   status: ConnectionStatus
   connectionId: string | null
   isSender: boolean
+}
+
+interface QuotaStatus {
+  dailyRemaining: number
+  dailyLimit: number | null
+  totalRemaining: number
+  totalAvailable: number
 }
 
 interface ConnectionButtonProps {
@@ -28,6 +35,17 @@ function ConnectionButton({ targetUserId, onStatusChange }: ConnectionButtonProp
   const [connectionState, setConnectionState] = useState<ConnectionState>(defaultState)
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState(false)
+
+  // Confirmation popup state
+  const [showConfirmPopup, setShowConfirmPopup] = useState(false)
+  const [quotaStatus, setQuotaStatus] = useState<QuotaStatus | null>(null)
+  const [quotaLoading, setQuotaLoading] = useState(false)
+
+  // Success animation state
+  const [showSuccess, setShowSuccess] = useState(false)
+
+  // Error state
+  const [error, setError] = useState<{ type: string; message: string } | null>(null)
 
   // Fetch current connection status (no caching - always fetch fresh)
   useEffect(() => {
@@ -81,9 +99,32 @@ function ConnectionButton({ targetUserId, onStatusChange }: ConnectionButtonProp
     }
   }, [user?.userId, targetUserId])
 
-  // Handle send request
-  const handleSendRequest = async () => {
+  // Fetch quota and show confirmation popup
+  const handleSendClick = useCallback(async () => {
+    setQuotaLoading(true)
+    setError(null)
+
+    try {
+      const response = await authFetch(`${API_BASE}/connections/quota`)
+      if (response.ok) {
+        const data = await response.json()
+        setQuotaStatus(data.quota)
+        setShowConfirmPopup(true)
+      }
+    } catch (error) {
+      console.error('Error fetching quota:', error)
+      setError({ type: 'FETCH_ERROR', message: 'Failed to check quota. Please try again.' })
+    } finally {
+      setQuotaLoading(false)
+    }
+  }, [])
+
+  // Handle confirmed send request
+  const handleConfirmSend = useCallback(async () => {
+    setShowConfirmPopup(false)
     setActionLoading(true)
+    setError(null)
+
     try {
       const response = await authFetch(`${API_BASE}/connections`, {
         method: 'POST',
@@ -91,45 +132,41 @@ function ConnectionButton({ targetUserId, onStatusChange }: ConnectionButtonProp
         body: JSON.stringify({ toUserId: targetUserId }),
       })
 
+      const data = await response.json()
+
       if (response.ok) {
-        const data = await response.json()
         setConnectionState({
           status: 'PENDING',
           connectionId: data.connection._id,
           isSender: true,
         })
         onStatusChange?.('PENDING')
+
+        // Show success animation
+        setShowSuccess(true)
+        setTimeout(() => setShowSuccess(false), 2500)
+      } else if (response.status === 429) {
+        // Quota exceeded
+        setError({
+          type: data.error,
+          message: data.message || 'You have reached your limit.',
+        })
+        if (data.quota) {
+          setQuotaStatus(data.quota)
+        }
+      } else {
+        setError({
+          type: 'SEND_ERROR',
+          message: data.error || 'Failed to send request. Please try again.',
+        })
       }
     } catch (error) {
       console.error('Error sending request:', error)
+      setError({ type: 'NETWORK_ERROR', message: 'Network error. Please try again.' })
     } finally {
       setActionLoading(false)
     }
-  }
-
-  // Handle cancel request
-  const handleCancelRequest = async () => {
-    if (!connectionState.connectionId) return
-    setActionLoading(true)
-    try {
-      const response = await authFetch(`${API_BASE}/connections/${connectionState.connectionId}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        setConnectionState({
-          status: null,
-          connectionId: null,
-          isSender: false,
-        })
-        onStatusChange?.(null)
-      }
-    } catch (error) {
-      console.error('Error cancelling request:', error)
-    } finally {
-      setActionLoading(false)
-    }
-  }
+  }, [targetUserId, onStatusChange])
 
   // Handle accept request
   const handleAcceptRequest = async () => {
@@ -209,6 +246,91 @@ function ConnectionButton({ targetUserId, onStatusChange }: ConnectionButtonProp
     )
   }
 
+  // Success animation overlay
+  if (showSuccess) {
+    return (
+      <div className="px-5 py-4 border-t border-gray-100">
+        <div className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl animate-fade-in">
+          {/* Animated checkmark */}
+          <div className="relative w-16 h-16 mb-3">
+            <svg className="w-16 h-16 text-green-500" viewBox="0 0 52 52">
+              <circle
+                className="animate-[circle_0.6s_ease-in-out_forwards]"
+                cx="26"
+                cy="26"
+                r="25"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                style={{
+                  strokeDasharray: 166,
+                  strokeDashoffset: 166,
+                  animation: 'circle 0.6s ease-in-out forwards',
+                }}
+              />
+              <path
+                className="animate-[check_0.3s_0.6s_ease-in-out_forwards]"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M14 27l7.8 7.8L38 18"
+                style={{
+                  strokeDasharray: 48,
+                  strokeDashoffset: 48,
+                  animation: 'check 0.3s 0.6s ease-in-out forwards',
+                }}
+              />
+            </svg>
+            {/* Confetti particles */}
+            <div className="absolute inset-0 pointer-events-none">
+              {[...Array(8)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-2 h-2 rounded-full"
+                  style={{
+                    background: ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'][i % 5],
+                    left: '50%',
+                    top: '50%',
+                    animation: `confetti 0.8s ${i * 0.1}s ease-out forwards`,
+                    transform: `rotate(${i * 45}deg) translateY(-30px)`,
+                    opacity: 0,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          <p className="text-lg font-semibold text-green-700">Request Sent!</p>
+          <p className="text-sm text-green-600 mt-1">Waiting for their response</p>
+        </div>
+
+        <style jsx>{`
+          @keyframes circle {
+            to {
+              stroke-dashoffset: 0;
+            }
+          }
+          @keyframes check {
+            to {
+              stroke-dashoffset: 0;
+            }
+          }
+          @keyframes confetti {
+            0% {
+              transform: rotate(var(--rotation)) translateY(0) scale(0);
+              opacity: 1;
+            }
+            100% {
+              transform: rotate(var(--rotation)) translateY(-40px) scale(1);
+              opacity: 0;
+            }
+          }
+        `}</style>
+      </div>
+    )
+  }
+
   // Accepted state
   if (connectionState.status === 'ACCEPTED') {
     return (
@@ -227,29 +349,11 @@ function ConnectionButton({ targetUserId, onStatusChange }: ConnectionButtonProp
   if (connectionState.status === 'PENDING' && connectionState.isSender) {
     return (
       <div className="px-5 py-4 border-t border-gray-100">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 flex items-center gap-2 p-3 bg-blue-50 rounded-xl">
-            <svg className="w-5 h-5 text-blue-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="text-blue-800 text-sm">Request sent, awaiting response</span>
-          </div>
-          <button
-            onClick={handleCancelRequest}
-            disabled={actionLoading}
-            className="px-4 py-3 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
-          >
-            {actionLoading ? (
-              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            )}
-          </button>
+        <div className="flex items-center justify-center gap-2 p-4 bg-blue-50 rounded-xl">
+          <svg className="w-5 h-5 text-blue-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="text-blue-800 font-medium">Request sent, awaiting response</span>
         </div>
       </div>
     )
@@ -297,12 +401,32 @@ function ConnectionButton({ targetUserId, onStatusChange }: ConnectionButtonProp
   // No connection - Show send request button
   return (
     <div className="px-5 py-4 border-t border-gray-100 space-y-3">
+      {/* Error message */}
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-100 rounded-xl flex items-start gap-2 animate-fade-in">
+          <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <div className="flex-1">
+            <p className="text-sm text-red-700">{error.message}</p>
+            {error.type === 'DAILY_LIMIT_EXCEEDED' && (
+              <p className="text-xs text-red-500 mt-1">Try again tomorrow</p>
+            )}
+          </div>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
+
       <button
-        onClick={handleSendRequest}
-        disabled={actionLoading}
+        onClick={handleSendClick}
+        disabled={actionLoading || quotaLoading}
         className="w-full py-3.5 px-4 bg-gradient-to-r from-myColor-500 to-myColor-600 hover:from-myColor-600 hover:to-myColor-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-myColor-500/30 disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        {actionLoading ? (
+        {(actionLoading || quotaLoading) ? (
           <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
@@ -319,6 +443,61 @@ function ConnectionButton({ targetUserId, onStatusChange }: ConnectionButtonProp
       <p className="text-xs text-gray-500 text-center">
         Once accepted, you can view their contact details
       </p>
+
+      {/* Confirmation Popup */}
+      {showConfirmPopup && quotaStatus && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 animate-fade-in">
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-scale-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="p-5 pb-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-myColor-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-myColor-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-gray-900">Send Connection Request?</h3>
+                </div>
+              </div>
+            </div>
+
+            {/* Quota Info */}
+            <div className="p-5 space-y-3">
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                <span className="text-sm text-gray-600">Remaining requests for today</span>
+                <span className={`font-semibold ${quotaStatus.dailyRemaining === -1 ? 'text-green-600' : quotaStatus.dailyRemaining > 0 ? 'text-myColor-600' : 'text-red-500'}`}>
+                  {quotaStatus.dailyRemaining === -1 ? 'Unlimited' : quotaStatus.dailyRemaining}
+                </span>
+              </div>
+
+              <p className="text-xs text-gray-500 text-center">
+                You can send only {quotaStatus.dailyLimit ?? 2} requests per day
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="p-5 pt-0 flex gap-3">
+              <button
+                onClick={() => setShowConfirmPopup(false)}
+                className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmSend}
+                disabled={quotaStatus.dailyRemaining === 0}
+                className="flex-1 py-3 px-4 bg-gradient-to-r from-myColor-500 to-myColor-600 hover:from-myColor-600 hover:to-myColor-700 text-white font-medium rounded-xl transition-all shadow-lg shadow-myColor-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Send Request
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

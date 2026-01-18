@@ -138,24 +138,6 @@ export default function ConnectionsPage() {
     }
   }
 
-  // Handle cancel request
-  const handleCancel = async (connectionId: string) => {
-    setActionLoading(connectionId)
-    try {
-      const response = await authFetch(`${API_BASE}/connections/${connectionId}`, {
-        method: 'DELETE',
-      })
-
-      if (response.ok) {
-        setConnections((prev) => prev.filter((c) => c._id !== connectionId))
-      }
-    } catch (error) {
-      console.error('Error cancelling request:', error)
-    } finally {
-      setActionLoading(null)
-    }
-  }
-
   const tabs: { id: TabType; label: string; icon: JSX.Element }[] = [
     {
       id: 'accepted',
@@ -260,31 +242,12 @@ export default function ConnectionsPage() {
               )}
 
               {activeTab === 'sent' && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-3 py-1.5 text-sm text-amber-700 bg-amber-50 rounded-lg flex items-center gap-1.5">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Waiting for response
-                  </span>
-                  <button
-                    onClick={() => handleCancel(connection._id)}
-                    disabled={actionLoading === connection._id}
-                    className="px-3 py-1.5 text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1"
-                  >
-                    {actionLoading === connection._id ? (
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    )}
-                    Cancel
-                  </button>
-                </div>
+                <span className="px-3 py-1.5 text-sm text-amber-700 bg-amber-50 rounded-lg flex items-center gap-1.5">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Waiting for response
+                </span>
               )}
 
               {activeTab === 'accepted' && (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, memo, useCallback } from 'react'
+import { useEffect, useState, memo, useCallback, useRef } from 'react'
 import { useProfileData } from '../hooks/useProfileData'
 import ProfileImageHeader from './ProfileImageHeader'
 import ConnectionButton from './ConnectionButton'
@@ -34,6 +34,10 @@ function ProfileDetailView({ profileId, images, onClose }: ProfileDetailViewProp
   const [isMobile, setIsMobile] = useState(true)
   const [isVisible, setIsVisible] = useState(false)
 
+  // Track if we pushed a history state and if we're closing via UI
+  const historyPushedRef = useRef(false)
+  const closingViaUIRef = useRef(false)
+
   useEffect(() => {
     setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
     const handleResize = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
@@ -50,8 +54,49 @@ function ProfileDetailView({ profileId, images, onClose }: ProfileDetailViewProp
     return () => { document.body.style.overflow = 'unset' }
   }, [])
 
+  // Handle device back button via History API
+  useEffect(() => {
+    // Push a history state when modal opens
+    history.pushState({ profileDetailOpen: true, profileId }, '')
+    historyPushedRef.current = true
+
+    const handlePopState = (event: PopStateEvent) => {
+      // If we're already closing via UI button, ignore this popstate
+      if (closingViaUIRef.current) {
+        closingViaUIRef.current = false
+        return
+      }
+
+      // Device back button was pressed - close the modal
+      if (historyPushedRef.current) {
+        historyPushedRef.current = false
+        setIsVisible(false)
+        setTimeout(onClose, 200)
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+      // If modal unmounts without proper close (e.g., navigation), clean up history
+      if (historyPushedRef.current) {
+        historyPushedRef.current = false
+        // Don't call history.back() here as it might cause issues during navigation
+      }
+    }
+  }, [onClose, profileId])
+
   const handleClose = useCallback(() => {
     setIsVisible(false)
+
+    // If we pushed a history state, go back to clean it up
+    if (historyPushedRef.current) {
+      closingViaUIRef.current = true
+      historyPushedRef.current = false
+      history.back()
+    }
+
     setTimeout(onClose, 200)
   }, [onClose])
 
