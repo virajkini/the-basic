@@ -1,6 +1,6 @@
 import express from 'express';
-import { readProfile, createProfile, updateProfile, listProfiles, maskString } from '../services/profileManager.js';
-import { Profile, CreatingFor, Gender, SalaryRange, WorkingStatus, calculateAge } from '../models/profile.js';
+import { readProfile, createProfile, updateProfile, listProfiles, maskString, SortOption, FilterOptions } from '../services/profileManager.js';
+import { Profile, CreatingFor, Gender, SalaryRange, WorkingStatus, calculateAge, parseHeightToCm } from '../models/profile.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { verifyUserOwnership, verifyUserIdMatch } from '../middleware/verifyOwnership.js';
 import { getOtherUserProfileImages } from '../services/fileManager.js';
@@ -15,12 +15,15 @@ const validGenders: Gender[] = ['M', 'F'];
 const validSalaryRanges: SalaryRange[] = ['<5L', '5-15L', '15-30L', '30-50L', '>50L'];
 const validWorkingStatuses: WorkingStatus[] = ['employed', 'self-employed', 'not-working'];
 
+// Valid sort options
+const validSortOptions: SortOption[] = ['recent', 'updated', 'age_asc', 'age_desc', 'height_asc', 'height_desc'];
+
 /**
  * GET /api/profiles/discover
  * Get profiles for discovery with images in a single call
  * Returns masked data + blurred images for unverified users
  * Returns full data + original images for verified users
- * Query params: limit (default 20), skip (default 0)
+ * Query params: limit (default 20), skip (default 0), sort, ageMin, ageMax
  */
 router.get('/discover',
   authenticateToken,
@@ -38,8 +41,23 @@ router.get('/discover',
       const limit = Math.min(parseInt(req.query.limit as string) || 20, 50);
       const skip = parseInt(req.query.skip as string) || 0;
 
+      // Parse sort option
+      const sortParam = req.query.sort as string;
+      const sortBy: SortOption = validSortOptions.includes(sortParam as SortOption)
+        ? sortParam as SortOption
+        : 'recent';
+
+      // Parse filter options
+      const filters: FilterOptions = {};
+      const ageMin = parseInt(req.query.ageMin as string);
+      const ageMax = parseInt(req.query.ageMax as string);
+      if (!isNaN(ageMin) && ageMin >= 18) filters.ageMin = ageMin;
+      if (!isNaN(ageMax) && ageMax >= 18) filters.ageMax = ageMax;
+      const nameParam = req.query.name as string;
+      if (nameParam && nameParam.trim()) filters.name = nameParam.trim();
+
       // Get profiles (gender from JWT, no DB call needed)
-      const profiles = await listProfiles(currentUserId, currentGender ?? undefined, limit, skip);
+      const profiles = await listProfiles(currentUserId, currentGender ?? undefined, limit, skip, sortBy, Object.keys(filters).length > 0 ? filters : undefined);
 
       // Fetch images for all profiles in parallel
       const profilesWithImages = (await Promise.all(
@@ -80,7 +98,9 @@ router.get('/discover',
         count: profilesWithImages.length,
         isVerified,
         skip,
-        limit
+        limit,
+        sort: sortBy,
+        filters
       });
     } catch (error) {
       console.error('Error discovering profiles:', error);
@@ -357,6 +377,7 @@ router.post('/',
       }
 
       const isWorking = workingStatus === 'employed' || workingStatus === 'self-employed';
+      const heightCm = parseHeightToCm(height.trim());
       const profileData: Omit<Profile, '_id' | 'createdAt' | 'updatedAt'> = {
         creatingFor: creatingFor as CreatingFor,
         firstName: firstName.trim(),
@@ -367,6 +388,7 @@ router.post('/',
         age: age,
         nativePlace: nativePlace.trim(),
         height: height.trim(),
+        heightCm: heightCm ?? undefined,
         workingStatus: workingStatus as WorkingStatus,
         company: isWorking && company?.trim() ? company.trim() : undefined,
         designation: isWorking && designation?.trim() ? designation.trim() : undefined,
@@ -539,6 +561,10 @@ router.put('/:userId',
         return res.status(400).json({ error: 'Invalid height' });
       }
       updateData.height = height.trim();
+      const heightCm = parseHeightToCm(height.trim());
+      if (heightCm !== null) {
+        updateData.heightCm = heightCm;
+      }
     }
 
     if (workingStatus !== undefined) {
