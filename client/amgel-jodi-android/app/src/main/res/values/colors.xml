@@ -40,8 +40,8 @@
     <!-- Notification -->
     <color name="notification_color">#7C3AED</color>
 
-    <!-- Splash Screen -->
-    <color name="splash_background">#7C3AED</color>
+    <!-- Splash Screen - soft purple -->
+    <color name="splash_background">#8b5cf6</color>
     <color name="splash_icon_background">#FFFFFF</color>
 
     <!-- Gradient Colors -->

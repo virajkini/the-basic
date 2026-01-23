@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,22 +12,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.amgeljodi.app.bridge.WebViewBridge
 import com.amgeljodi.app.ui.main.MainScreen
-import com.amgeljodi.app.ui.splash.SplashScreen
-import com.amgeljodi.app.ui.splash.SplashState
 import com.amgeljodi.app.ui.splash.SplashViewModel
 import com.amgeljodi.app.ui.theme.AmgelJodiTheme
-import com.amgeljodi.app.ui.webview.WebViewState
-import com.amgeljodi.app.ui.webview.rememberWebViewState
-import com.amgeljodi.app.util.BiometricHelper
-import com.amgeljodi.app.util.BiometricStatus
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -48,7 +38,6 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var webViewBridge: WebViewBridge
 
-    private var webViewState: WebViewState? = null
     private var deepLinkUrl: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -84,8 +73,7 @@ class MainActivity : ComponentActivity() {
                     AmgelJodiApp(
                         webViewBridge = webViewBridge,
                         deepLinkUrl = deepLinkUrl,
-                        onSplashComplete = { keepSplash = false },
-                        onWebViewStateCreated = { state -> webViewState = state }
+                        onNativeSplashComplete = { keepSplash = false }
                     )
                 }
             }
@@ -117,68 +105,27 @@ class MainActivity : ComponentActivity() {
 
 /**
  * Root composable for the app
+ * Goes directly to content - no extra splash screen for faster loading
  */
 @Composable
 private fun AmgelJodiApp(
     webViewBridge: WebViewBridge,
     deepLinkUrl: String?,
-    onSplashComplete: () -> Unit,
-    onWebViewStateCreated: (WebViewState) -> Unit,
+    onNativeSplashComplete: () -> Unit,
     splashViewModel: SplashViewModel = hiltViewModel()
 ) {
-    val splashState by splashViewModel.splashState.collectAsState()
     val baseUrl by splashViewModel.baseUrl.collectAsState()
 
-    var showSplash by remember { mutableStateOf(true) }
-    var needsBiometric by remember { mutableStateOf(false) }
-
-    val webViewState = rememberWebViewState()
-
-    // Track WebView state
-    androidx.compose.runtime.LaunchedEffect(webViewState) {
-        onWebViewStateCreated(webViewState)
+    // Dismiss native splash and go straight to content
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        onNativeSplashComplete()
     }
 
-    // Handle splash state changes
-    androidx.compose.runtime.LaunchedEffect(splashState) {
-        when (splashState) {
-            is SplashState.Loading -> {
-                // Keep showing splash
-            }
-            is SplashState.RequiresBiometric -> {
-                needsBiometric = true
-            }
-            is SplashState.Ready -> {
-                showSplash = false
-                onSplashComplete()
-            }
-        }
-    }
+    // Go directly to WebView content - fastest loading
+    val urlToLoad = deepLinkUrl ?: baseUrl
 
-    // Back button handling
-    BackHandler(enabled = !showSplash) {
-        if (webViewState.canGoBack) {
-            webViewState.goBack()
-        }
-    }
-
-    // UI
-    if (showSplash) {
-        SplashScreen(
-            onSplashComplete = {
-                if (splashState is SplashState.Ready) {
-                    showSplash = false
-                    onSplashComplete()
-                }
-            }
-        )
-    } else {
-        // Determine URL to load
-        val urlToLoad = deepLinkUrl ?: baseUrl
-
-        MainScreen(
-            baseUrl = urlToLoad,
-            webViewBridge = webViewBridge
-        )
-    }
+    MainScreen(
+        baseUrl = urlToLoad,
+        webViewBridge = webViewBridge
+    )
 }

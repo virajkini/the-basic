@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">Amgel Jodi</string>
     <string name="app_tagline">Find Your Perfect Match</string>
+    <string name="app_community">Exclusively for GSB Konkani Community</string>
 
     <!-- Splash Screen -->
     <string name="splash_loading">Loading…</string>

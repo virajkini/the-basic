@@ -4,6 +4,7 @@ import android.Manifest
 import android.net.Uri
 import android.os.Build
 import android.webkit.WebChromeClient
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.fadeIn
@@ -70,6 +71,11 @@ fun MainScreen(
 
     val webViewState = rememberWebViewState()
     val uiState by viewModel.uiState.collectAsState()
+
+    // Handle back button - trigger history.back() for SPA navigation
+    BackHandler(enabled = webViewState.canGoBack) {
+        webViewState.goBack()
+    }
 
     var showDebugSettings by remember { mutableStateOf(false) }
     var pendingFileChooserParams by remember { mutableStateOf<WebChromeClient.FileChooserParams?>(null) }

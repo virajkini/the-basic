@@ -35,102 +35,79 @@ import com.amgeljodi.app.ui.theme.GradientStart
 import kotlinx.coroutines.delay
 
 /**
- * Animated splash screen with logo and tagline
- * Shows a heart icon with scale and fade animations
+ * Quick splash screen with logo and tagline
+ * Shows branding briefly then transitions to content fast
  */
 @Composable
 fun SplashScreen(
     onSplashComplete: () -> Unit
 ) {
-    // Animation states
-    val logoScale = remember { Animatable(0f) }
-    val logoAlpha = remember { Animatable(0f) }
-    val textAlpha = remember { Animatable(0f) }
-    val pulseScale = remember { Animatable(1f) }
+    // Animation states - start visible for faster display
+    val logoScale = remember { Animatable(0.8f) }
+    val contentAlpha = remember { Animatable(0f) }
 
-    // Run animations
+    // Run quick animations - no blocking delays
     LaunchedEffect(key1 = true) {
-        // Logo appears with bounce
-        logoAlpha.animateTo(
+        // Quick fade in
+        contentAlpha.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 400)
+            animationSpec = tween(durationMillis = 200)
         )
 
+        // Quick scale
         logoScale.animateTo(
             targetValue = 1f,
-            animationSpec = tween(
-                durationMillis = 600,
-                easing = FastOutSlowInEasing
-            )
+            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
         )
 
-        // Small delay before text
-        delay(200)
-
-        // Text fades in
-        textAlpha.animateTo(
-            targetValue = 1f,
-            animationSpec = tween(durationMillis = 400)
-        )
-
-        // Gentle pulse animation
-        repeat(2) {
-            pulseScale.animateTo(
-                targetValue = 1.1f,
-                animationSpec = tween(durationMillis = 300)
-            )
-            pulseScale.animateTo(
-                targetValue = 1f,
-                animationSpec = tween(durationMillis = 300)
-            )
-        }
-
-        // Small delay then proceed
-        delay(300)
+        // Brief display then proceed - fast transition to content
+        delay(400)
         onSplashComplete()
     }
 
-    // UI
+    // UI - Soft purple gradient background
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 brush = Brush.linearGradient(
-                    colors = listOf(GradientStart, GradientEnd)
+                    colors = listOf(
+                        Color(0xFF8b5cf6),  // Soft violet
+                        Color(0xFF7c3aed)   // Purple
+                    )
                 )
             ),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.alpha(contentAlpha.value)
         ) {
             // Logo with white circle background
             Box(
                 modifier = Modifier
-                    .size(120.dp)
-                    .scale(logoScale.value * pulseScale.value)
-                    .alpha(logoAlpha.value)
+                    .size(100.dp)
+                    .scale(logoScale.value)
                     .background(Color.White, shape = CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_notification),
                     contentDescription = "Amgel Jodi Logo",
-                    modifier = Modifier.size(60.dp),
-                    tint = GradientStart
+                    modifier = Modifier.size(50.dp),
+                    tint = Color(0xFF7c3aed)
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // App name
             Text(
                 text = stringResource(R.string.app_name),
                 color = Color.White,
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.alpha(textAlpha.value)
+                fontSize = 32.sp,
+                fontWeight = FontWeight.Bold
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -139,75 +116,20 @@ fun SplashScreen(
             Text(
                 text = stringResource(R.string.app_tagline),
                 color = Color.White.copy(alpha = 0.9f),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.alpha(textAlpha.value)
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Community text
+            Text(
+                text = stringResource(R.string.app_community),
+                color = Color.White.copy(alpha = 0.8f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Normal
             )
         }
-
-        // Loading indicator at bottom
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .alpha(textAlpha.value),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.align(Alignment.BottomCenter)
-            ) {
-                LoadingDots()
-                Spacer(modifier = Modifier.height(48.dp))
-            }
-        }
     }
 }
 
-/**
- * Animated loading dots
- */
-@Composable
-private fun LoadingDots() {
-    val dot1Alpha = remember { Animatable(0.3f) }
-    val dot2Alpha = remember { Animatable(0.3f) }
-    val dot3Alpha = remember { Animatable(0.3f) }
-
-    LaunchedEffect(key1 = true) {
-        while (true) {
-            // Dot 1
-            dot1Alpha.animateTo(1f, animationSpec = tween(200))
-            dot1Alpha.animateTo(0.3f, animationSpec = tween(200))
-
-            // Dot 2
-            dot2Alpha.animateTo(1f, animationSpec = tween(200))
-            dot2Alpha.animateTo(0.3f, animationSpec = tween(200))
-
-            // Dot 3
-            dot3Alpha.animateTo(1f, animationSpec = tween(200))
-            dot3Alpha.animateTo(0.3f, animationSpec = tween(200))
-        }
-    }
-
-    androidx.compose.foundation.layout.Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .alpha(dot1Alpha.value)
-                .background(Color.White, CircleShape)
-        )
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .alpha(dot2Alpha.value)
-                .background(Color.White, CircleShape)
-        )
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .alpha(dot3Alpha.value)
-                .background(Color.White, CircleShape)
-        )
-    }
-}

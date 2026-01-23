@@ -59,7 +59,7 @@ object Constants {
 
     // Timeouts
     object Timeouts {
-        const val SPLASH_DELAY_MS = 1500L
+        const val SPLASH_DELAY_MS = 500L  // Fast splash - get to content quickly
         const val WEBVIEW_TIMEOUT_MS = 30000L
         const val BIOMETRIC_TIMEOUT_MS = 30000
     }
