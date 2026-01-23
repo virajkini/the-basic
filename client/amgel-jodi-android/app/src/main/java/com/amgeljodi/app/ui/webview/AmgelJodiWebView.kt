@@ -45,7 +45,20 @@ class WebViewState {
 
     fun goBack(): Boolean {
         return if (webView?.canGoBack() == true) {
-            webView?.goBack()
+            // Use JavaScript history.back() to properly trigger popstate event for SPAs
+            webView?.evaluateJavascript(
+                """
+                (function() {
+                    // Dispatch custom event first so app knows back is from native
+                    window.dispatchEvent(new CustomEvent('nativeBackPressed', {
+                        detail: { source: 'android' }
+                    }));
+                    // Then trigger history.back() which fires popstate
+                    history.back();
+                })();
+                """.trimIndent(),
+                null
+            )
             true
         } else {
             false
@@ -157,6 +170,7 @@ fun AmgelJodiWebView(
                         view?.evaluateJavascript(
                             """
                             window.isAmgelJodiApp = true;
+                            window.isAndroidApp = true;
                             window.AmgelJodiNative && console.log('Native bridge ready');
 
                             // Ensure proper viewport for native-like scroll
@@ -171,6 +185,12 @@ fun AmgelJodiWebView(
                             // Add smooth scroll behavior
                             document.documentElement.style.scrollBehavior = 'smooth';
                             document.documentElement.style.webkitOverflowScrolling = 'touch';
+
+                            // Setup native back button handler helper
+                            if (!window._nativeBackSetup) {
+                                window._nativeBackSetup = true;
+                                console.log('Native back button handler ready - listen for nativeBackPressed or popstate events');
+                            }
                             """.trimIndent(),
                             null
                         )
