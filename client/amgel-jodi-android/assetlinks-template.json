@@ -1,0 +1,23 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.amgeljodi.app",
+      "sha256_cert_fingerprints": [
+        "YOUR_APP_SIGNING_CERTIFICATE_SHA256_FINGERPRINT"
+      ]
+    }
+  }
+]
+
+// INSTRUCTIONS:
+// 1. Get your app's signing certificate SHA256 fingerprint:
+//    - Debug: ./gradlew signingReport
+//    - Release: keytool -list -v -keystore your-release-key.jks
+//
+// 2. Host this file at: https://www.amgeljodi.com/.well-known/assetlinks.json
+//
+// 3. The file must be served with Content-Type: application/json
+//
+// 4. This enables Android App Links (verified deep linking)
