@@ -161,7 +161,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-4 md:py-6 pb-20 md:pb-6">
+      <div className="container mx-auto px-4 py-4 md:py-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <div className="h-8 w-40 bg-gray-200 rounded-lg animate-pulse" />
@@ -248,7 +248,7 @@ export default function Dashboard() {
 
   // Has profile - Show Discover Profiles
   return (
-    <div className="container mx-auto px-4 py-4 md:py-6 pb-20 md:pb-6">
+    <div className="container mx-auto px-4 py-4 md:py-6">
       <div className="max-w-6xl mx-auto">
         {/* Error Message */}
         {error && (

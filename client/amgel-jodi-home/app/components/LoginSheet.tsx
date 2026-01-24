@@ -20,6 +20,7 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
   const modalRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
   const scrollYRef = useRef(0)
+  const [keyboardHeight, setKeyboardHeight] = useState(0)
 
   // Handle opening animation
   useEffect(() => {
@@ -88,6 +89,31 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
   }, [isOpen, handleClose])
+
+  // Detect keyboard on mobile using visualViewport
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleResize = () => {
+      if (window.visualViewport) {
+        const heightDiff = window.innerHeight - window.visualViewport.height
+        setKeyboardHeight(heightDiff > 100 ? heightDiff : 0)
+      }
+    }
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', handleResize)
+      window.visualViewport.addEventListener('scroll', handleResize)
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener('resize', handleResize)
+        window.visualViewport.removeEventListener('scroll', handleResize)
+      }
+      setKeyboardHeight(0)
+    }
+  }, [isOpen])
 
   // Auto-focus input when step changes
   useEffect(() => {
@@ -170,21 +196,23 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
         onClick={handleBackdropClick}
       />
 
-      {/* Modal Container - Top aligned on mobile for keyboard safety */}
+      {/* Modal Container - Adjusts for keyboard */}
       <div
-        className="absolute inset-0 flex items-start md:items-center justify-center p-4 pt-[15vh] md:pt-4 overflow-y-auto"
+        className="absolute inset-0 flex items-start md:items-center justify-center p-4 pt-[10vh] md:pt-4 overflow-y-auto"
+        style={{
+          paddingBottom: keyboardHeight > 0 ? keyboardHeight + 16 : 16,
+        }}
         onClick={handleBackdropClick}
       >
         <div
           ref={modalRef}
-          className={`relative w-full max-w-md bg-white rounded-2xl shadow-2xl transform transition-all duration-300 ease-out my-auto ${
+          className={`relative w-full max-w-md bg-white rounded-2xl shadow-2xl transform transition-all duration-300 ease-out ${
             isVisible
               ? 'opacity-100 scale-100 translate-y-0'
               : 'opacity-0 scale-95 translate-y-4'
           }`}
           style={{
-            // Ensure modal doesn't get pushed off screen by keyboard
-            maxHeight: 'calc(100vh - 20vh)',
+            marginBottom: keyboardHeight > 0 ? 'auto' : undefined,
           }}
           onClick={(e) => e.stopPropagation()}
         >

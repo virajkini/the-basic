@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt">
+
+    <aapt:attr name="android:drawable">
+        <vector
+            android:width="108dp"
+            android:height="108dp"
+            android:viewportWidth="108"
+            android:viewportHeight="108">
+
+            <!-- Background rounded rectangle with soft purple gradient -->
+            <group android:name="background">
+                <path android:name="rect" android:pathData="M14,14h80v80h-80z">
+                    <aapt:attr name="android:fillColor">
+                        <gradient
+                            android:startX="14"
+                            android:startY="14"
+                            android:endX="94"
+                            android:endY="94"
+                            android:type="linear">
+                            <item android:offset="0" android:color="#FF8b5cf6"/>
+                            <item android:offset="1" android:color="#FF7c3aed"/>
+                        </gradient>
+                    </aapt:attr>
+                </path>
+            </group>
+
+            <!-- Clean cute heart outline -->
+            <group
+                android:name="heart"
+                android:pivotX="54"
+                android:pivotY="54"
+                android:scaleX="0"
+                android:scaleY="0">
+                <path
+                    android:name="heartPath"
+                    android:pathData="M44,47 a6,6,0,0,0,0,8.5 L54,65 l10,-10 a6,6,0,0,0,-8.5,-8.5 L54,48 l-1.8,-1.8 a6,6,0,0,0,-8.5,0 z"
+                    android:strokeWidth="2"
+                    android:strokeColor="#FFFFFF"
+                    android:strokeLineCap="round"
+                    android:strokeLineJoin="round"
+                    android:fillColor="#00000000" />
+            </group>
+        </vector>
+    </aapt:attr>
+
+    <!-- Heart scale animation -->
+    <target android:name="heart">
+        <aapt:attr name="android:animation">
+            <set>
+                <objectAnimator
+                    android:duration="600"
+                    android:interpolator="@android:interpolator/overshoot"
+                    android:propertyName="scaleX"
+                    android:startOffset="200"
+                    android:valueFrom="0"
+                    android:valueTo="1"
+                    android:valueType="floatType" />
+                <objectAnimator
+                    android:duration="600"
+                    android:interpolator="@android:interpolator/overshoot"
+                    android:propertyName="scaleY"
+                    android:startOffset="200"
+                    android:valueFrom="0"
+                    android:valueTo="1"
+                    android:valueType="floatType" />
+            </set>
+        </aapt:attr>
+    </target>
+
+</animated-vector>

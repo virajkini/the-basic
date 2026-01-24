@@ -34,12 +34,18 @@ export default function NotificationBell() {
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Fetch unread count only
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = async (broadcast = false) => {
     try {
       const response = await authFetch(`${API_BASE}/notifications/unread-count`)
       if (response.ok) {
         const data = await response.json()
         setUnreadCount(data.count)
+        // Broadcast to all NotificationBell instances (desktop + mobile)
+        if (broadcast) {
+          window.dispatchEvent(
+            new CustomEvent(NOTIFICATION_UPDATE_EVENT, { detail: { count: data.count } })
+          )
+        }
         return data.count
       }
     } catch (error) {
@@ -82,7 +88,7 @@ export default function NotificationBell() {
   useEffect(() => {
     if (globalCountFetched) return
     globalCountFetched = true
-    fetchUnreadCount()
+    fetchUnreadCount(true) // broadcast to all instances (desktop + mobile)
   }, [])
 
   // Fetch notifications when dropdown opens for the first time
@@ -254,11 +260,11 @@ export default function NotificationBell() {
   }
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative overflow-visible" ref={dropdownRef}>
       {/* Bell Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-myColor-600 hover:bg-myColor-50 rounded-lg transition-colors"
+        className="relative p-2 text-myColor-600 hover:bg-myColor-50 rounded-lg transition-colors overflow-visible"
         aria-label="Notifications"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -267,7 +273,7 @@ export default function NotificationBell() {
 
         {/* Unread Badge */}
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs font-medium rounded-full flex items-center justify-center">
+          <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-xs font-medium rounded-full flex items-center justify-center z-10">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
