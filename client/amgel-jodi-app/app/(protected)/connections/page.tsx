@@ -7,7 +7,7 @@ import ProfileDetailView from '../../../components/ProfileDetailView'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
-type TabType = 'accepted' | 'received' | 'sent'
+type TabType = 'matches' | 'interested' | 'awaiting'
 
 interface Connection {
   _id: string
@@ -22,27 +22,28 @@ interface Connection {
     lastName?: string
     age: number
     nativePlace: string
+    height?: string
+    designation?: string
     images: string[]
   }
 }
 
 export default function ConnectionsPage() {
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<TabType>('accepted')
+  const [activeTab, setActiveTab] = useState<TabType>('matches')
   const [connections, setConnections] = useState<Connection[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [selectedProfile, setSelectedProfile] = useState<{ id: string; images: string[] } | null>(null)
 
-  // Fetch connections based on active tab
   useEffect(() => {
     const fetchConnections = async () => {
       setLoading(true)
       try {
         let url = `${API_BASE}/connections?`
-        if (activeTab === 'received') {
+        if (activeTab === 'interested') {
           url += 'type=received&status=PENDING'
-        } else if (activeTab === 'sent') {
+        } else if (activeTab === 'awaiting') {
           url += 'type=sent&status=PENDING'
         } else {
           url += 'status=ACCEPTED'
@@ -52,11 +53,10 @@ export default function ConnectionsPage() {
         if (response.ok) {
           const data = await response.json()
 
-          // Fetch profiles for each connection
           const connectionsWithProfiles = await Promise.all(
             data.connections.map(async (conn: Connection) => {
-              const otherUserId = activeTab === 'sent' ? conn.toUserId :
-                                  activeTab === 'received' ? conn.fromUserId :
+              const otherUserId = activeTab === 'awaiting' ? conn.toUserId :
+                                  activeTab === 'interested' ? conn.fromUserId :
                                   (conn.fromUserId === user?.userId ? conn.toUserId : conn.fromUserId)
 
               try {
@@ -93,7 +93,6 @@ export default function ConnectionsPage() {
     fetchConnections()
   }, [activeTab, user?.userId])
 
-  // Handle accept request
   const handleAccept = async (connectionId: string) => {
     setActionLoading(connectionId)
     try {
@@ -113,7 +112,6 @@ export default function ConnectionsPage() {
     }
   }
 
-  // Handle reject request
   const handleReject = async (connectionId: string) => {
     setActionLoading(connectionId)
     try {
@@ -133,35 +131,24 @@ export default function ConnectionsPage() {
     }
   }
 
-  const tabs: { id: TabType; label: string; icon: JSX.Element }[] = [
-    {
-      id: 'accepted',
-      label: 'Connected',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ),
-    },
-    {
-      id: 'received',
-      label: 'Requests',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-        </svg>
-      ),
-    },
-    {
-      id: 'sent',
-      label: 'Pending',
-      icon: (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-    },
+  const tabs: { id: TabType; label: string; sublabel: string }[] = [
+    { id: 'matches', label: 'Matches', sublabel: 'Connected' },
+    { id: 'interested', label: 'Interested', sublabel: 'In You' },
+    { id: 'awaiting', label: 'Sent', sublabel: 'Awaiting' },
   ]
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Yesterday'
+    if (diffDays < 7) return `${diffDays} days ago`
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
+    return `${Math.floor(diffDays / 30)} months ago`
+  }
 
   const renderConnectionCard = (connection: Connection) => {
     const profile = connection.profile
@@ -170,21 +157,23 @@ export default function ConnectionsPage() {
     return (
       <div
         key={connection._id}
-        onClick={() => setSelectedProfile({ id: profile._id, images: profile.images })}
-        className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+        className="group bg-white rounded-2xl border border-myColor-100 overflow-hidden hover:shadow-lg hover:shadow-myColor-500/10 hover:border-myColor-200 transition-all duration-200"
       >
-        <div className="flex gap-4 p-4">
+        <div
+          onClick={() => setSelectedProfile({ id: profile._id, images: profile.images })}
+          className="flex gap-4 p-4 cursor-pointer"
+        >
           {/* Profile Image */}
-          <div className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden bg-gray-100">
+          <div className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-gradient-to-br from-myColor-100 to-myColor-200">
             {profile.images?.[0] ? (
               <img
                 src={profile.images[0]}
                 alt={profile.firstName}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-10 h-10 text-myColor-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
               </div>
@@ -192,99 +181,120 @@ export default function ConnectionsPage() {
           </div>
 
           {/* Profile Info */}
-          <div className="flex-1 min-w-0">
-            <div>
-              <h3 className="font-semibold text-gray-900 truncate">
-                {profile.firstName}{profile.lastName ? ` ${profile.lastName}` : ''}, {profile.age}
-              </h3>
-              <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+          <div className="flex-1 min-w-0 py-1">
+            <h3 className="font-semibold text-myColor-900 text-lg">
+              {profile.firstName}{profile.lastName ? ` ${profile.lastName}` : ''}, {profile.age}
+            </h3>
+
+            <div className="flex items-center gap-3 mt-1.5 text-sm text-myColor-500">
+              <span className="flex items-center gap-1">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 </svg>
                 {profile.nativePlace}
+              </span>
+              {profile.height && (
+                <span className="text-myColor-400">•</span>
+              )}
+              {profile.height && (
+                <span>{profile.height.split('(')[0].trim()}</span>
+              )}
+            </div>
+
+            {profile.designation && (
+              <p className="text-sm text-myColor-400 mt-1 truncate">
+                {profile.designation}
               </p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
-              {activeTab === 'received' && (
-                <>
-                  <button
-                    onClick={() => handleReject(connection._id)}
-                    disabled={actionLoading === connection._id}
-                    className="px-3 py-1.5 text-sm text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
-                  >
-                    Decline
-                  </button>
-                  <button
-                    onClick={() => handleAccept(connection._id)}
-                    disabled={actionLoading === connection._id}
-                    className="px-3 py-1.5 text-sm text-white bg-myColor-500 hover:bg-myColor-600 rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1"
-                  >
-                    {actionLoading === connection._id ? (
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                    ) : (
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                    Accept
-                  </button>
-                </>
-              )}
-
-              {activeTab === 'sent' && (
-                <span className="px-3 py-1.5 text-sm text-amber-700 bg-amber-50 rounded-lg flex items-center gap-1.5">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Waiting for response
-                </span>
-              )}
-
-              {activeTab === 'accepted' && (
-                <span className="px-3 py-1.5 text-sm text-green-700 bg-green-50 rounded-lg flex items-center gap-1">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Connected
-                </span>
-              )}
-            </div>
+            )}
           </div>
+
+          {/* Arrow indicator */}
+          <div className="flex items-center">
+            <svg className="w-5 h-5 text-myColor-300 group-hover:text-myColor-500 group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Action Footer */}
+        <div className="px-4 pb-4" onClick={(e) => e.stopPropagation()}>
+          {activeTab === 'interested' && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleReject(connection._id)}
+                disabled={actionLoading === connection._id}
+                className="flex-1 py-2.5 text-sm font-medium text-myColor-600 bg-myColor-50 hover:bg-myColor-100 rounded-xl transition-colors disabled:opacity-50"
+              >
+                Not Interested
+              </button>
+              <button
+                onClick={() => handleAccept(connection._id)}
+                disabled={actionLoading === connection._id}
+                className="flex-1 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-myColor-500 to-myColor-600 hover:from-myColor-600 hover:to-myColor-700 rounded-xl shadow-md shadow-myColor-500/20 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5"
+              >
+                {actionLoading === connection._id ? (
+                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
+                )}
+                Accept
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'awaiting' && (
+            <div className="flex items-center justify-between py-2 px-3 bg-amber-50 rounded-xl">
+              <span className="text-sm text-amber-700 font-medium">Awaiting their response</span>
+              <span className="text-xs text-amber-500">{formatTimeAgo(connection.createdAt)}</span>
+            </div>
+          )}
+
+          {activeTab === 'matches' && (
+            <div className="flex items-center justify-between py-2 px-3 bg-green-50 rounded-xl">
+              <span className="text-sm text-green-700 font-medium flex items-center gap-1.5">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                You're connected!
+              </span>
+              <span className="text-xs text-green-500">{formatTimeAgo(connection.updatedAt)}</span>
+            </div>
+          )}
         </div>
       </div>
     )
   }
 
   const renderEmptyState = () => {
-    const messages = {
-      received: {
-        title: 'No new requests',
-        subtitle: 'When someone wants to connect with you, their request will show up here',
+    const states = {
+      interested: {
+        title: 'No requests yet',
+        subtitle: 'When someone shows interest in your profile, they\'ll appear here. Keep your profile updated to attract more interest!',
         icon: (
-          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          <svg className="w-12 h-12 text-myColor-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
         ),
       },
-      sent: {
+      awaiting: {
         title: 'No pending requests',
-        subtitle: 'Requests you send will appear here while waiting for the other person to accept',
+        subtitle: 'When you express interest in someone, they\'ll show here until they respond. Browse profiles to find your match!',
         icon: (
-          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-12 h-12 text-myColor-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         ),
       },
-      accepted: {
-        title: 'No connections yet',
-        subtitle: 'When you and another person both accept each other, you\'ll be connected and appear here',
+      matches: {
+        title: 'No matches yet',
+        subtitle: 'When both you and someone else express mutual interest, you\'ll be matched and appear here. Start exploring profiles!',
         icon: (
-          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-12 h-12 text-myColor-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
         ),
@@ -292,90 +302,81 @@ export default function ConnectionsPage() {
     }
 
     return (
-      <div className="text-center py-12">
-        <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-          {messages[activeTab].icon}
+      <div className="text-center py-16 px-4">
+        <div className="w-24 h-24 mx-auto mb-6 bg-myColor-50 rounded-full flex items-center justify-center">
+          {states[activeTab].icon}
         </div>
-        <h3 className="font-medium text-gray-900 mb-1">{messages[activeTab].title}</h3>
-        <p className="text-sm text-gray-500 max-w-xs mx-auto">{messages[activeTab].subtitle}</p>
+        <h3 className="text-xl font-display font-semibold text-myColor-900 mb-2">
+          {states[activeTab].title}
+        </h3>
+        <p className="text-myColor-500 max-w-sm mx-auto leading-relaxed">
+          {states[activeTab].subtitle}
+        </p>
       </div>
     )
   }
 
+  const renderSkeleton = () => (
+    <div className="space-y-4">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="bg-white rounded-2xl border border-myColor-100 p-4 animate-pulse">
+          <div className="flex gap-4">
+            <div className="w-24 h-24 bg-myColor-100 rounded-xl" />
+            <div className="flex-1 py-1">
+              <div className="h-5 bg-myColor-100 rounded-lg w-36 mb-3" />
+              <div className="h-4 bg-myColor-100 rounded w-28 mb-2" />
+              <div className="h-4 bg-myColor-100 rounded w-20" />
+            </div>
+          </div>
+          <div className="h-10 bg-myColor-100 rounded-xl mt-4" />
+        </div>
+      ))}
+    </div>
+  )
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-4 md:py-6">
-        {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Connections</h1>
-          <p className="text-gray-500 mt-1">Your matches and connection requests</p>
+    <div className="min-h-full">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-white border-b border-myColor-100">
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <h1 className="text-2xl font-display font-semibold text-myColor-900">
+            Connections
+          </h1>
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-1.5 mb-4">
-          <div className="flex gap-1">
+        <div className="max-w-2xl mx-auto px-4 pb-3">
+          <div className="flex gap-2">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2.5 sm:py-3 px-2 sm:px-4 text-xs sm:text-sm font-medium rounded-lg transition-all ${
+                className={`flex-1 py-3 px-4 text-center rounded-xl font-medium transition-all duration-200 ${
                   activeTab === tab.id
-                    ? 'text-myColor-700 bg-myColor-100 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    ? 'bg-myColor-600 text-white shadow-lg shadow-myColor-500/25'
+                    : 'bg-myColor-50 text-myColor-600 hover:bg-myColor-100'
                 }`}
               >
-                {tab.icon}
-                <span>{tab.label}</span>
+                <span className="block text-sm">{tab.label}</span>
+                <span className={`block text-xs mt-0.5 ${activeTab === tab.id ? 'text-myColor-200' : 'text-myColor-400'}`}>
+                  {tab.sublabel}
+                </span>
               </button>
             ))}
           </div>
         </div>
+      </div>
 
-        {/* Tab Info Banner */}
-        {activeTab === 'sent' && connections.length > 0 && (
-          <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl">
-            <p className="text-sm text-amber-800 flex items-start gap-2">
-              <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>These requests are waiting for the other person to accept. Once they accept, you'll both be connected.</span>
-            </p>
-          </div>
+      {/* Content */}
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        {/* Count Badge */}
+        {!loading && connections.length > 0 && (
+          <p className="text-sm text-myColor-500 mb-4">
+            {connections.length} {connections.length === 1 ? 'profile' : 'profiles'}
+          </p>
         )}
 
-        {activeTab === 'received' && connections.length > 0 && (
-          <div className="mb-4 px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl">
-            <p className="text-sm text-blue-800 flex items-start gap-2">
-              <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>These people want to connect with you. Accept to become connected and see their full profile.</span>
-            </p>
-          </div>
-        )}
-
-        {/* Content */}
-        {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 animate-pulse"
-              >
-                <div className="flex gap-4">
-                  <div className="w-20 h-20 bg-gray-200 rounded-xl" />
-                  <div className="flex-1">
-                    <div className="h-5 bg-gray-200 rounded w-32 mb-2" />
-                    <div className="h-4 bg-gray-200 rounded w-24 mb-3" />
-                    <div className="h-8 bg-gray-200 rounded w-24" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : connections.length === 0 ? (
-          renderEmptyState()
-        ) : (
+        {loading ? renderSkeleton() : connections.length === 0 ? renderEmptyState() : (
           <div className="space-y-4">
             {connections.map(renderConnectionCard)}
           </div>

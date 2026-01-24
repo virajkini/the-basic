@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
-import { DM_Sans, Inter } from 'next/font/google'
+import { DM_Sans, Cormorant_Garamond } from 'next/font/google'
 import './globals.css'
 
-// Clean modern font for headings
+// Refined sans-serif for body text
 const dmSans = DM_Sans({
   subsets: ['latin'],
   variable: '--font-dm-sans',
@@ -10,11 +10,12 @@ const dmSans = DM_Sans({
   weight: ['400', '500', '600', '700'],
 })
 
-// Clean sans-serif for body text
-const inter = Inter({
+// Elegant serif for headings - distinctive and memorable
+const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-cormorant',
   display: 'swap',
+  weight: ['400', '500', '600', '700'],
 })
 
 import type { Viewport } from 'next'
@@ -43,7 +44,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${inter.variable}`}>
+    <html lang="en" className={`${dmSans.variable} ${cormorant.variable}`}>
       <body className="font-sans antialiased">{children}</body>
     </html>
   )
