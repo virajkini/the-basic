@@ -157,7 +157,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="container mx-auto px-4 py-4 md:py-6">
+      <div className="min-h-full container mx-auto px-4 py-4 md:py-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <div className="h-8 w-40 bg-gray-200 rounded-lg animate-pulse" />
@@ -187,8 +187,8 @@ export default function Dashboard() {
   // No profile - Show Create Profile
   if (!profile) {
     return (
-      <div className="container mx-auto px-4 py-8 md:py-12">
-        <div className="max-w-4xl mx-auto">
+      <div className="min-h-full flex items-center justify-center container mx-auto px-4 py-8 md:py-12">
+        <div className="max-w-4xl mx-auto w-full">
           {/* Welcome Card */}
           <div className="glass-card rounded-2xl p-8 md:p-12 text-center animate-fade-in-up">
             {/* Icon */}
@@ -246,7 +246,7 @@ export default function Dashboard() {
 
   // Has profile - Show Discover Profiles
   return (
-    <div className="container mx-auto px-4 py-4 md:py-6">
+    <div className="min-h-full container mx-auto px-4 py-4 md:py-6">
       <div className="max-w-6xl mx-auto">
         {/* Error Message */}
         {error && (
