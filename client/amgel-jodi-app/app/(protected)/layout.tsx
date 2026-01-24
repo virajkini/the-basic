@@ -45,17 +45,17 @@ export default async function ProtectedLayout({
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="h-screen flex flex-col overflow-hidden">
       <Header />
 
-      {/* Main Content */}
-      <main>
+      {/* Main Content - scrollable area */}
+      <main className="flex-1 overflow-y-auto">
         <AuthProvider user={user.user}>
           {children}
         </AuthProvider>
       </main>
 
-      {/* Bottom Navigation - Mobile Only */}
+      {/* Bottom Navigation - stays at viewport bottom */}
       <BottomNav />
     </div>
   )

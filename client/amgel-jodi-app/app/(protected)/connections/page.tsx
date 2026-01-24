@@ -309,7 +309,7 @@ export default function ConnectionsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-4 md:py-6 pb-20 md:pb-6">
+      <div className="container mx-auto px-4 py-4 md:py-6">
         {/* Page Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Connections</h1>

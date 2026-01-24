@@ -2,14 +2,25 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
 
 export default function BottomNav() {
   const pathname = usePathname()
+  const [isAndroidApp, setIsAndroidApp] = useState(false)
 
   const isActive = (path: string) => pathname === path
 
+  // Detect if running in Android WebView
+  useEffect(() => {
+    const isAndroid = typeof window !== 'undefined' && (
+      (window as unknown as { isAndroidApp?: boolean }).isAndroidApp ||
+      navigator.userAgent.includes('AmgelJodiApp')
+    )
+    setIsAndroidApp(isAndroid)
+  }, [])
+
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm border-t border-gray-200 z-40 safe-area-bottom shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
+    <nav className="md:hidden bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">
       <div className="flex items-center justify-around h-16">
         {/* Discover Tab */}
         <Link
@@ -67,6 +78,10 @@ export default function BottomNav() {
           </span>
         </Link>
       </div>
+      {/* Safe area padding for Android navigation bar */}
+      {isAndroidApp && <div className="h-12" />}
+      {/* iOS safe area */}
+      <div className="pb-[env(safe-area-inset-bottom)]" />
     </nav>
   )
 }

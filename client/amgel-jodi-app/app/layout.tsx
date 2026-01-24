@@ -17,6 +17,15 @@ const inter = Inter({
   display: 'swap',
 })
 
+import type { Viewport } from 'next'
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#8b5cf6',
+}
+
 export const metadata: Metadata = {
   title: 'Amgel Jodi - Dashboard',
   description: 'Your matrimony dashboard',
