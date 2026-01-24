@@ -198,7 +198,7 @@ export default function Dashboard() {
               </svg>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-heading font-bold text-myColor-900 mb-3">
+            <h1 className="text-2xl md:text-3xl font-display font-bold text-myColor-900 mb-3">
               Let's Get You Started!
             </h1>
             <p className="text-sm text-myColor-500 mb-8">
@@ -242,6 +242,8 @@ export default function Dashboard() {
     )
   }
 
+  const activeFilterCount = (filters.name ? 1 : 0) + ((filters.ageMin || filters.ageMax) ? 1 : 0)
+
   // Has profile - Show Discover Profiles
   return (
     <div className="container mx-auto px-4 py-4 md:py-6">
@@ -273,10 +275,10 @@ export default function Dashboard() {
 
         {/* Discover Profiles Section */}
         <div className="animate-fade-in-up delay-100">
-          {/* Header Row - stacks on mobile, inline on desktop */}
+          {/* Header Row */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-heading font-bold text-myColor-900">
+              <h2 className="text-2xl md:text-3xl font-display font-bold text-myColor-900">
                 Discover Profiles
               </h2>
               <span className="text-sm text-myColor-500 md:hidden">
@@ -284,72 +286,64 @@ export default function Dashboard() {
               </span>
             </div>
 
-            {/* Sort, Filter & Layout Bar */}
-            <div className="flex items-center bg-gray-50 rounded-xl border border-gray-100 md:bg-transparent md:border-0 md:gap-2">
+            {/* Sort, Filter & Layout Bar - New refined design */}
+            <div className="flex items-center gap-2">
               {/* Sort Button */}
               <button
                 onClick={() => setShowSortSheet(true)}
-                className={`flex-1 md:flex-none flex items-center justify-center gap-2 py-3 px-4 md:py-2 md:px-3 md:bg-gray-50 md:hover:bg-gray-100 md:rounded-lg transition-colors ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full font-medium text-sm transition-all duration-200 ${
                   sortBy !== 'recent'
-                    ? 'text-myColor-700'
-                    : 'text-gray-600'
+                    ? 'bg-myColor-600 text-white shadow-lg shadow-myColor-500/20'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                 }`}
               >
-                <svg className="w-5 h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
                 </svg>
-                <span className="font-medium text-sm">Sort</span>
+                <span>Sort</span>
               </button>
 
-              {/* Divider - mobile only */}
-              <div className="w-px h-8 bg-gray-200 md:hidden" />
-
               {/* Filter Button */}
-              {(() => {
-                const activeFilterCount = (filters.name ? 1 : 0) + ((filters.ageMin || filters.ageMax) ? 1 : 0)
-                return (
-                  <button
-                    onClick={() => setShowFilterSheet(true)}
-                    className={`flex-1 md:flex-none flex items-center justify-center gap-2 py-3 px-4 md:py-2 md:px-3 md:bg-gray-50 md:hover:bg-gray-100 md:rounded-lg transition-colors relative ${
-                      activeFilterCount > 0
-                        ? 'text-myColor-700'
-                        : 'text-gray-600'
-                    }`}
-                  >
-                    <div className="relative">
-                      <svg className="w-5 h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                      </svg>
-                      {activeFilterCount > 0 && (
-                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 md:w-3.5 md:h-3.5 bg-red-500 text-white text-[10px] md:text-[9px] font-bold rounded-full flex items-center justify-center">
-                          {activeFilterCount}
-                        </span>
-                      )}
-                    </div>
-                    <span className="font-medium text-sm">Filter</span>
-                  </button>
-                )
-              })()}
+              <button
+                onClick={() => setShowFilterSheet(true)}
+                className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full font-medium text-sm transition-all duration-200 ${
+                  activeFilterCount > 0
+                    ? 'bg-myColor-600 text-white shadow-lg shadow-myColor-500/20'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                }`}
+              >
+                <div className="relative">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                  </svg>
+                  {activeFilterCount > 0 && (
+                    <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                      {activeFilterCount}
+                    </span>
+                  )}
+                </div>
+                <span>Filter</span>
+              </button>
 
-              {/* Divider - mobile only */}
-              <div className="w-px h-8 bg-gray-200 md:hidden" />
+              {/* Divider */}
+              <div className="w-px h-6 bg-gray-200" />
 
-              {/* Layout Toggle Button */}
+              {/* Layout Toggle */}
               <button
                 onClick={toggleLayout}
-                className={`flex items-center justify-center gap-2 py-3 px-4 md:py-2 md:px-3 md:bg-gray-50 md:hover:bg-gray-100 md:rounded-lg transition-colors ${
+                className={`p-2.5 rounded-full transition-all duration-200 ${
                   layout === 'compact'
-                    ? 'text-myColor-700'
-                    : 'text-gray-600'
+                    ? 'bg-myColor-600 text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                 }`}
-                title={layout === 'default' ? 'Switch to compact view' : 'Switch to default view'}
+                title={layout === 'default' ? 'Compact view' : 'Default view'}
               >
                 {layout === 'default' ? (
-                  <svg className="w-5 h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
                   </svg>
                 ) : (
-                  <svg className="w-5 h-5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                   </svg>
                 )}

@@ -7,8 +7,9 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
-        heading: ['var(--font-dm-sans)', 'system-ui', 'sans-serif'],
+        sans: ['var(--font-dm-sans)', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-cormorant)', 'Georgia', 'serif'],
+        display: ['var(--font-cormorant)', 'Georgia', 'serif'],
       },
       colors: {
         "myColor": {

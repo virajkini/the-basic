@@ -166,6 +166,15 @@
   .gradient-text {
     @apply bg-gradient-to-r from-myColor-600 via-myColor-500 to-myColor-700 bg-clip-text text-transparent;
   }
+
+  /* Hide scrollbar utility */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Custom scrollbar */
