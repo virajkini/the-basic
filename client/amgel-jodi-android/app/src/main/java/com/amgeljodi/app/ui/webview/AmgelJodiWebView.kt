@@ -166,6 +166,9 @@ fun AmgelJodiWebView(
                         state.canGoBack = view?.canGoBack() == true
                         url?.let { onPageFinished?.invoke(it) }
 
+                        // Flush cookies to disk to ensure persistence across app restarts
+                        CookieManager.getInstance().flush()
+
                         // Inject native availability check and fix viewport for proper scroll
                         view?.evaluateJavascript(
                             """

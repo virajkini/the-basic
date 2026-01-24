@@ -3,6 +3,7 @@ package com.amgeljodi.app
 import android.content.Intent
 import android.os.Bundle
 import android.view.WindowManager
+import android.webkit.CookieManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -83,6 +84,12 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleIntent(intent)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Flush cookies to disk when app goes to background
+        CookieManager.getInstance().flush()
     }
 
     /**

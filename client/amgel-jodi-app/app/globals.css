@@ -8,7 +8,7 @@
   }
 
   body {
-    @apply bg-gradient-to-b from-myColor-50 to-white min-h-screen;
+    @apply bg-gradient-to-b from-myColor-50 to-white;
   }
 
   body.modal-open {
@@ -20,6 +20,11 @@
 }
 
 @layer utilities {
+  /* Dynamic viewport height for mobile browsers */
+  .h-dvh {
+    height: 100dvh;
+  }
+
   /* Fade animations */
   @keyframes fadeIn {
     from { opacity: 0; }

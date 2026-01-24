@@ -25,7 +25,7 @@ android {
             isMinifyEnabled = false
             isDebuggable = true
             buildConfigField("String", "BASE_URL", "\"https://app.amgeljodi.com/dashboard\"")
-            buildConfigField("String", "DEBUG_URL", "\"http://10.0.2.2:3000/dashboard\"")
+            buildConfigField("String", "DEBUG_URL", "\"http://localhost:3002/dashboard\"")
             buildConfigField("Boolean", "ALLOW_URL_TOGGLE", "true")
         }
         release {

@@ -72,10 +72,6 @@ export default function Dashboard() {
     localStorage.setItem(LAYOUT_STORAGE_KEY, newLayout)
   }
 
-  // Scroll to top on mount
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [])
 
   useEffect(() => {
     if (user?.userId && !hasFetched.current) {
