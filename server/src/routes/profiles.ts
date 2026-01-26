@@ -6,6 +6,7 @@ import { verifyUserOwnership, verifyUserIdMatch } from '../middleware/verifyOwne
 import { getOtherUserProfileImages } from '../services/fileManager.js';
 import { generateAccessToken, getAccessTokenCookieOptions } from './auth.js';
 import { getConnectionBetweenUsers } from '../services/connectionManager.js';
+import { findUserById } from '../services/userManager.js';
 
 const router = express.Router();
 
@@ -139,12 +140,19 @@ router.get('/view/:userId',
         return res.status(404).json({ error: 'Profile not found' });
       }
 
-      // Check if users are connected (to show lastName)
+      // Check if users are connected (to show lastName and contact details)
       // Own profile always shows full details
       let isConnected = isOwnProfile;
       if (!isOwnProfile) {
         const connection = await getConnectionBetweenUsers(viewerUserId, targetUserId);
         isConnected = connection?.status === 'ACCEPTED';
+      }
+
+      // Get phone number if connected
+      let phone: string | null = null;
+      if (isConnected) {
+        const user = await findUserById(targetUserId);
+        phone = user?.phone || null;
       }
 
       // Get images (blurred for unverified, compressed for verified)
@@ -159,13 +167,14 @@ router.get('/view/:userId',
                         profile.workingStatus === 'self-employed';
 
       // Show full profile data for all users (images are blurred for unverified)
-      // Only show lastName when connection is accepted
+      // Only show lastName and phone when connection is accepted
       res.status(200).json({
         success: true,
         profile: {
           _id: profile._id,
           firstName: profile.firstName,
           lastName: isConnected ? profile.lastName : null, // Show only when connected
+          phone: isConnected ? phone : null, // Show only when connected
           dob: profile.dob,
           age,
           nativePlace: profile.nativePlace,

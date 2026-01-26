@@ -9,6 +9,7 @@ import fileRoutes from './routes/files.js';
 import connectionRoutes from './routes/connections.js';
 import notificationRoutes from './routes/notifications.js';
 import adminRoutes from './routes/admin.js';
+import contactRoutes from './routes/contact.js';
 import { authenticateToken } from './middleware/auth.js';
 
 const app = express();
@@ -105,10 +106,18 @@ app.use('/api/notifications', notificationRoutes);
 // Admin routes (protected by authenticateToken and requireAdmin middleware)
 app.use('/api/admin', adminRoutes);
 
-// Apply authentication middleware to all other API routes (excluding /api/auth and /health)
+// Contact routes (POST is public with rate limiting, admin routes are protected)
+app.use('/api/contact', contactRoutes);
+
+// Apply authentication middleware to all other API routes (excluding /api/auth, /api/contact POST, and /health)
 app.use((req, res, next) => {
   // Skip authentication for auth routes and health check
   if (req.path.startsWith('/api/auth') || req.path === '/health') {
+    return next();
+  }
+  // Skip authentication for public contact form submission (POST /api/contact)
+  // Admin contact routes (/api/contact/admin/*) have their own auth middleware
+  if (req.path === '/api/contact' && req.method === 'POST') {
     return next();
   }
   // Apply authentication for all other /api routes
