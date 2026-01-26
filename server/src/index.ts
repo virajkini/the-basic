@@ -3,6 +3,8 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.js';
+import otpRoutes from './routes/otp.js';
+import contactRoutes from './routes/contact.js';
 import userRoutes from './routes/users.js';
 import profileRoutes from './routes/profiles.js';
 import fileRoutes from './routes/files.js';
@@ -18,12 +20,12 @@ const PORT = process.env.PORT || 3001;
 app.use((req, res, next) => {
   res.setHeader('X-Debug-Origin', process.env.CLIENT_URL || 'NOT_SET');
   res.setHeader('X-Debug-Allowed-Origins', normalizedOrigins.join(', '));
-  
+
   // Log CORS-related requests for debugging
   if (req.method === 'OPTIONS' || req.headers.origin) {
     console.log(`[CORS] ${req.method} ${req.path} - Origin: ${req.headers.origin || 'none'}`);
   }
-  
+
   next();
 });
 
@@ -46,10 +48,10 @@ app.use(cors({
     if (!origin) {
       return callback(null, true);
     }
-    
+
     // Normalize the incoming origin (remove trailing slash)
     const normalizedOrigin = origin.replace(/\/$/, '');
-    
+
     // Check if the origin is in the allowed list
     if (normalizedOrigins.includes(normalizedOrigin) || allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -62,8 +64,8 @@ app.use(cors({
   credentials: true, // Required for cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
+    'Content-Type',
+    'Authorization',
     'X-Requested-With',
     'Accept',
     'Origin',
@@ -87,6 +89,12 @@ app.get('/health', (req, res) => {
 // Auth routes (no authentication required)
 app.use('/api/auth', authRoutes);
 
+// OTP routes (no authentication required)
+app.use('/api/otp', otpRoutes);
+
+// Contact routes (POST is public with rate limiting, admin routes are protected)
+app.use('/api/contact', contactRoutes);
+
 // User routes
 app.use('/api/users', userRoutes);
 
@@ -105,10 +113,15 @@ app.use('/api/notifications', notificationRoutes);
 // Admin routes (protected by authenticateToken and requireAdmin middleware)
 app.use('/api/admin', adminRoutes);
 
-// Apply authentication middleware to all other API routes (excluding /api/auth and /health)
+// Apply authentication middleware to all other API routes (excluding /api/auth, /api/otp, /api/contact POST, and /health)
 app.use((req, res, next) => {
-  // Skip authentication for auth routes and health check
-  if (req.path.startsWith('/api/auth') || req.path === '/health') {
+  // Skip authentication for auth, otp routes and health check
+  if (req.path.startsWith('/api/auth') || req.path.startsWith('/api/otp') || req.path === '/health') {
+    return next();
+  }
+  // Skip authentication for public contact form submission (POST /api/contact)
+  // Admin contact routes (/api/contact/admin/*) have their own auth middleware
+  if (req.path === '/api/contact' && req.method === 'POST') {
     return next();
   }
   // Apply authentication for all other /api routes
@@ -125,4 +138,3 @@ const server = app.listen(PORT, () => {
 // Enable HTTP keep-alive for better connection reuse
 server.keepAliveTimeout = 65000; // 65 seconds
 server.headersTimeout = 66000; // 66 seconds (must be > keepAliveTimeout)
-
