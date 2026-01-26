@@ -7,6 +7,9 @@ const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN || 'static.amgeljodi.com
 const CLOUDFRONT_KEY_PAIR_ID = 'K16SCVGULKTB9O';
 const CLOUDFRONT_PRIVATE_KEY = (process.env.CLOUD_FRONT_KEY || '').replace(/\\n/g, '\n');
 
+// Signed URL expiry time (30 minutes)
+const SIGNED_URL_EXPIRY_MS = 30 * 10 * 1000;
+
 // Initialize S3 client
 const s3ClientConfig: {
   region: string;
@@ -167,7 +170,7 @@ export async function getUserProfileImages(userId: string): Promise<Array<{
           url: cloudFrontUrl,
           keyPairId: CLOUDFRONT_KEY_PAIR_ID,
           privateKey: CLOUDFRONT_PRIVATE_KEY,
-          dateLessThan: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
+          dateLessThan: new Date(Date.now() + SIGNED_URL_EXPIRY_MS).toISOString(),
         });
 
         return {
@@ -238,7 +241,7 @@ export async function getOtherUserProfileImages(
             url: cloudFrontUrl,
             keyPairId: CLOUDFRONT_KEY_PAIR_ID,
             privateKey: CLOUDFRONT_PRIVATE_KEY,
-            dateLessThan: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+            dateLessThan: new Date(Date.now() + SIGNED_URL_EXPIRY_MS).toISOString(),
           });
 
           return {
@@ -256,7 +259,7 @@ export async function getOtherUserProfileImages(
           url: cloudFrontUrl,
           keyPairId: CLOUDFRONT_KEY_PAIR_ID,
           privateKey: CLOUDFRONT_PRIVATE_KEY,
-          dateLessThan: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          dateLessThan: new Date(Date.now() + SIGNED_URL_EXPIRY_MS).toISOString(),
         });
 
         return {

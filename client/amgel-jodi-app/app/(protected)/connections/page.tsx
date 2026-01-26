@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import { authFetch } from '../../utils/authFetch'
 import ProfileDetailView from '../../../components/ProfileDetailView'
@@ -30,11 +31,30 @@ interface Connection {
 
 export default function ConnectionsPage() {
   const { user } = useAuth()
-  const [activeTab, setActiveTab] = useState<TabType>('matches')
+  const searchParams = useSearchParams()
+
+  // Initialize tab from URL param or default to 'matches'
+  const getInitialTab = (): TabType => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam === 'matches' || tabParam === 'interested' || tabParam === 'awaiting') {
+      return tabParam
+    }
+    return 'matches'
+  }
+
+  const [activeTab, setActiveTab] = useState<TabType>(getInitialTab)
   const [connections, setConnections] = useState<Connection[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [selectedProfile, setSelectedProfile] = useState<{ id: string; images: string[] } | null>(null)
+
+  // Update tab when URL param changes
+  useEffect(() => {
+    const tabParam = searchParams.get('tab')
+    if (tabParam === 'matches' || tabParam === 'interested' || tabParam === 'awaiting') {
+      setActiveTab(tabParam)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const fetchConnections = async () => {
@@ -131,10 +151,10 @@ export default function ConnectionsPage() {
     }
   }
 
-  const tabs: { id: TabType; label: string; sublabel: string }[] = [
-    { id: 'matches', label: 'Matches', sublabel: 'Connected' },
-    { id: 'interested', label: 'Interested', sublabel: 'In You' },
-    { id: 'awaiting', label: 'Sent', sublabel: 'Awaiting' },
+  const tabs: { id: TabType; label: string }[] = [
+    { id: 'matches', label: 'Matches' },
+    { id: 'interested', label: 'Interested' },
+    { id: 'awaiting', label: 'Sent' },
   ]
 
   const formatTimeAgo = (dateString: string) => {
@@ -145,9 +165,11 @@ export default function ConnectionsPage() {
 
     if (diffDays === 0) return 'Today'
     if (diffDays === 1) return 'Yesterday'
-    if (diffDays < 7) return `${diffDays} days ago`
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`
-    return `${Math.floor(diffDays / 30)} months ago`
+    if (diffDays < 7) return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`
+    const weeks = Math.floor(diffDays / 7)
+    if (diffDays < 30) return `${weeks} week${weeks === 1 ? '' : 's'} ago`
+    const months = Math.floor(diffDays / 30)
+    return `${months} month${months === 1 ? '' : 's'} ago`
   }
 
   const renderConnectionCard = (connection: Connection) => {
@@ -164,20 +186,23 @@ export default function ConnectionsPage() {
           className="flex gap-4 p-4 cursor-pointer"
         >
           {/* Profile Image */}
-          <div className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-gradient-to-br from-myColor-100 to-myColor-200">
-            {profile.images?.[0] ? (
+          <div className="flex-shrink-0 w-24 h-24 rounded-xl overflow-hidden bg-gradient-to-br from-myColor-100 to-myColor-200 relative">
+            {profile.images?.[0] && (
               <img
                 src={profile.images[0]}
                 alt={profile.firstName}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                }}
               />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <svg className="w-10 h-10 text-myColor-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-              </div>
             )}
+            {/* Fallback placeholder - always rendered behind image */}
+            <div className="absolute inset-0 flex items-center justify-center -z-10">
+              <svg className="w-10 h-10 text-myColor-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
           </div>
 
           {/* Profile Info */}
@@ -357,10 +382,7 @@ export default function ConnectionsPage() {
                     : 'bg-myColor-50 text-myColor-600 hover:bg-myColor-100'
                 }`}
               >
-                <span className="block text-sm">{tab.label}</span>
-                <span className={`block text-xs mt-0.5 ${activeTab === tab.id ? 'text-myColor-200' : 'text-myColor-400'}`}>
-                  {tab.sublabel}
-                </span>
+                {tab.label}
               </button>
             ))}
           </div>

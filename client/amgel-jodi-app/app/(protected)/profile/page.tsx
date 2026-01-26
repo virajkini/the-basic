@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import imageCompression from 'browser-image-compression'
 import { useAuth } from '../../context/AuthContext'
 import Dropdown from '../../components/Dropdown'
+import DatePicker from '../../components/DatePicker'
+import ProfileDetailView from '../../../components/ProfileDetailView'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
@@ -128,6 +130,7 @@ export default function ProfilePage() {
   const [dragActive, setDragActive] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const hasFetched = useRef(false)
 
@@ -529,19 +532,36 @@ export default function ProfilePage() {
                 {STEPS[currentStep].title}
               </h1>
             </div>
-            <div className="flex items-center gap-1.5">
-              {STEPS.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    idx < currentStep
-                      ? 'bg-green-500'
-                      : idx === currentStep
-                      ? 'bg-myColor-500 w-6'
-                      : 'bg-myColor-200'
-                  }`}
-                />
-              ))}
+            <div className="flex items-center gap-3">
+              {/* Preview Button - Only show if profile exists */}
+              {existingProfile && (
+                <button
+                  type="button"
+                  onClick={() => setShowPreview(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-myColor-600 hover:text-myColor-800 hover:bg-myColor-50 rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  <span className="hidden sm:inline">Preview</span>
+                </button>
+              )}
+              {/* Step Indicators */}
+              <div className="flex items-center gap-1.5">
+                {STEPS.map((_, idx) => (
+                  <div
+                    key={idx}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      idx < currentStep
+                        ? 'bg-green-500'
+                        : idx === currentStep
+                        ? 'bg-myColor-500 w-6'
+                        : 'bg-myColor-200'
+                    }`}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -641,15 +661,13 @@ export default function ProfilePage() {
                   <label htmlFor="dob" className="block text-sm font-medium text-myColor-800 mb-2">
                     Date of Birth
                   </label>
-                  <input
+                  <DatePicker
                     id="dob"
-                    type="date"
                     value={formData.dob}
-                    onChange={(e) => updateFormData('dob', e.target.value)}
-                    max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
-                    className={`w-full px-4 py-3.5 bg-white border rounded-xl transition-all text-myColor-900 ${
-                      fieldErrors.dob ? 'border-red-300' : 'border-myColor-200 focus:border-myColor-500'
-                    }`}
+                    onChange={(value) => updateFormData('dob', value)}
+                    maxDate={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]}
+                    placeholder="Select date"
+                    error={!!fieldErrors.dob}
                   />
                   {fieldErrors.dob && (
                     <p className="mt-1.5 text-sm text-red-500">{fieldErrors.dob}</p>
@@ -709,6 +727,7 @@ export default function ProfilePage() {
                   </label>
                   <Dropdown
                     id="height"
+                    label="Select Height"
                     options={HEIGHT_OPTIONS.map((h) => ({ value: h, label: h }))}
                     value={formData.height}
                     onChange={(value) => updateFormData('height', value)}
@@ -786,6 +805,7 @@ export default function ProfilePage() {
                         </label>
                         <Dropdown
                           id="gothra"
+                          label="Select Gothra"
                           options={GOTHRA_OPTIONS.map((g) => ({ value: g, label: g }))}
                           value={formData.gothra}
                           onChange={(value) => updateFormData('gothra', value)}
@@ -799,6 +819,7 @@ export default function ProfilePage() {
                         </label>
                         <Dropdown
                           id="nakshatra"
+                          label="Select Nakshatra"
                           options={NAKSHATRA_OPTIONS.map((n) => ({ value: n, label: n }))}
                           value={formData.nakshatra}
                           onChange={(value) => updateFormData('nakshatra', value)}
@@ -829,8 +850,22 @@ export default function ProfilePage() {
                   <div className="grid grid-cols-3 gap-3">
                     {existingImages.map((img, index) => (
                       <div key={img.key} className="relative aspect-square group">
-                        <div className="w-full h-full rounded-2xl overflow-hidden bg-myColor-100">
-                          <img src={img.url} alt={`Photo ${index + 1}`} className="w-full h-full object-cover" />
+                        <div className="w-full h-full rounded-2xl overflow-hidden bg-myColor-100 relative">
+                          <img
+                            src={img.url}
+                            alt={`Photo ${index + 1}`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                          {/* Fallback placeholder */}
+                          <div className="absolute inset-0 flex flex-col items-center justify-center text-myColor-400 -z-10">
+                            <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span className="text-xs">Refresh</span>
+                          </div>
                         </div>
                         <button
                           type="button"
@@ -1014,6 +1049,7 @@ export default function ProfilePage() {
                       </label>
                       <Dropdown
                         id="salaryRange"
+                        label="Select Income Range"
                         options={[
                           { value: '<5L', label: '< 5 Lakhs' },
                           { value: '5-15L', label: '5-15 Lakhs' },
@@ -1173,6 +1209,16 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Profile Preview Modal */}
+      {showPreview && existingProfile && (
+        <ProfileDetailView
+          profileId={existingProfile._id}
+          images={existingImages.map(img => img.url)}
+          onClose={() => setShowPreview(false)}
+          isOwnProfile
+        />
+      )}
     </div>
   )
 }

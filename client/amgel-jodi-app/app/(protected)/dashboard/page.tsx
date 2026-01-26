@@ -265,11 +265,16 @@ export default function Dashboard() {
 
         {/* Verification Warning - Compact */}
         {!profile.verified && (
-          <div className="mb-4 flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-sm">
-            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span>Profile pending verification</span>
+          <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl">
+            <div className="flex items-center gap-2 text-amber-800">
+              <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span className="text-sm font-medium">Profile pending verification</span>
+            </div>
+            <p className="text-xs text-amber-600 mt-1.5 ml-7">
+              We'll call you within 24 hours. Photos appear blurred until verified.
+            </p>
           </div>
         )}
 
@@ -431,6 +436,7 @@ const ProfileCard = memo(function ProfileCard({
   const [activeIndex, setActiveIndex] = useState(0)
   const [isInView, setIsInView] = useState(priority) // Priority cards are "in view" immediately
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set([0]))
+  const [failedImages, setFailedImages] = useState<Set<number>>(new Set())
 
   const handleSelect = useCallback(() => {
     onSelect(profile)
@@ -491,8 +497,12 @@ const ProfileCard = memo(function ProfileCard({
     setLoadedImages(prev => new Set(prev).add(index))
   }
 
+  const handleImageError = useCallback((index: number) => {
+    setFailedImages(prev => new Set(prev).add(index))
+  }, [])
+
   const hasImages = profile.images.length > 0
-  const shouldLoadImage = (idx: number) => isInView && loadedImages.has(idx)
+  const shouldLoadImage = (idx: number) => isInView && loadedImages.has(idx) && !failedImages.has(idx)
 
   return (
     <div
@@ -508,56 +518,87 @@ const ProfileCard = memo(function ProfileCard({
       }`}>
         {hasImages ? (
           <>
-            {/* Carousel Container */}
-            <div
-              ref={carouselRef}
-              onScroll={handleScroll}
-              onClick={(e) => e.stopPropagation()}
-              className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-            >
-              {profile.images.map((url, idx) => (
-                <div
-                  key={idx}
-                  className="flex-shrink-0 w-full h-full snap-center"
-                >
-                  {shouldLoadImage(idx) ? (
-                    <img
-                      src={url}
-                      alt={`${profile.firstName} photo ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                      fetchPriority={priority && idx === 0 ? 'high' : 'auto'}
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-myColor-100 to-myColor-200" />
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Carousel Indicators */}
-            {profile.images.length > 1 && (
-              <div className={`absolute left-0 right-0 flex justify-center z-10 ${
-                compact ? 'top-2 gap-1' : 'top-3 gap-1.5'
-              }`}>
-                {profile.images.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      scrollToIndex(idx)
-                    }}
-                    className={`rounded-full transition-all duration-300 ${
-                      compact ? 'w-1.5 h-1.5' : 'w-2 h-2'
-                    } ${
-                      idx === activeIndex
-                        ? `bg-white shadow-md ${compact ? 'w-3' : 'w-4'}`
-                        : 'bg-white/50 hover:bg-white/75'
-                    }`}
-                    aria-label={`Go to image ${idx + 1}`}
+            {compact ? (
+              /* Compact mode: Single image only, no carousel */
+              <div className="absolute inset-0">
+                {failedImages.has(0) ? (
+                  <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center text-gray-400">
+                    <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-xs">Refresh to view</p>
+                  </div>
+                ) : shouldLoadImage(0) ? (
+                  <img
+                    src={profile.images[0]}
+                    alt={`${profile.firstName} photo`}
+                    className="w-full h-full object-cover"
+                    fetchPriority={priority ? 'high' : 'auto'}
+                    onError={() => handleImageError(0)}
                   />
-                ))}
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-myColor-100 to-myColor-200" />
+                )}
               </div>
+            ) : (
+              /* Default mode: Full carousel */
+              <>
+                {/* Carousel Container */}
+                <div
+                  ref={carouselRef}
+                  onScroll={handleScroll}
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute inset-0 flex overflow-x-auto snap-x snap-mandatory scrollbar-hide"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {profile.images.map((url, idx) => (
+                    <div
+                      key={idx}
+                      className="flex-shrink-0 w-full h-full snap-center"
+                    >
+                      {failedImages.has(idx) ? (
+                        <div className="w-full h-full bg-gray-100 flex flex-col items-center justify-center text-gray-400">
+                          <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <p className="text-xs">Refresh to view</p>
+                        </div>
+                      ) : shouldLoadImage(idx) ? (
+                        <img
+                          src={url}
+                          alt={`${profile.firstName} photo ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                          fetchPriority={priority && idx === 0 ? 'high' : 'auto'}
+                          onError={() => handleImageError(idx)}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-myColor-100 to-myColor-200" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Carousel Indicators */}
+                {profile.images.length > 1 && (
+                  <div className="absolute left-0 right-0 flex justify-center z-10 top-3 gap-1.5">
+                    {profile.images.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          scrollToIndex(idx)
+                        }}
+                        className={`rounded-full transition-all duration-300 w-2 h-2 ${
+                          idx === activeIndex
+                            ? 'bg-white shadow-md w-4'
+                            : 'bg-white/50 hover:bg-white/75'
+                        }`}
+                        aria-label={`Go to image ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </>
         ) : (
