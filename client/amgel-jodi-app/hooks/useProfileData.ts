@@ -9,6 +9,7 @@ export interface FullProfile {
   _id: string
   firstName: string
   lastName: string | null  // Only shown when connected
+  dob?: string
   age: number
   nativePlace: string
   height: string

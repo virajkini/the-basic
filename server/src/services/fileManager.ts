@@ -7,6 +7,9 @@ const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN || 'static.amgeljodi.com
 const CLOUDFRONT_KEY_PAIR_ID = 'K16SCVGULKTB9O';
 const CLOUDFRONT_PRIVATE_KEY = (process.env.CLOUD_FRONT_KEY || '').replace(/\\n/g, '\n');
 
+// Signed URL expiry time (30 minutes)
+const SIGNED_URL_EXPIRY_MS = 30 * 10 * 1000;
+
 // Initialize S3 client
 const s3ClientConfig: {
   region: string;
@@ -167,7 +170,7 @@ export async function getUserProfileImages(userId: string): Promise<Array<{
           url: cloudFrontUrl,
           keyPairId: CLOUDFRONT_KEY_PAIR_ID,
           privateKey: CLOUDFRONT_PRIVATE_KEY,
-          dateLessThan: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
+          dateLessThan: new Date(Date.now() + SIGNED_URL_EXPIRY_MS).toISOString(),
         });
 
         return {
@@ -238,7 +241,7 @@ export async function getOtherUserProfileImages(
             url: cloudFrontUrl,
             keyPairId: CLOUDFRONT_KEY_PAIR_ID,
             privateKey: CLOUDFRONT_PRIVATE_KEY,
-            dateLessThan: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+            dateLessThan: new Date(Date.now() + SIGNED_URL_EXPIRY_MS).toISOString(),
           });
 
           return {
@@ -256,7 +259,7 @@ export async function getOtherUserProfileImages(
           url: cloudFrontUrl,
           keyPairId: CLOUDFRONT_KEY_PAIR_ID,
           privateKey: CLOUDFRONT_PRIVATE_KEY,
-          dateLessThan: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+          dateLessThan: new Date(Date.now() + SIGNED_URL_EXPIRY_MS).toISOString(),
         });
 
         return {
@@ -321,6 +324,47 @@ export async function deleteFile(key: string, userId: string): Promise<void> {
     await s3Client.send(command);
   } catch (error) {
     console.error('Error deleting file:', error);
+    throw error;
+  }
+}
+
+/**
+ * Delete all files for a user from S3 (original, compressed, blurred folders)
+ * Used for account deletion
+ * @param userId - User ID
+ * @returns Number of files deleted
+ */
+export async function deleteAllUserFiles(userId: string): Promise<number> {
+  try {
+    const folders = ['original', 'compressed', 'blurred'];
+    let totalDeleted = 0;
+
+    for (const folder of folders) {
+      const prefix = `profiles/${userId}/${folder}/`;
+      const listCommand = new ListObjectsV2Command({
+        Bucket: BUCKET_NAME,
+        Prefix: prefix,
+      });
+
+      const response = await s3Client.send(listCommand);
+      const items = response.Contents || [];
+
+      // Delete each file
+      for (const item of items) {
+        if (item.Key) {
+          const deleteCommand = new DeleteObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: item.Key,
+          });
+          await s3Client.send(deleteCommand);
+          totalDeleted++;
+        }
+      }
+    }
+
+    return totalDeleted;
+  } catch (error) {
+    console.error('Error deleting all user files:', error);
     throw error;
   }
 }

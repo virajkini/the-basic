@@ -49,13 +49,18 @@ export const getAccessTokenCookieOptions = () => {
   return options;
 };
 
-// Rate limiter for OTP send endpoint
+// Rate limiter for OTP send endpoint - uses IP + phone as key
 const otpRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
+  max: 5, // Limit each IP+phone combo to 5 requests per windowMs
   message: { error: 'Too many OTP requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req: Request) => {
+    const phone = req.body?.phone?.replace(/\s+/g, '') || 'unknown';
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    return `${ip}:${phone}`;
+  },
 });
 
 // Simple phone validation

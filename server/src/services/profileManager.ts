@@ -204,4 +204,17 @@ export async function getAllProfiles(): Promise<Profile[]> {
   return profiles;
 }
 
+/**
+ * Delete a user's profile (used for account deletion)
+ * @param userId - User ID
+ * @returns true if deleted, false if not found
+ */
+export async function deleteProfile(userId: string): Promise<boolean> {
+  const db = await getDatabase();
+  const collection = db.collection<Profile>('profiles');
+
+  const result = await collection.deleteOne({ _id: userId });
+  return result.deletedCount > 0;
+}
+
 

@@ -294,3 +294,19 @@ export async function getConnectionById(
     return null;
   }
 }
+
+/**
+ * Delete all connections for a user (used for account deletion)
+ * @param userId - User ID
+ * @returns Number of deleted connections
+ */
+export async function deleteAllUserConnections(userId: string): Promise<number> {
+  const db = await getDatabase();
+  const collection = db.collection<Connection>(COLLECTION_NAME);
+
+  const result = await collection.deleteMany({
+    $or: [{ fromUserId: userId }, { toUserId: userId }],
+  });
+
+  return result.deletedCount;
+}

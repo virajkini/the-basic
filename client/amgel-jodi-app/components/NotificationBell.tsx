@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { authFetch } from '../app/utils/authFetch'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
@@ -26,6 +27,7 @@ let globalEventSource: EventSource | null = null
 const NOTIFICATION_UPDATE_EVENT = 'notificationCountUpdate'
 
 export default function NotificationBell() {
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
@@ -259,6 +261,31 @@ export default function NotificationBell() {
     return date.toLocaleDateString()
   }
 
+  // Get redirect URL for notification type
+  const getNotificationRedirectUrl = (type: NotificationType): string | null => {
+    switch (type) {
+      case 'REQUEST_RECEIVED':
+        return '/connections?tab=interested'
+      case 'REQUEST_ACCEPTED':
+        return '/connections?tab=matches'
+      default:
+        return null // No redirect for rejected or other types
+    }
+  }
+
+  // Handle notification click
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.read) {
+      markAsRead(notification._id)
+    }
+    setIsOpen(false)
+
+    const redirectUrl = getNotificationRedirectUrl(notification.type)
+    if (redirectUrl) {
+      router.push(redirectUrl)
+    }
+  }
+
   return (
     <div className="relative overflow-visible" ref={dropdownRef}>
       {/* Bell Button */}
@@ -325,12 +352,7 @@ export default function NotificationBell() {
                 {notifications.map((notification) => (
                   <button
                     key={notification._id}
-                    onClick={() => {
-                      if (!notification.read) {
-                        markAsRead(notification._id)
-                      }
-                      setIsOpen(false)
-                    }}
+                    onClick={() => handleNotificationClick(notification)}
                     className={`w-full flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left ${
                       !notification.read ? 'bg-myColor-50/50' : ''
                     }`}

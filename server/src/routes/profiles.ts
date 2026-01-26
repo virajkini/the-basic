@@ -130,10 +130,8 @@ router.get('/view/:userId',
         return res.status(401).json({ error: 'User ID not found in token' });
       }
 
-      // Don't allow viewing own profile through this endpoint
-      if (targetUserId === viewerUserId) {
-        return res.status(400).json({ error: 'Use /api/profiles/:userId to view your own profile' });
-      }
+      // Check if viewing own profile (for preview functionality)
+      const isOwnProfile = targetUserId === viewerUserId;
 
       const profile = await readProfile(targetUserId);
 
@@ -142,8 +140,12 @@ router.get('/view/:userId',
       }
 
       // Check if users are connected (to show lastName)
-      const connection = await getConnectionBetweenUsers(viewerUserId, targetUserId);
-      const isConnected = connection?.status === 'ACCEPTED';
+      // Own profile always shows full details
+      let isConnected = isOwnProfile;
+      if (!isOwnProfile) {
+        const connection = await getConnectionBetweenUsers(viewerUserId, targetUserId);
+        isConnected = connection?.status === 'ACCEPTED';
+      }
 
       // Get images (blurred for unverified, compressed for verified)
       const files = await getOtherUserProfileImages(targetUserId, isVerified);
@@ -164,6 +166,7 @@ router.get('/view/:userId',
           _id: profile._id,
           firstName: profile.firstName,
           lastName: isConnected ? profile.lastName : null, // Show only when connected
+          dob: profile.dob,
           age,
           nativePlace: profile.nativePlace,
           height: profile.height,

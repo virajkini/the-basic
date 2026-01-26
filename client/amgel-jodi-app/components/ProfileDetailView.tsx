@@ -12,6 +12,7 @@ interface ProfileDetailViewProps {
   profileId: string
   images: string[]
   onClose: () => void
+  isOwnProfile?: boolean
 }
 
 const formatLastUpdated = (dateString?: string) => {
@@ -37,7 +38,7 @@ const formatBirthTime = (time?: string) => {
   return `${hour12}:${minutes} ${ampm}`
 }
 
-function ProfileDetailView({ profileId, images, onClose }: ProfileDetailViewProps) {
+function ProfileDetailView({ profileId, images, onClose, isOwnProfile = false }: ProfileDetailViewProps) {
   const { profile, loading, error } = useProfileData(profileId)
   const [isMobile, setIsMobile] = useState(true)
   const [isVisible, setIsVisible] = useState(false)
@@ -149,6 +150,15 @@ function ProfileDetailView({ profileId, images, onClose }: ProfileDetailViewProp
               <div className="px-5 pb-32 space-y-5">
                 {/* Quick Info Pills */}
                 <div className="flex flex-wrap gap-2">
+                  {profile.dob && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-myColor-50 rounded-full text-sm font-medium text-myColor-700">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {new Date(profile.dob).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                  )}
+
                   <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-myColor-50 rounded-full text-sm font-medium text-myColor-700">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M6 2a1 1 0 00-1 1v18a1 1 0 001 1h2a1 1 0 001-1v-1h2v1a1 1 0 001 1h2a1 1 0 001-1V3a1 1 0 00-1-1H6zm1 2h6v3h-2V6H9v1H7V4zm0 5h2v1h2V9h2v3h-2v-1H9v1H7V9zm0 5h2v1h2v-1h2v3h-2v-1H9v1H7v-3z"/>
@@ -323,9 +333,11 @@ function ProfileDetailView({ profileId, images, onClose }: ProfileDetailViewProp
         </div>
 
         {/* Fixed Bottom Action */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-myColor-100 safe-area-pb z-10">
-          <ConnectionButton targetUserId={profileId} />
-        </div>
+        {!isOwnProfile && (
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-myColor-100 safe-area-pb z-10">
+            <ConnectionButton targetUserId={profileId} />
+          </div>
+        )}
       </div>
     )
   }
@@ -387,6 +399,15 @@ function ProfileDetailView({ profileId, images, onClose }: ProfileDetailViewProp
               <div className="flex-1 overflow-y-auto p-6 space-y-5">
                 {/* Quick Info Pills */}
                 <div className="flex flex-wrap gap-2">
+                  {profile.dob && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-myColor-100 rounded-full text-sm font-medium text-myColor-700">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {new Date(profile.dob).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </span>
+                  )}
+
                   <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-myColor-100 rounded-full text-sm font-medium text-myColor-700">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M6 2a1 1 0 00-1 1v18a1 1 0 001 1h2a1 1 0 001-1v-1h2v1a1 1 0 001 1h2a1 1 0 001-1V3a1 1 0 00-1-1H6zm1 2h6v3h-2V6H9v1H7V4zm0 5h2v1h2V9h2v3h-2v-1H9v1H7V9zm0 5h2v1h2v-1h2v3h-2v-1H9v1H7v-3z"/>
@@ -512,9 +533,11 @@ function ProfileDetailView({ profileId, images, onClose }: ProfileDetailViewProp
             ) : null}
 
             {/* Connection Button */}
-            <div className="flex-shrink-0 border-t border-myColor-100 bg-white">
-              <ConnectionButton targetUserId={profileId} />
-            </div>
+            {!isOwnProfile && (
+              <div className="flex-shrink-0 border-t border-myColor-100 bg-white">
+                <ConnectionButton targetUserId={profileId} />
+              </div>
+            )}
           </div>
         </div>
       </div>
