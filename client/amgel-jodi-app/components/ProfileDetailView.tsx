@@ -39,7 +39,7 @@ const formatBirthTime = (time?: string) => {
 }
 
 function ProfileDetailView({ profileId, images, onClose, isOwnProfile = false }: ProfileDetailViewProps) {
-  const { profile, loading, error } = useProfileData(profileId)
+  const { profile, loading, error, isConnected } = useProfileData(profileId)
   const [isMobile, setIsMobile] = useState(true)
   const [isVisible, setIsVisible] = useState(false)
   const [showKundali, setShowKundali] = useState(false)
@@ -327,6 +327,60 @@ function ProfileDetailView({ profileId, images, onClose, isOwnProfile = false }:
                     </div>
                   </div>
                 )}
+
+                {/* Contact Details - Only shown when connected */}
+                {isConnected && !isOwnProfile && profile.phone && (
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl overflow-hidden">
+                    <div className="px-5 py-4 bg-gradient-to-r from-green-100 to-emerald-100 border-b border-green-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
+                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-green-800">You&apos;re Connected!</p>
+                          <p className="text-xs text-green-600">Contact details are now visible</p>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <a
+                        href={`tel:${profile.phone}`}
+                        className="flex items-center gap-4 p-4 bg-white rounded-xl border border-green-100 hover:border-green-300 hover:shadow-md transition-all group"
+                      >
+                        <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                          <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs text-green-600 font-medium mb-1">Phone Number</p>
+                          <p className="text-lg font-semibold text-gray-900">{profile.phone}</p>
+                        </div>
+                        <svg className="w-5 h-5 text-green-400 group-hover:text-green-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </a>
+
+                      {/* Trust & Safety Notice */}
+                      <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-100">
+                        <div className="flex gap-3">
+                          <svg className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                          </svg>
+                          <div>
+                            <p className="text-sm text-amber-800 font-medium">Please be respectful</p>
+                            <p className="text-xs text-amber-700 mt-1">
+                              Contact details are shared in trust. Misuse may lead to account suspension.
+                              If you experience any inappropriate behavior, please report to us immediately.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : null}
           </div>
@@ -478,6 +532,40 @@ function ProfileDetailView({ profileId, images, onClose, isOwnProfile = false }:
                     <div>
                       <p className="text-xs text-blue-500 font-medium">Education</p>
                       <p className="text-blue-900">{profile.education}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Contact Details - Only shown when connected (Desktop) */}
+                {isConnected && !isOwnProfile && profile.phone && (
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 rounded-2xl overflow-hidden">
+                    <div className="px-5 py-3 bg-gradient-to-r from-green-100 to-emerald-100 border-b border-green-200">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="font-semibold text-green-800">Connected - Contact Details</p>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <a
+                        href={`tel:${profile.phone}`}
+                        className="flex items-center gap-3 p-3 bg-white rounded-xl border border-green-100 hover:border-green-300 hover:shadow-md transition-all group"
+                      >
+                        <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs text-green-600 font-medium">Phone</p>
+                          <p className="font-semibold text-gray-900">{profile.phone}</p>
+                        </div>
+                      </a>
+
+                      <p className="mt-3 text-xs text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-100">
+                        <span className="font-medium">Trust & Safety:</span> Contact details are shared in trust. Misuse may lead to account suspension.
+                      </p>
                     </div>
                   </div>
                 )}
