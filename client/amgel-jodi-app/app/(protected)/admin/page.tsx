@@ -18,7 +18,8 @@ interface Profile {
 interface ContactMessage {
   _id: string
   name: string
-  email: string
+  email?: string
+  phone?: string
   subject: string
   message: string
   status: 'NEW' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED'
@@ -446,6 +447,7 @@ export default function AdminPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -454,14 +456,15 @@ export default function AdminPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {messages.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No messages found</td>
+                        <td colSpan={7} className="px-6 py-8 text-center text-gray-500">No messages found</td>
                       </tr>
                     ) : (
                       messages.map((msg) => (
                         <tr key={msg._id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(msg.createdAt)}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{msg.name}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{msg.email}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{msg.email || '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{msg.phone || '-'}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">{msg.subject}</td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(msg.status)}`}>
@@ -558,13 +561,17 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 uppercase">Email</label>
-                  <p className="font-medium text-gray-900">{selectedMessage.email}</p>
+                  <p className="font-medium text-gray-900">{selectedMessage.email || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 uppercase">Phone</label>
+                  <p className="font-medium text-gray-900">{selectedMessage.phone || '-'}</p>
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 uppercase">Subject</label>
                   <p className="font-medium text-gray-900 capitalize">{selectedMessage.subject}</p>
                 </div>
-                <div>
+                <div className="col-span-2">
                   <label className="text-xs text-gray-500 uppercase">Current Status</label>
                   <p>
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(selectedMessage.status)}`}>
