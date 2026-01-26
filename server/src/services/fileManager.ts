@@ -328,3 +328,44 @@ export async function deleteFile(key: string, userId: string): Promise<void> {
   }
 }
 
+/**
+ * Delete all files for a user from S3 (original, compressed, blurred folders)
+ * Used for account deletion
+ * @param userId - User ID
+ * @returns Number of files deleted
+ */
+export async function deleteAllUserFiles(userId: string): Promise<number> {
+  try {
+    const folders = ['original', 'compressed', 'blurred'];
+    let totalDeleted = 0;
+
+    for (const folder of folders) {
+      const prefix = `profiles/${userId}/${folder}/`;
+      const listCommand = new ListObjectsV2Command({
+        Bucket: BUCKET_NAME,
+        Prefix: prefix,
+      });
+
+      const response = await s3Client.send(listCommand);
+      const items = response.Contents || [];
+
+      // Delete each file
+      for (const item of items) {
+        if (item.Key) {
+          const deleteCommand = new DeleteObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: item.Key,
+          });
+          await s3Client.send(deleteCommand);
+          totalDeleted++;
+        }
+      }
+    }
+
+    return totalDeleted;
+  } catch (error) {
+    console.error('Error deleting all user files:', error);
+    throw error;
+  }
+}
+

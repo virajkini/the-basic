@@ -21,8 +21,15 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [isLocalhost, setIsLocalhost] = useState(false)
+  const [deleteModal, setDeleteModal] = useState<{ open: boolean; profile: Profile | null }>({ open: false, profile: null })
+  const [deleteConfirmation, setDeleteConfirmation] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
+    // Check if running on localhost
+    const hostname = window.location.hostname
+    setIsLocalhost(hostname === 'localhost' || hostname === '127.0.0.1')
     fetchProfiles()
   }, [])
 
@@ -89,6 +96,49 @@ export default function AdminPage() {
       setError(err instanceof Error ? err.message : 'Failed to update verified status')
     } finally {
       setUpdating(null)
+    }
+  }
+
+  const openDeleteModal = (profile: Profile) => {
+    setDeleteModal({ open: true, profile })
+    setDeleteConfirmation('')
+  }
+
+  const closeDeleteModal = () => {
+    if (deleting) return
+    setDeleteModal({ open: false, profile: null })
+    setDeleteConfirmation('')
+  }
+
+  const deleteUser = async () => {
+    if (!deleteModal.profile || deleteConfirmation.toLowerCase() !== 'delete') return
+
+    try {
+      setDeleting(true)
+      setError(null)
+
+      const response = await authFetch(`${API_BASE}/admin/users/${deleteModal.profile.userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ confirmation: 'DELETE' }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || errorData.error || 'Failed to delete user')
+      }
+
+      // Remove user from local state
+      setProfiles((prevProfiles) =>
+        prevProfiles.filter((profile) => profile.userId !== deleteModal.profile?.userId)
+      )
+      closeDeleteModal()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete user')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -225,21 +275,31 @@ export default function AdminPage() {
                         {createdDate}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button
-                          onClick={() => toggleVerified(profile.userId, profile.isVerified)}
-                          disabled={updating === profile.userId}
-                          className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                            profile.isVerified
-                              ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                              : 'bg-green-100 text-green-700 hover:bg-green-200'
-                          } disabled:opacity-50 disabled:cursor-not-allowed`}
-                        >
-                          {updating === profile.userId
-                            ? 'Updating...'
-                            : profile.isVerified
-                            ? 'Unverify'
-                            : 'Verify'}
-                        </button>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => toggleVerified(profile.userId, profile.isVerified)}
+                            disabled={updating === profile.userId}
+                            className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
+                              profile.isVerified
+                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          >
+                            {updating === profile.userId
+                              ? 'Updating...'
+                              : profile.isVerified
+                              ? 'Unverify'
+                              : 'Verify'}
+                          </button>
+                          {isLocalhost && (
+                            <button
+                              onClick={() => openDeleteModal(profile)}
+                              className="px-3 py-1 rounded text-xs font-medium bg-red-600 text-white hover:bg-red-700 transition-colors"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -253,6 +313,99 @@ export default function AdminPage() {
       <div className="mt-4 text-sm text-gray-600">
         Total profiles: <span className="font-semibold">{profiles.length}</span>
       </div>
+
+      {/* Delete User Modal (localhost only) */}
+      {deleteModal.open && deleteModal.profile && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={closeDeleteModal}
+        >
+          <div
+            className="bg-white rounded-2xl w-full max-w-md shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="p-6 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Delete User Account</h2>
+                  <p className="text-sm text-gray-500">Admin action - This cannot be undone</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600 mb-2">You are about to delete:</p>
+                <p className="font-medium text-gray-900">{deleteModal.profile.name}</p>
+                <p className="text-sm text-gray-600">{deleteModal.profile.phone}</p>
+                <p className="text-xs text-gray-400 font-mono mt-1">{deleteModal.profile.userId}</p>
+              </div>
+
+              <div className="mb-4 p-4 bg-red-50 rounded-lg border border-red-100">
+                <p className="text-sm text-red-800 font-medium mb-2">This will permanently delete:</p>
+                <ul className="text-sm text-red-700 list-disc list-inside space-y-1">
+                  <li>Profile information</li>
+                  <li>All photos</li>
+                  <li>All connections</li>
+                  <li>All notifications</li>
+                </ul>
+              </div>
+
+              <p className="text-sm text-gray-600 mb-4">
+                To confirm, please type <span className="font-bold text-gray-900">DELETE</span> below:
+              </p>
+
+              <input
+                type="text"
+                value={deleteConfirmation}
+                onChange={(e) => setDeleteConfirmation(e.target.value)}
+                placeholder="Type DELETE to confirm"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+                disabled={deleting}
+              />
+
+              {error && (
+                <p className="mt-3 text-sm text-red-600">{error}</p>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-6 border-t border-gray-100 flex gap-3">
+              <button
+                onClick={closeDeleteModal}
+                disabled={deleting}
+                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={deleteUser}
+                disabled={deleteConfirmation.toLowerCase() !== 'delete' || deleting}
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {deleting ? (
+                  <>
+                    <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  <span>Delete Account</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

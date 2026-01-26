@@ -150,3 +150,20 @@ export async function getNotificationById(
     return null;
   }
 }
+
+/**
+ * Delete all notifications for a user (used for account deletion)
+ * @param userId - User ID
+ * @returns Number of deleted notifications
+ */
+export async function deleteAllUserNotifications(userId: string): Promise<number> {
+  const db = await getDatabase();
+  const collection = db.collection<Notification>(COLLECTION_NAME);
+
+  // Delete notifications where user is the recipient OR the actor
+  const result = await collection.deleteMany({
+    $or: [{ userId }, { actorUserId: userId }],
+  });
+
+  return result.deletedCount;
+}

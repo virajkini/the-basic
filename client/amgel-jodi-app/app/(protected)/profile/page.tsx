@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext'
 import Dropdown from '../../components/Dropdown'
 import DatePicker from '../../components/DatePicker'
 import ProfileDetailView from '../../../components/ProfileDetailView'
+import DeleteAccountModal from '../../../components/DeleteAccountModal'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
@@ -131,6 +132,7 @@ export default function ProfilePage() {
   const [uploadProgress, setUploadProgress] = useState(0)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const hasFetched = useRef(false)
 
@@ -1129,6 +1131,19 @@ export default function ProfilePage() {
                   )}
                 </div>
               )}
+
+              {/* Delete Account - Only show for existing profiles on last step */}
+              {existingProfile && (
+                <div className="pt-8 mt-8 border-t border-myColor-100">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="text-sm text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    Delete my account
+                  </button>
+                </div>
+              )}
             </div>
           )}
       </div>
@@ -1219,6 +1234,12 @@ export default function ProfilePage() {
           isOwnProfile
         />
       )}
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+      />
     </div>
   )
 }
