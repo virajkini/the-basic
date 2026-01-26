@@ -260,6 +260,19 @@ export default function AdminPage() {
     })
   }
 
+  const getSubjectLabel = (subject: string) => {
+    const labels: Record<string, string> = {
+      'general': 'General Inquiry',
+      'account': 'Account Help',
+      'technical': 'Technical Support',
+      'feedback': 'Feedback & Suggestions',
+      'report': 'Report an Issue',
+      'partnership': 'Partnership Inquiry',
+      'other': 'Other'
+    }
+    return labels[subject] || subject
+  }
+
   if (loadingProfiles && activeTab === 'profiles') {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -449,6 +462,7 @@ export default function AdminPage() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Message</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -456,7 +470,7 @@ export default function AdminPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {messages.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-6 py-8 text-center text-gray-500">No messages found</td>
+                        <td colSpan={8} className="px-6 py-8 text-center text-gray-500">No messages found</td>
                       </tr>
                     ) : (
                       messages.map((msg) => (
@@ -465,7 +479,10 @@ export default function AdminPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{msg.name}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{msg.email || '-'}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{msg.phone || '-'}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">{msg.subject}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{getSubjectLabel(msg.subject)}</td>
+                          <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate" title={msg.message}>
+                            {msg.message.length > 100 ? msg.message.substring(0, 100) + '...' : msg.message}
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeClass(msg.status)}`}>
                               {msg.status.replace('_', ' ')}
@@ -569,7 +586,7 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <label className="text-xs text-gray-500 uppercase">Subject</label>
-                  <p className="font-medium text-gray-900 capitalize">{selectedMessage.subject}</p>
+                  <p className="font-medium text-gray-900">{getSubjectLabel(selectedMessage.subject)}</p>
                 </div>
                 <div className="col-span-2">
                   <label className="text-xs text-gray-500 uppercase">Current Status</label>
