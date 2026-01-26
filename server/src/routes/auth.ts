@@ -56,7 +56,53 @@ const verifyAccessToken = (token: string): TokenPayload & { exp: number; type: s
   return decoded;
 };
 
-// POST /auth/msg91/verify - Verify MSG91 access token
+// POST /auth/otp/login - Login after OTP verification
+router.post('/otp/login', async (req: Request, res: Response) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({ error: 'Phone number is required' });
+    }
+
+    // Normalize phone number (remove spaces, ensure format)
+    const normalizedPhone = phone.replace(/\s+/g, '').replace(/^\+/, '');
+
+    // Check if user exists, if not create new user
+    let user = await findUserByPhone(normalizedPhone);
+
+    if (!user) {
+      user = await createUser(normalizedPhone);
+    }
+
+    // Fetch profile to get verified, subscribed, and gender status
+    const profile = await readProfile(user._id);
+    const verified = profile?.verified ?? false;
+    const subscribed = profile?.subscribed ?? false;
+    const gender = profile?.gender ?? null;
+
+    // Generate our access token
+    const accessToken = generateAccessToken({
+      phone: normalizedPhone,
+      userId: user._id,
+      verified,
+      subscribed,
+      gender,
+    });
+
+    // Set cookie
+    res.cookie('accessToken', accessToken, getAccessTokenCookieOptions());
+
+    res.json({ authenticated: true });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to create session',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// POST /auth/msg91/verify - Verify MSG91 access token (DEPRECATED - kept for backwards compatibility)
 router.post('/msg91/verify', async (req: Request, res: Response) => {
   try {
     const { accessToken, phone } = req.body;

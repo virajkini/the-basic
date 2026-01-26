@@ -1,8 +1,6 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import Script from 'next/script'
-import msg91 from '../services/msg91'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
@@ -33,58 +31,13 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
 
-  // MSG91 state
-  const [scriptLoaded, setScriptLoaded] = useState(msg91.isScriptLoaded())
-  const [captchaReady, setCaptchaReady] = useState(false)
-
   // Refs
   const inputRef = useRef<HTMLInputElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const scrollYRef = useRef(0)
   const [keyboardHeight, setKeyboardHeight] = useState(0)
 
-  // Initialize MSG91 when ready
-  const initializeMSG91 = useCallback(async () => {
-    if (!scriptLoaded) return
-
-    // Wait a bit for DOM to be ready
-    await new Promise((r) => setTimeout(r, 100))
-
-    const success = await msg91.initialize()
-    if (success) {
-      // Watch for captcha to appear
-      const container = document.getElementById(msg91.getCaptchaContainerId())
-      if (container) {
-        const checkCaptcha = () => {
-          if (container.children.length > 0) {
-            setCaptchaReady(true)
-            return true
-          }
-          return false
-        }
-
-        // Check immediately
-        if (!checkCaptcha()) {
-          // Watch for changes
-          const observer = new MutationObserver(() => {
-            if (checkCaptcha()) {
-              observer.disconnect()
-            }
-          })
-          observer.observe(container, { childList: true, subtree: true })
-
-          // Cleanup after 10 seconds
-          setTimeout(() => observer.disconnect(), 10000)
-        }
-      }
-    }
-  }, [scriptLoaded])
-
-  // Handle script load
-  const handleScriptLoad = useCallback(() => {
-    msg91.markScriptLoaded()
-    setScriptLoaded(true)
-  }, [])
+  // No initialization needed - OTP is handled server-side
 
   // Handle modal open
   useEffect(() => {
@@ -104,20 +57,7 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
     setError(null)
     setSelectedCountry(COUNTRIES[0])
     setShowCountryDropdown(false)
-    setCaptchaReady(msg91.isInitialized())
-
-    // Initialize MSG91 if not already done
-    if (!msg91.isInitialized()) {
-      initializeMSG91()
-    }
-  }, [isOpen, initializeMSG91])
-
-  // Re-initialize when script loads
-  useEffect(() => {
-    if (scriptLoaded && isOpen && !msg91.isInitialized()) {
-      initializeMSG91()
-    }
-  }, [scriptLoaded, isOpen, initializeMSG91])
+  }, [isOpen])
 
   // Handle modal close
   const handleClose = useCallback(() => {
@@ -193,16 +133,23 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-
-    if (!msg91.isCaptchaVerified()) {
-      setError('Please complete the captcha verification')
-      return
-    }
-
     setLoading(true)
+
     try {
-      await msg91.sendOtp(formatPhone(phone))
-      setStep('otp')
+      const response = await fetch(`${API_BASE}/otp/send`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ phone: formatPhone(phone) }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setStep('otp')
+      } else {
+        setError(data.message || data.error || 'Failed to send OTP. Please try again.')
+      }
     } catch (err) {
       console.error('Send OTP error:', err)
       setError('Failed to send OTP. Please try again.')
@@ -218,26 +165,42 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
     setLoading(true)
 
     try {
-      const accessToken = await msg91.verifyOtp(otp)
+      const formattedPhone = formatPhone(phone)
 
-      const response = await fetch(`${API_BASE}/auth/msg91/verify`, {
+      // Verify OTP with server
+      const verifyResponse = await fetch(`${API_BASE}/otp/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ accessToken, phone: formatPhone(phone) }),
+        body: JSON.stringify({ phone: formattedPhone, otp }),
       })
 
-      const data = await response.json()
+      const verifyData = await verifyResponse.json()
 
-      if (response.ok) {
+      if (!verifyResponse.ok) {
+        setError(verifyData.message || verifyData.error || 'Invalid OTP. Please try again.')
+        return
+      }
+
+      // OTP verified, now create session
+      const authResponse = await fetch(`${API_BASE}/auth/otp/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ phone: formattedPhone }),
+      })
+
+      const authData = await authResponse.json()
+
+      if (authResponse.ok) {
         handleClose()
         window.dispatchEvent(new Event('loginSuccess'))
       } else {
-        setError(data.error || 'Verification failed')
+        setError(authData.error || 'Login failed')
       }
     } catch (err) {
       console.error('Verify OTP error:', err)
-      setError('Invalid OTP. Please try again.')
+      setError('Failed to verify OTP. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -248,7 +211,18 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
     setLoading(true)
     setError(null)
     try {
-      await msg91.resendOtp()
+      const response = await fetch(`${API_BASE}/otp/resend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ phone: formatPhone(phone) }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.message || data.error || 'Failed to resend OTP. Please try again.')
+      }
     } catch (err) {
       console.error('Resend OTP error:', err)
       setError('Failed to resend OTP. Please try again.')
@@ -257,7 +231,7 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
     }
   }
 
-  // Change number - captcha stays verified
+  // Change number
   const handleChangeNumber = () => {
     setStep('phone')
     setOtp('')
@@ -272,14 +246,7 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
   if (!isOpen && !isClosing) return null
 
   return (
-    <>
-      <Script
-        src="https://verify.msg91.com/otp-provider.js"
-        strategy="lazyOnload"
-        onLoad={handleScriptLoad}
-      />
-
-      <div className="fixed inset-0 z-[100]">
+    <div className="fixed inset-0 z-[100]">
         {/* Backdrop */}
         <div
           className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
@@ -434,21 +401,6 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
                     </div>
                   </div>
 
-                  {/* Captcha */}
-                  <div className="mb-4 flex justify-center min-h-[78px] relative">
-                    {!captchaReady && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-[300px] h-[74px] bg-myColor-100 rounded-lg overflow-hidden">
-                          <div className="h-full w-full bg-gradient-to-r from-myColor-100 via-myColor-50 to-myColor-100 animate-shimmer" />
-                        </div>
-                      </div>
-                    )}
-                    <div
-                      id={msg91.getCaptchaContainerId()}
-                      className={`transition-opacity duration-300 ${captchaReady ? 'opacity-100' : 'opacity-0'}`}
-                    />
-                  </div>
-
                   <button
                     type="submit"
                     disabled={loading || !phone}
@@ -522,7 +474,6 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
           </div>
         </div>
       </div>
-    </>
   )
 }
 

@@ -6,23 +6,53 @@ import { Metadata } from 'next'
 // Note: Metadata should be in a separate file for client components
 // For now, we'll handle SEO through the layout
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
+
 export default function ContactPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     subject: '',
     message: '',
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError('')
+
+    // Validate: either email or phone must be provided
+    if (!formData.email && !formData.phone) {
+      setError('Please provide either an email address or phone number')
+      return
+    }
+
     setIsSubmitting(true)
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    setSubmitted(true)
-    setIsSubmitting(false)
+
+    try {
+      const response = await fetch(`${API_BASE}/contact`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(formData),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        setSubmitted(true)
+      } else {
+        setError(data.message || data.error || 'Failed to submit. Please try again.')
+      }
+    } catch (err) {
+      console.error('Contact form error:', err)
+      setError('Failed to submit. Please check your connection and try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -66,7 +96,8 @@ export default function ContactPage() {
                   <button
                     onClick={() => {
                       setSubmitted(false)
-                      setFormData({ name: '', email: '', subject: '', message: '' })
+                      setFormData({ name: '', email: '', phone: '', subject: '', message: '' })
+                      setError('')
                     }}
                     className="text-myColor-600 hover:text-myColor-800 font-medium"
                   >
@@ -75,6 +106,15 @@ export default function ContactPage() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {error && (
+                    <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-center gap-3">
+                      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {error}
+                    </div>
+                  )}
+
                   <div>
                     <label htmlFor="name" className="block text-sm font-medium text-myColor-700 mb-2">
                       Your Name *
@@ -93,18 +133,33 @@ export default function ContactPage() {
 
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-myColor-700 mb-2">
-                      Email Address *
+                      Email Address
                     </label>
                     <input
                       type="email"
                       id="email"
                       name="email"
-                      required
                       value={formData.email}
                       onChange={handleChange}
                       className="w-full px-4 py-3 rounded-xl border border-myColor-200 focus:border-myColor-500 focus:ring-2 focus:ring-myColor-200 outline-none transition-all"
                       placeholder="your@email.com"
                     />
+                  </div>
+
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-medium text-myColor-700 mb-2">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      id="phone"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-xl border border-myColor-200 focus:border-myColor-500 focus:ring-2 focus:ring-myColor-200 outline-none transition-all"
+                      placeholder="9876543210"
+                    />
+                    <p className="text-xs text-myColor-500 mt-1">* Either email or phone is required</p>
                   </div>
 
                   <div>
