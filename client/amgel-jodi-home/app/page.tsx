@@ -652,6 +652,11 @@ export default function Home() {
                     Terms of Service
                   </a>
                 </li>
+                <li>
+                  <a href="/child-safety" className="text-myColor-400 hover:text-white transition-colors">
+                    Child Safety
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
