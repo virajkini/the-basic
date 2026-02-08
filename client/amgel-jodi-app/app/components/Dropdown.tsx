@@ -55,12 +55,8 @@ export default function Dropdown({
     }
   }, [isOpen])
 
-  // Focus search input when sheet opens
-  useEffect(() => {
-    if (isOpen && searchable && searchInputRef.current) {
-      setTimeout(() => searchInputRef.current?.focus(), 100)
-    }
-  }, [isOpen, searchable])
+  // Don't auto-focus search input on mobile to avoid keyboard blocking view
+  // Users can manually tap the search input if they want to use it
 
   // Handle keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -93,7 +89,7 @@ export default function Dropdown({
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/40 animate-fade-in"
+        className="absolute inset-0 bg-black/50 animate-fade-in"
         onClick={() => {
           setIsOpen(false)
           setSearchQuery('')
@@ -103,16 +99,16 @@ export default function Dropdown({
       {/* Sheet */}
       <div
         ref={sheetRef}
-        className="relative w-full max-w-lg bg-white rounded-t-2xl shadow-2xl animate-slide-up max-h-[70vh] flex flex-col"
+        className="relative w-full max-w-lg bg-white rounded-t-2xl shadow-2xl animate-slide-up max-h-[85vh] flex flex-col"
         style={{ animationDuration: '200ms' }}
       >
         {/* Handle */}
-        <div className="flex justify-center pt-3 pb-2">
+        <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
           <div className="w-10 h-1 bg-myColor-200 rounded-full" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pb-3 border-b border-myColor-100">
+        <div className="flex items-center justify-between px-5 pb-3 border-b border-myColor-100 flex-shrink-0">
           <h3 className="text-lg font-semibold text-myColor-900">
             {label || placeholder}
           </h3>
@@ -122,7 +118,7 @@ export default function Dropdown({
               setIsOpen(false)
               setSearchQuery('')
             }}
-            className="p-2 -mr-2 text-myColor-400 hover:text-myColor-600 transition-colors"
+            className="p-2 -mr-2 text-myColor-400 hover:text-myColor-600 transition-colors active:bg-myColor-50 rounded-lg"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -132,10 +128,10 @@ export default function Dropdown({
 
         {/* Search Input */}
         {searchable && (
-          <div className="px-4 py-3 border-b border-myColor-100">
+          <div className="px-4 py-3 border-b border-myColor-100 flex-shrink-0">
             <div className="relative">
               <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-myColor-400"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-myColor-400 pointer-events-none"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -153,50 +149,64 @@ export default function Dropdown({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="w-full pl-10 pr-4 py-3 bg-myColor-50 border border-myColor-100 rounded-xl text-base focus:outline-none focus:border-myColor-300"
+                className="w-full pl-10 pr-10 py-3 bg-myColor-50 border border-myColor-100 rounded-xl text-base focus:outline-none focus:border-myColor-400 focus:bg-white"
+                inputMode="search"
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-myColor-400 hover:text-myColor-600"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         )}
 
         {/* Options List */}
-        <div className="flex-1 overflow-y-auto overscroll-contain pb-safe">
+        <div className="flex-1 overflow-y-auto overscroll-contain pb-safe" style={{ WebkitOverflowScrolling: 'touch' }}>
           {filteredOptions.length === 0 ? (
             <div className="px-5 py-8 text-center text-myColor-400">
               No options found
             </div>
           ) : (
-            filteredOptions.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => handleSelect(option.value)}
-                className={`w-full px-5 py-4 text-left transition-colors duration-150 flex items-center justify-between border-b border-myColor-50 active:bg-myColor-100 ${
-                  option.value === value
-                    ? 'bg-myColor-50'
-                    : ''
-                }`}
-              >
-                <span className={`text-base ${option.value === value ? 'text-myColor-800 font-medium' : 'text-myColor-600'}`}>
-                  {option.label}
-                </span>
-                {option.value === value && (
-                  <svg
-                    className="w-5 h-5 text-myColor-600 flex-shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </button>
-            ))
+            <div className="pb-4">
+              {filteredOptions.map((option, index) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => handleSelect(option.value)}
+                  className={`w-full px-5 py-4 text-left transition-colors duration-150 flex items-center justify-between border-b border-myColor-50 last:border-b-0 active:bg-myColor-100 ${
+                    option.value === value
+                      ? 'bg-myColor-50'
+                      : ''
+                  }`}
+                >
+                  <span className={`text-base leading-relaxed ${option.value === value ? 'text-myColor-800 font-medium' : 'text-myColor-600'}`}>
+                    {option.label}
+                  </span>
+                  {option.value === value && (
+                    <svg
+                      className="w-5 h-5 text-myColor-600 flex-shrink-0 ml-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       </div>

@@ -246,10 +246,64 @@ export default function ProfilePage() {
     setSelectedFiles(prev => [...prev, ...newFiles])
   }, [remainingSlots])
 
+  // Android native bridge handler for image selection
+  useEffect(() => {
+    // Define handler for receiving images from Android native bridge
+    const handleNativeMessage = (type: string, data: any) => {
+      if (type === 'imagesSelected' && Array.isArray(data)) {
+        // Convert base64 images to File objects
+        const files: File[] = data.map((img: any, index: number) => {
+          // Decode base64 to binary
+          const base64Data = img.base64.split(',')[1] || img.base64
+          const binaryString = atob(base64Data)
+          const bytes = new Uint8Array(binaryString.length)
+          for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i)
+          }
+
+          // Create file from binary data
+          const blob = new Blob([bytes], { type: 'image/jpeg' })
+          return new File([blob], `photo-${Date.now()}-${index}.jpg`, {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          })
+        })
+
+        // Add files to preview
+        if (files.length > 0) {
+          validateAndAddFiles(files)
+        }
+      }
+    }
+
+    // Expose handler to window for Android bridge
+    if (typeof window !== 'undefined') {
+      (window as any).onNativeMessage = handleNativeMessage
+    }
+
+    // Cleanup
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).onNativeMessage
+      }
+    }
+  }, [validateAndAddFiles])
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (files.length > 0) validateAndAddFiles(files)
     if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handlePickImages = () => {
+    // Check if running in Android WebView
+    if (typeof window !== 'undefined' && (window as any).pickImages) {
+      // Call Android native image picker
+      (window as any).pickImages()
+    } else {
+      // Fallback to web file input
+      fileInputRef.current?.click()
+    }
   }
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -919,7 +973,7 @@ export default function ProfilePage() {
                   <p className="text-myColor-400 text-sm mb-4">or tap to browse</p>
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={handlePickImages}
                     className="px-6 py-2.5 bg-myColor-600 text-white rounded-full font-medium hover:bg-myColor-700 transition-colors shadow-lg shadow-myColor-500/25"
                   >
                     Choose Photos
