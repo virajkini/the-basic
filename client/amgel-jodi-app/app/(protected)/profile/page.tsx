@@ -257,8 +257,6 @@ export default function ProfilePage() {
     // Define handler for receiving images from Android native bridge
     const handleNativeMessage = (type: string, data: any) => {
       if (type === 'imagesSelected' && Array.isArray(data)) {
-        console.log('[Android Bridge] Received images from native:', data.length)
-
         // Convert base64 images to File objects
         const files: File[] = data.map((img: any, index: number) => {
           // Decode base64 to binary
@@ -287,14 +285,12 @@ export default function ProfilePage() {
     // Expose handler to window for Android bridge (only once)
     if (typeof window !== 'undefined') {
       (window as any).onNativeMessage = handleNativeMessage
-      console.log('[Android Bridge] Handler registered')
     }
 
     // Cleanup on unmount only (not on every re-render)
     return () => {
       if (typeof window !== 'undefined') {
         delete (window as any).onNativeMessage
-        console.log('[Android Bridge] Handler unregistered')
       }
     }
   }, []) // Empty dependency array - only runs once on mount
@@ -309,11 +305,9 @@ export default function ProfilePage() {
     // Check if running in Android WebView
     if (typeof window !== 'undefined' && (window as any).AmgelJodiNative?.pickImages) {
       // Call Android native image picker
-      console.log('[Profile] Calling Android native pickImages')
       ;(window as any).AmgelJodiNative.pickImages(remainingSlots)
     } else {
       // Fallback to web file input
-      console.log('[Profile] Using web file input')
       fileInputRef.current?.click()
     }
   }
