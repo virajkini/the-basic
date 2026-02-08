@@ -135,6 +135,7 @@ export default function ProfilePage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const hasFetched = useRef(false)
+  const validateAndAddFilesRef = useRef<((files: File[]) => void) | null>(null)
 
   const HOME_URL = process.env.NEXT_PUBLIC_HOME_URL || 'https://amgeljodi.com'
 
@@ -246,11 +247,18 @@ export default function ProfilePage() {
     setSelectedFiles(prev => [...prev, ...newFiles])
   }, [remainingSlots])
 
-  // Android native bridge handler for image selection
+  // Keep ref updated with latest validateAndAddFiles
+  useEffect(() => {
+    validateAndAddFilesRef.current = validateAndAddFiles
+  }, [validateAndAddFiles])
+
+  // Android native bridge handler for image selection (stable, doesn't re-register)
   useEffect(() => {
     // Define handler for receiving images from Android native bridge
     const handleNativeMessage = (type: string, data: any) => {
       if (type === 'imagesSelected' && Array.isArray(data)) {
+        console.log('[Android Bridge] Received images from native:', data.length)
+
         // Convert base64 images to File objects
         const files: File[] = data.map((img: any, index: number) => {
           // Decode base64 to binary
@@ -269,25 +277,27 @@ export default function ProfilePage() {
           })
         })
 
-        // Add files to preview
-        if (files.length > 0) {
-          validateAndAddFiles(files)
+        // Add files to preview using ref to avoid re-registering handler
+        if (files.length > 0 && validateAndAddFilesRef.current) {
+          validateAndAddFilesRef.current(files)
         }
       }
     }
 
-    // Expose handler to window for Android bridge
+    // Expose handler to window for Android bridge (only once)
     if (typeof window !== 'undefined') {
       (window as any).onNativeMessage = handleNativeMessage
+      console.log('[Android Bridge] Handler registered')
     }
 
-    // Cleanup
+    // Cleanup on unmount only (not on every re-render)
     return () => {
       if (typeof window !== 'undefined') {
         delete (window as any).onNativeMessage
+        console.log('[Android Bridge] Handler unregistered')
       }
     }
-  }, [validateAndAddFiles])
+  }, []) // Empty dependency array - only runs once on mount
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
