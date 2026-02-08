@@ -257,8 +257,6 @@ export default function ProfilePage() {
     // Define handler for receiving images from Android native bridge
     const handleNativeMessage = (type: string, data: any) => {
       if (type === 'imagesSelected' && Array.isArray(data)) {
-        console.log('[Android Bridge] Received images from native:', data.length)
-
         // Convert base64 images to File objects
         const files: File[] = data.map((img: any, index: number) => {
           // Decode base64 to binary
@@ -287,14 +285,12 @@ export default function ProfilePage() {
     // Expose handler to window for Android bridge (only once)
     if (typeof window !== 'undefined') {
       (window as any).onNativeMessage = handleNativeMessage
-      console.log('[Android Bridge] Handler registered')
     }
 
     // Cleanup on unmount only (not on every re-render)
     return () => {
       if (typeof window !== 'undefined') {
         delete (window as any).onNativeMessage
-        console.log('[Android Bridge] Handler unregistered')
       }
     }
   }, []) // Empty dependency array - only runs once on mount
@@ -307,9 +303,9 @@ export default function ProfilePage() {
 
   const handlePickImages = () => {
     // Check if running in Android WebView
-    if (typeof window !== 'undefined' && (window as any).pickImages) {
+    if (typeof window !== 'undefined' && (window as any).AmgelJodiNative?.pickImages) {
       // Call Android native image picker
-      (window as any).pickImages()
+      ;(window as any).AmgelJodiNative.pickImages(remainingSlots)
     } else {
       // Fallback to web file input
       fileInputRef.current?.click()
@@ -936,7 +932,7 @@ export default function ProfilePage() {
                         <button
                           type="button"
                           onClick={() => removeExistingImage(img.key)}
-                          className="absolute top-2 right-2 w-7 h-7 bg-black/50 backdrop-blur-sm text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-2 right-2 w-7 h-7 bg-black/50 backdrop-blur-sm text-white rounded-full flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -956,7 +952,7 @@ export default function ProfilePage() {
               {/* Upload Zone */}
               {remainingSlots > 0 && (
                 <div
-                  className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-200 ${
+                  className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-200 cursor-pointer ${
                     dragActive
                       ? 'border-myColor-500 bg-myColor-50'
                       : 'border-myColor-200 bg-white hover:border-myColor-400 hover:bg-myColor-50/50'
@@ -965,6 +961,7 @@ export default function ProfilePage() {
                   onDragLeave={handleDrag}
                   onDragOver={handleDrag}
                   onDrop={handleDrop}
+                  onClick={handlePickImages}
                 >
                   <input
                     ref={fileInputRef}
@@ -983,7 +980,10 @@ export default function ProfilePage() {
                   <p className="text-myColor-400 text-sm mb-4">or tap to browse</p>
                   <button
                     type="button"
-                    onClick={handlePickImages}
+                    onClick={(e) => {
+                      e.stopPropagation() // Prevent triggering parent onClick
+                      handlePickImages()
+                    }}
                     className="px-6 py-2.5 bg-myColor-600 text-white rounded-full font-medium hover:bg-myColor-700 transition-colors shadow-lg shadow-myColor-500/25"
                   >
                     Choose Photos
