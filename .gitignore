@@ -1,0 +1,3 @@
+echo "node_modules/" > .gitignore
+echo "test-results/" >> .gitignore
+echo "playwright-report/" >> .gitignore
