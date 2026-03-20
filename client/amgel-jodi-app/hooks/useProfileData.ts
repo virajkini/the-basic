@@ -28,6 +28,7 @@ export interface FullProfile {
   birthTiming?: string | null
   gothra?: string | null
   nakshatra?: string | null
+  kuldeva?: string | null
 }
 
 // Module-level cache - persists across component lifecycle

@@ -34,6 +34,7 @@ interface FormData {
   birthTiming: string
   gothra: string
   nakshatra: string
+  kuldeva: string
 }
 
 interface FileWithPreview {
@@ -67,6 +68,7 @@ interface Profile {
   birthTiming?: string
   gothra?: string
   nakshatra?: string
+  kuldeva?: string
 }
 
 const STEPS = [
@@ -97,9 +99,31 @@ const NAKSHATRA_OPTIONS = [
   "Dhanishta", "Shatabhisha", "Purva Bhadrapada", "Uttara Bhadrapada", "Revati"
 ]
 
+const KULDEVA_OPTIONS = [
+  { name: 'Shri Mangesh', location: 'Mangeshi, Goa' },
+  { name: 'Shri Shantadurga', location: 'Kavlem, Goa' },
+  { name: 'Shri Mahalasa Narayani', location: 'Mardol, Goa' },
+  { name: 'Shri Naguesh', location: 'Bandora, Goa' },
+  { name: 'Shri Ramnath', location: 'Ramnathi, Goa' },
+  { name: 'Shri Mahalakshmi', location: 'Bandora, Goa' },
+  { name: 'Shri Damodar', location: 'Zambaulim, Goa' },
+  { name: 'Shri Kamakshi', location: 'Shiroda, Goa' },
+  { name: 'Shri Navadurga', location: 'Madkai, Goa' },
+  { name: 'Shri Mookambika', location: 'Kollur, Karnataka' },
+  { name: 'Shri Durga Parameshwari', location: 'Kateel, Karnataka' },
+  { name: 'Shri Krishna', location: 'Udupi, Karnataka' },
+  { name: 'Shri Subramanya', location: 'Kukke, Karnataka' },
+  { name: 'Shri Mahabaleshwar', location: 'Gokarna, Karnataka' },
+  { name: 'Other', location: '' },
+].map((option) => {
+  const label = option.location ? `${option.name} (${option.location})` : option.name
+  return { value: label, label }
+})
+
 export default function ProfilePage() {
   const { user } = useAuth()
   const [currentStep, setCurrentStep] = useState(0)
+  const [successState, setSuccessState] = useState<'created' | 'updated' | null>(null)
   const [formData, setFormData] = useState<FormData>({
     creatingFor: '',
     firstName: '',
@@ -119,6 +143,7 @@ export default function ProfilePage() {
     birthTiming: '',
     gothra: '',
     nakshatra: '',
+    kuldeva: '',
   })
   const [showKundaliSection, setShowKundaliSection] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<FileWithPreview[]>([])
@@ -136,6 +161,7 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const hasFetched = useRef(false)
   const validateAndAddFilesRef = useRef<((files: File[]) => void) | null>(null)
+  const redirectTimeoutRef = useRef<number | null>(null)
 
   const HOME_URL = process.env.NEXT_PUBLIC_HOME_URL || 'https://amgeljodi.com'
 
@@ -148,6 +174,14 @@ export default function ProfilePage() {
       fetchData()
     }
   }, [user?.userId])
+
+  useEffect(() => {
+    return () => {
+      if (redirectTimeoutRef.current) {
+        window.clearTimeout(redirectTimeoutRef.current)
+      }
+    }
+  }, [])
 
   const fetchData = async () => {
     if (!user?.userId) return
@@ -190,8 +224,9 @@ export default function ProfilePage() {
             birthTiming: p.birthTiming || '',
             gothra: p.gothra || '',
             nakshatra: p.nakshatra || '',
+            kuldeva: p.kuldeva || '',
           })
-          if (p.placeOfBirth || p.birthTiming || p.gothra || p.nakshatra) {
+          if (p.placeOfBirth || p.birthTiming || p.gothra || p.nakshatra || p.kuldeva) {
             setShowKundaliSection(true)
           }
         }
@@ -521,6 +556,7 @@ export default function ProfilePage() {
         birthTiming: formData.birthTiming || undefined,
         gothra: formData.gothra || undefined,
         nakshatra: formData.nakshatra || undefined,
+        kuldeva: formData.kuldeva || undefined,
       }
 
       setUploadProgress(80)
@@ -543,13 +579,14 @@ export default function ProfilePage() {
       }
 
       setUploadProgress(100)
+      setSuccessState(existingProfile ? 'updated' : 'created')
 
       selectedFiles.forEach(f => URL.revokeObjectURL(f.preview))
       setSelectedFiles([])
 
-      setTimeout(() => {
+      redirectTimeoutRef.current = window.setTimeout(() => {
         window.location.href = '/dashboard'
-      }, 500)
+      }, 2200)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save profile')
     } finally {
@@ -568,6 +605,103 @@ export default function ProfilePage() {
           <div className="w-16 h-16 border-4 border-myColor-100 border-t-myColor-500 rounded-full animate-spin mx-auto mb-4" />
           <p className="text-myColor-600 font-medium">Loading your profile...</p>
         </div>
+      </div>
+    )
+  }
+
+  if (successState) {
+    const isCreated = successState === 'created'
+
+    return (
+      <div className="min-h-full bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.16),_transparent_34%),linear-gradient(180deg,_#fffdf8_0%,_#ffffff_48%,_#f8fafc_100%)] px-4 py-10">
+        <div className="mx-auto flex min-h-[70vh] max-w-md items-center justify-center">
+          <div className="w-full rounded-[2rem] border border-myColor-100 bg-white/90 p-8 text-center shadow-[0_24px_80px_-28px_rgba(15,23,42,0.28)] backdrop-blur-sm animate-fade-in">
+            <div className="relative mx-auto mb-6 flex h-28 w-28 items-center justify-center">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-100 via-emerald-50 to-myColor-50 animate-pulse-glow" />
+              <div className="absolute inset-3 rounded-full border border-green-200/80" />
+              <svg className="relative h-16 w-16 text-green-600" fill="none" viewBox="0 0 64 64">
+                <circle
+                  cx="32"
+                  cy="32"
+                  r="22"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeDasharray="138.2"
+                  strokeDashoffset="138.2"
+                  className="animate-[circle_0.7s_ease-in-out_forwards]"
+                />
+                <path
+                  d="M22 33.5l7 7L43 26.5"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeDasharray="32"
+                  strokeDashoffset="32"
+                  className="animate-[check_0.35s_0.55s_ease-out_forwards]"
+                />
+              </svg>
+
+              {[
+                'top-1 left-1/2 -translate-x-1/2',
+                'right-1 top-6',
+                'bottom-3 right-4',
+                'bottom-1 left-5',
+                'left-1 top-8',
+              ].map((position, index) => (
+                <span
+                  key={position}
+                  className={`absolute ${position} h-2.5 w-2.5 rounded-full bg-myColor-300`}
+                  style={{
+                    animation: `confetti 0.9s ${index * 0.08}s ease-out forwards`,
+                    opacity: 0,
+                  }}
+                />
+              ))}
+            </div>
+
+            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.28em] text-myColor-400">
+              Profile {isCreated ? 'Created' : 'Updated'}
+            </p>
+            <h1 className="mb-3 font-display text-3xl font-semibold text-myColor-900">
+              {isCreated ? 'You are all set' : 'Changes saved beautifully'}
+            </h1>
+
+            <div className="mt-8 overflow-hidden rounded-full bg-myColor-100">
+              <div className="h-2 rounded-full bg-gradient-to-r from-myColor-500 via-green-500 to-emerald-500 animate-[progress_2s_linear_forwards]" />
+            </div>
+
+            <p className="mt-3 text-xs text-myColor-400">Redirecting to dashboard...</p>
+          </div>
+        </div>
+
+        <style jsx>{`
+          @keyframes circle {
+            to {
+              stroke-dashoffset: 0;
+            }
+          }
+
+          @keyframes check {
+            to {
+              stroke-dashoffset: 0;
+            }
+          }
+
+          @keyframes confetti {
+            0% {
+              opacity: 0;
+              transform: translateY(0) scale(0.4);
+            }
+            20% {
+              opacity: 1;
+            }
+            100% {
+              opacity: 0;
+              transform: translateY(-18px) scale(1);
+            }
+          }
+        `}</style>
       </div>
     )
   }
@@ -889,6 +1023,20 @@ export default function ProfilePage() {
                           searchable
                         />
                       </div>
+                    </div>
+                    <div>
+                      <label htmlFor="kuldeva" className="block text-sm font-medium text-myColor-800 mb-2">
+                        Kuldeva
+                      </label>
+                      <Dropdown
+                        id="kuldeva"
+                        label="Select Kuldeva"
+                        options={KULDEVA_OPTIONS}
+                        value={formData.kuldeva}
+                        onChange={(value) => updateFormData('kuldeva', value)}
+                        placeholder="Select Kuldeva"
+                        searchable
+                      />
                     </div>
                   </div>
                 )}
