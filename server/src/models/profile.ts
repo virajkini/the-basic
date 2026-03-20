@@ -32,6 +32,7 @@ export interface Profile {
   birthTiming?: string; // Format: "HH:MM" (24-hour)
   gothra?: string;
   nakshatra?: string;
+  kuldeva?: string;
 
   // Legacy fields for backwards compatibility
   name?: string; // Will be derived from firstName + lastName
@@ -85,5 +86,4 @@ export function parseHeightToCm(height: string): number | null {
 
   return null;
 }
-
 
