@@ -1,5 +1,6 @@
 import { MongoClient, Collection } from 'mongodb';
 import * as dotenv from 'dotenv';
+import { MONGODB_DB_NAME, APP_ENV } from '../src/config/appEnv.js';
 
 // Load environment variables
 dotenv.config();
@@ -35,13 +36,40 @@ async function createIndexes() {
   try {
     await client.connect();
     console.log('Connected to MongoDB');
+    const db = client.db(MONGODB_DB_NAME);
 
-    // Extract database name from URI
-    const uriParts = MONGODB_URI!.split('/');
-    const dbName = uriParts[uriParts.length - 1]?.split('?')[0] || 'amgeljodi';
-    const db = client.db(dbName);
+    console.log(`Using app env: ${APP_ENV}`);
+    console.log(`Using database: ${MONGODB_DB_NAME}`);
 
-    console.log(`Using database: ${dbName}`);
+    const requiredCollections = [
+      'users',
+      'profiles',
+      'connections',
+      'notifications',
+      'connection_quotas',
+      'contact_messages',
+    ];
+
+    const existingCollections = new Set((await db.listCollections().toArray()).map((item) => item.name));
+    for (const name of requiredCollections) {
+      if (!existingCollections.has(name)) {
+        await db.createCollection(name);
+        console.log(`Created collection: ${name}`);
+      }
+    }
+
+    console.log('\nCreating indexes for users collection...');
+    const usersCollection = db.collection('users');
+    await usersCollection.createIndex(
+      { phone: 1 },
+      { unique: true, name: 'unique_user_phone' }
+    );
+    console.log('  ✓ Created unique index: phone');
+    await usersCollection.createIndex(
+      { createdAt: -1 },
+      { name: 'users_created_at' }
+    );
+    console.log('  ✓ Created index: createdAt');
 
     // Create connections collection indexes
     console.log('\nCreating indexes for connections collection...');
@@ -85,6 +113,11 @@ async function createIndexes() {
       { name: 'unread_notifications' }
     );
     console.log('  ✓ Created index: userId + read (unread count)');
+    await notificationsCollection.createIndex(
+      { refId: 1, type: 1 },
+      { name: 'notification_ref_lookup' }
+    );
+    console.log('  ✓ Created index: refId + type');
 
     // Create profiles collection indexes
     console.log('\nCreating indexes for profiles collection...');
@@ -125,12 +158,45 @@ async function createIndexes() {
       console.log('  ○ Index already exists: gender + createdAt');
     }
 
+    if (await safeCreateIndex(profilesCollection, { gender: 1, updatedAt: -1 }, 'gender_updated_at')) {
+      console.log('  ✓ Created index: gender + updatedAt (filtered updated sort)');
+    } else {
+      console.log('  ○ Index already exists: gender + updatedAt');
+    }
+
+    if (await safeCreateIndex(profilesCollection, { gender: 1, dob: 1 }, 'gender_dob')) {
+      console.log('  ✓ Created index: gender + dob (filtered age sort)');
+    } else {
+      console.log('  ○ Index already exists: gender + dob');
+    }
+
     // Index for name search (regex queries benefit from this for anchored patterns)
     if (await safeCreateIndex(profilesCollection, { firstName: 1 }, 'firstname_search')) {
       console.log('  ✓ Created index: firstName (name search)');
     } else {
       console.log('  ○ Index already exists: firstName');
     }
+
+    console.log('\nCreating indexes for connection_quotas collection...');
+    const quotasCollection = db.collection('connection_quotas');
+    await quotasCollection.createIndex(
+      { updatedAt: -1 },
+      { name: 'quota_updated_at' }
+    );
+    console.log('  ✓ Created index: updatedAt');
+
+    console.log('\nCreating indexes for contact_messages collection...');
+    const contactCollection = db.collection('contact_messages');
+    await contactCollection.createIndex(
+      { status: 1, createdAt: -1 },
+      { name: 'contact_status_created_at' }
+    );
+    console.log('  ✓ Created index: status + createdAt');
+    await contactCollection.createIndex(
+      { subject: 1, createdAt: -1 },
+      { name: 'contact_subject_created_at' }
+    );
+    console.log('  ✓ Created index: subject + createdAt');
 
     console.log('\n✅ All indexes created successfully!');
   } catch (error) {
