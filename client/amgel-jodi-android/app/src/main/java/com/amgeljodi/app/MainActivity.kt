@@ -17,8 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.amgeljodi.app.bridge.WebViewBridge
-import com.amgeljodi.app.ui.main.MainScreen
-import com.amgeljodi.app.ui.splash.SplashViewModel
+import com.amgeljodi.app.ui.root.AppEntryScreen
+import com.amgeljodi.app.ui.root.AppEntryViewModel
+import com.amgeljodi.app.ui.root.AppRoute
 import com.amgeljodi.app.ui.theme.AmgelJodiTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -119,20 +120,18 @@ private fun AmgelJodiApp(
     webViewBridge: WebViewBridge,
     deepLinkUrl: String?,
     onNativeSplashComplete: () -> Unit,
-    splashViewModel: SplashViewModel = hiltViewModel()
+    appEntryViewModel: AppEntryViewModel = hiltViewModel()
 ) {
-    val baseUrl by splashViewModel.baseUrl.collectAsState()
+    val uiState by appEntryViewModel.uiState.collectAsState()
 
-    // Dismiss native splash and go straight to content
-    androidx.compose.runtime.LaunchedEffect(Unit) {
-        onNativeSplashComplete()
+    androidx.compose.runtime.LaunchedEffect(uiState.route) {
+        if (uiState.route != AppRoute.Splash) {
+            onNativeSplashComplete()
+        }
     }
 
-    // Go directly to WebView content - fastest loading
-    val urlToLoad = deepLinkUrl ?: baseUrl
-
-    MainScreen(
-        baseUrl = urlToLoad,
-        webViewBridge = webViewBridge
+    AppEntryScreen(
+        webViewBridge = webViewBridge,
+        deepLinkUrl = deepLinkUrl
     )
 }

@@ -63,6 +63,8 @@ import java.io.File
 fun MainScreen(
     baseUrl: String,
     webViewBridge: WebViewBridge,
+    onAuthLost: (() -> Unit)? = null,
+    onExitRequested: (() -> Unit)? = null,
     viewModel: MainViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -75,6 +77,10 @@ fun MainScreen(
     // Handle back button - trigger history.back() for SPA navigation
     BackHandler(enabled = webViewState.canGoBack) {
         webViewState.goBack()
+    }
+
+    BackHandler(enabled = !webViewState.canGoBack && onExitRequested != null) {
+        onExitRequested?.invoke()
     }
 
     var showDebugSettings by remember { mutableStateOf(false) }
@@ -210,6 +216,10 @@ fun MainScreen(
                         onPageFinished = { url ->
                             scope.launch {
                                 viewModel.saveLastVisitedUrl(url)
+                            }
+
+                            if (url.startsWith(Constants.Urls.HOME) || url.startsWith("https://amgeljodi.com")) {
+                                onAuthLost?.invoke()
                             }
                         },
                         onFileUploadRequest = { params ->

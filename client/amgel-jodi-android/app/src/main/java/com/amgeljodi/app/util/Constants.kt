@@ -11,6 +11,8 @@ object Constants {
     object Urls {
         val PRODUCTION = BuildConfig.BASE_URL
         val DEBUG = BuildConfig.DEBUG_URL
+        val API = BuildConfig.API_BASE_URL
+        val HOME = BuildConfig.HOME_URL
         val ALLOW_TOGGLE = BuildConfig.ALLOW_URL_TOGGLE
 
         // Deep link paths
@@ -39,6 +41,13 @@ object Constants {
         const val USE_DEBUG_URL = "use_debug_url"
         const val BIOMETRIC_ENABLED = "biometric_enabled"
         const val LAST_VISITED_URL = "last_visited_url"
+    }
+
+    object Auth {
+        const val OTP_MIN_LENGTH = 4
+        const val OTP_MAX_LENGTH = 4
+        const val RESEND_COOLDOWN_SECONDS = 30
+        const val ACCESS_TOKEN_COOKIE = "accessToken"
     }
 
     // File Picker
