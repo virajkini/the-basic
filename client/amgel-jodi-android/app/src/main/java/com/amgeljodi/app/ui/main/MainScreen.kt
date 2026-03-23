@@ -218,7 +218,11 @@ fun MainScreen(
                                 viewModel.saveLastVisitedUrl(url)
                             }
 
-                            if (url.startsWith(Constants.Urls.HOME) || url.startsWith("https://amgeljodi.com")) {
+                            if (
+                                url.startsWith(Constants.Urls.HOME) ||
+                                url.startsWith("https://amgeljodi.com") ||
+                                url.startsWith("https://stage.amgeljodi.com")
+                            ) {
                                 onAuthLost?.invoke()
                             }
                         },

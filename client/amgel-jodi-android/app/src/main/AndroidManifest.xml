@@ -70,6 +70,12 @@
                 <data
                     android:scheme="https"
                     android:host="app.amgeljodi.com" />
+                <data
+                    android:scheme="https"
+                    android:host="stage.amgeljodi.com" />
+                <data
+                    android:scheme="https"
+                    android:host="stage-app.amgeljodi.com" />
             </intent-filter>
 
             <!-- Custom URL Scheme -->

@@ -33,6 +33,8 @@ app.use((req, res, next) => {
 const allowedOrigins: string[] = [
   'https://www.amgeljodi.com',
   'https://amgeljodi.com',
+  'https://stage.amgeljodi.com/', // Stage  domain
+  'https://stage-app.amgeljodi.com/', // Stage app domain (alternate)
   'https://app.amgeljodi.com', // Protected app domain
   process.env.CLIENT_URL,
   'http://localhost:3000', // For local development (home app)

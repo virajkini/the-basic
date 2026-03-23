@@ -279,6 +279,9 @@ private fun isExternalUrl(url: String): Boolean {
         "amgeljodi.com",
         "www.amgeljodi.com",
         "app.amgeljodi.com",
+        "stage.amgeljodi.com",
+        "stage-app.amgeljodi.com",
+        "stage.api.amgeljodi.com",
         "localhost",
         "10.0.2.2"
     )
