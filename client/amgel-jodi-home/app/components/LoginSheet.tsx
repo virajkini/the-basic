@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
+const RESEND_OTP_COOLDOWN_SECONDS = 30
 
 const COUNTRIES = [
   { code: 'IN', name: 'India', dialCode: '91', flag: '🇮🇳' },
@@ -30,6 +31,7 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
   const [error, setError] = useState<string | null>(null)
   const [isVisible, setIsVisible] = useState(false)
   const [isClosing, setIsClosing] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
 
   // Refs
   const inputRef = useRef<HTMLInputElement>(null)
@@ -57,7 +59,18 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
     setError(null)
     setSelectedCountry(COUNTRIES[0])
     setShowCountryDropdown(false)
+    setResendCooldown(0)
   }, [isOpen])
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+
+    const timer = window.setInterval(() => {
+      setResendCooldown((current) => (current > 0 ? current - 1 : 0))
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [resendCooldown])
 
   // Handle modal close
   const handleClose = useCallback(() => {
@@ -147,6 +160,7 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
 
       if (response.ok) {
         setStep('otp')
+        setResendCooldown(RESEND_OTP_COOLDOWN_SECONDS)
       } else {
         setError(data.message || data.error || 'Failed to send OTP. Please try again.')
       }
@@ -208,6 +222,8 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
 
   // Resend OTP
   const handleResendOTP = async () => {
+    if (resendCooldown > 0) return
+
     setLoading(true)
     setError(null)
     try {
@@ -222,6 +238,8 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
 
       if (!response.ok) {
         setError(data.message || data.error || 'Failed to resend OTP. Please try again.')
+      } else {
+        setResendCooldown(RESEND_OTP_COOLDOWN_SECONDS)
       }
     } catch (err) {
       console.error('Resend OTP error:', err)
@@ -236,6 +254,7 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
     setStep('phone')
     setOtp('')
     setError(null)
+    setResendCooldown(0)
   }
 
   // Backdrop click
@@ -462,10 +481,10 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
                     <button
                       type="button"
                       onClick={handleResendOTP}
-                      disabled={loading}
+                      disabled={loading || resendCooldown > 0}
                       className="py-2 text-myColor-600 hover:text-myColor-800 text-sm font-medium disabled:opacity-50"
                     >
-                      Resend OTP
+                      {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend OTP'}
                     </button>
                   </div>
                 </form>

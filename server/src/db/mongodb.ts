@@ -1,4 +1,5 @@
 import { MongoClient, Db } from 'mongodb';
+import { MONGODB_DB_NAME } from '../config/appEnv.js';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 
@@ -30,21 +31,12 @@ if (process.env.NODE_ENV === 'development') {
 // Get database instance
 export async function getDatabase(dbName?: string): Promise<Db> {
   const connectedClient = await clientPromise;
-  
+
   if (dbName) {
     return connectedClient.db(dbName);
   }
-  
-  // Extract database name from URI or use default
-  if (MONGODB_URI) {
-    const uriParts = MONGODB_URI.split('/');
-    const dbNameFromUri = uriParts[uriParts.length - 1]?.split('?')[0];
-    if (dbNameFromUri) {
-      return connectedClient.db(dbNameFromUri);
-    }
-  }
-  
-  return connectedClient.db('amgeljodi');
+
+  return connectedClient.db(MONGODB_DB_NAME);
 }
 
 export default clientPromise;

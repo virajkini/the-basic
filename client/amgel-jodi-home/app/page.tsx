@@ -337,12 +337,12 @@ export default function Home() {
           {/* Profile Cards Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6 mb-12">
             {[
-              { name: 'Priya S.', age: 26, city: 'Mumbai', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80' },
-              { name: 'Aditya K.', age: 28, city: 'Bangalore', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80' },
-              { name: 'Sneha R.', age: 25, city: 'Goa', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=300&q=80' },
-              { name: 'Rahul M.', age: 30, city: 'Pune', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80' },
-              { name: 'Ananya P.', age: 27, city: 'Chennai', img: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80' },
-              { name: 'Vikram D.', age: 29, city: 'Delhi', img: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80' },
+              { name: 'Chetana S.', age: 26, city: 'Mumbai', img: '/images/community/chetana.jpg' },
+              { name: 'Raksha K.', age: 28, city: 'Bangalore', img: '/images/community/raksha.jpg' },
+              { name: 'Archana R.', age: 25, city: 'Goa', img: '/images/community/archana.jpg' },
+              { name: 'Suhas M.', age: 30, city: 'Pune', img: '/images/community/suhas.png' },
+              { name: 'Ninaad P.', age: 27, city: 'Chennai', img: '/images/community/ninaad.png' },
+              { name: 'Ashish D.', age: 29, city: 'Delhi', img: '/images/community/ashish.png' },
             ].map((profile, index) => (
               <div key={index} className="group relative">
                 <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-myColor-100">
@@ -350,7 +350,7 @@ export default function Home() {
                   <img
                     src={profile.img}
                     alt={profile.name}
-                    className="w-full h-full object-cover blur-md group-hover:blur-lg transition-all duration-300"
+                    className="w-full h-full object-cover blur-[3px] group-hover:blur-[5px] transition-all duration-300"
                   />
                   {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-myColor-900/80 via-myColor-900/20 to-transparent" />

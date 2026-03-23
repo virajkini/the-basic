@@ -26,6 +26,8 @@ android {
             isDebuggable = true
             buildConfigField("String", "BASE_URL", "\"https://app.amgeljodi.com/dashboard\"")
             buildConfigField("String", "DEBUG_URL", "\"http://localhost:3002/dashboard\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://api.amgeljodi.com/api\"")
+            buildConfigField("String", "HOME_URL", "\"https://www.amgeljodi.com\"")
             buildConfigField("Boolean", "ALLOW_URL_TOGGLE", "true")
         }
         release {
@@ -37,6 +39,8 @@ android {
             )
             buildConfigField("String", "BASE_URL", "\"https://app.amgeljodi.com/dashboard\"")
             buildConfigField("String", "DEBUG_URL", "\"https://app.amgeljodi.com/dashboard\"")
+            buildConfigField("String", "API_BASE_URL", "\"https://api.amgeljodi.com/api\"")
+            buildConfigField("String", "HOME_URL", "\"https://www.amgeljodi.com\"")
             buildConfigField("Boolean", "ALLOW_URL_TOGGLE", "false")
         }
     }
@@ -110,4 +114,8 @@ dependencies {
 
     // ExifInterface for image rotation handling
     implementation(libs.androidx.exifinterface)
+
+    // Networking and secure storage
+    implementation(libs.okhttp)
+    implementation(libs.androidx.security.crypto)
 }

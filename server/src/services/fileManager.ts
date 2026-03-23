@@ -336,7 +336,7 @@ export async function deleteFile(key: string, userId: string): Promise<void> {
  */
 export async function deleteAllUserFiles(userId: string): Promise<number> {
   try {
-    const folders = ['original', 'compressed', 'blurred'];
+    const folders: Array<'original' | 'compressed' | 'blurred'> = ['original', 'compressed', 'blurred'];
     let totalDeleted = 0;
 
     for (const folder of folders) {
@@ -368,4 +368,3 @@ export async function deleteAllUserFiles(userId: string): Promise<number> {
     throw error;
   }
 }
-

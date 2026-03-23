@@ -99,7 +99,7 @@ function ProfileDetailView({ profileId, images, onClose, isOwnProfile = false }:
     if (e.target === e.currentTarget) handleClose()
   }, [handleClose])
 
-  const hasKundaliInfo = profile?.placeOfBirth || profile?.birthTiming || profile?.gothra || profile?.nakshatra
+  const hasKundaliInfo = profile?.placeOfBirth || profile?.birthTiming || profile?.gothra || profile?.nakshatra || profile?.kuldeva
   const isWorking = profile?.workingStatus === 'employed' || profile?.workingStatus === 'self-employed' || profile?.workingStatus === true
 
   // ===== MOBILE VIEW =====
@@ -305,6 +305,12 @@ function ProfileDetailView({ profileId, images, onClose, isOwnProfile = false }:
                           <div className="bg-amber-50/50 rounded-xl p-3">
                             <p className="text-xs text-amber-600 font-medium mb-1">Nakshatra</p>
                             <p className="text-myColor-800">{profile.nakshatra}</p>
+                          </div>
+                        )}
+                        {profile.kuldeva && (
+                          <div className="bg-amber-50/50 rounded-xl p-3 col-span-2">
+                            <p className="text-xs text-amber-600 font-medium mb-1">Kuldeva</p>
+                            <p className="text-myColor-800">{profile.kuldeva}</p>
                           </div>
                         )}
                       </div>
@@ -611,6 +617,12 @@ function ProfileDetailView({ profileId, images, onClose, isOwnProfile = false }:
                           <div className="bg-amber-50/50 rounded-xl p-3">
                             <p className="text-xs text-amber-600 mb-1">Nakshatra</p>
                             <p className="text-myColor-800">{profile.nakshatra}</p>
+                          </div>
+                        )}
+                        {profile.kuldeva && (
+                          <div className="bg-amber-50/50 rounded-xl p-3 col-span-2">
+                            <p className="text-xs text-amber-600 mb-1">Kuldeva</p>
+                            <p className="text-myColor-800">{profile.kuldeva}</p>
                           </div>
                         )}
                       </div>

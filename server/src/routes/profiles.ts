@@ -190,6 +190,7 @@ router.get('/view/:userId',
           birthTiming: profile.birthTiming || null,
           gothra: profile.gothra || null,
           nakshatra: profile.nakshatra || null,
+          kuldeva: profile.kuldeva || null,
           verified: profile.verified,
           updatedAt: profile.updatedAt,
           images,
@@ -272,6 +273,7 @@ router.get('/:userId',
           birthTiming: profile.birthTiming,
           gothra: profile.gothra,
           nakshatra: profile.nakshatra,
+          kuldeva: profile.kuldeva,
           verified: profile.verified,
           subscribed: profile.subscribed,
           createdAt: profile.createdAt,
@@ -317,7 +319,8 @@ router.post('/',
         placeOfBirth,
         birthTiming,
         gothra,
-        nakshatra
+        nakshatra,
+        kuldeva
       } = req.body;
 
       const authenticatedUserId = req.authenticatedUserId;
@@ -413,6 +416,7 @@ router.post('/',
         birthTiming: birthTiming || undefined,
         gothra: gothra || undefined,
         nakshatra: nakshatra || undefined,
+        kuldeva: kuldeva || undefined,
         verified: false,
         subscribed: false
       };
@@ -453,6 +457,7 @@ router.post('/',
           birthTiming: profile.birthTiming,
           gothra: profile.gothra,
           nakshatra: profile.nakshatra,
+          kuldeva: profile.kuldeva,
           verified: profile.verified,
           subscribed: profile.subscribed,
           createdAt: profile.createdAt,
@@ -505,7 +510,8 @@ router.put('/:userId',
         placeOfBirth,
         birthTiming,
         gothra,
-        nakshatra
+        nakshatra,
+        kuldeva
       } = req.body;
 
     // Build update object with only provided fields
@@ -638,6 +644,10 @@ router.put('/:userId',
       updateData.nakshatra = nakshatra || undefined;
     }
 
+    if (kuldeva !== undefined) {
+      updateData.kuldeva = kuldeva || undefined;
+    }
+
     // Note: verified and subscribed fields cannot be updated by users
 
     if (Object.keys(updateData).length === 0) {
@@ -674,6 +684,7 @@ router.put('/:userId',
         birthTiming: updatedProfile.birthTiming,
         gothra: updatedProfile.gothra,
         nakshatra: updatedProfile.nakshatra,
+        kuldeva: updatedProfile.kuldeva,
         verified: updatedProfile.verified,
         subscribed: updatedProfile.subscribed,
         createdAt: updatedProfile.createdAt,

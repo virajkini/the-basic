@@ -28,4 +28,3 @@ The app will run on http://localhost:3002
 - Auth enforcement at layout level
 - Protected routes: `/dashboard`, `/profile`, `/settings`
 - Auto-redirect to home if not logged in
-
