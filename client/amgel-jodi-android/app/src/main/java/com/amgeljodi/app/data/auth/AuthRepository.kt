@@ -158,6 +158,7 @@ class AuthRepository @Inject constructor(
             cookieManager.setCookie(Constants.Urls.PRODUCTION, cookie)
             cookieManager.setCookie(Constants.Urls.HOME, cookie)
             cookieManager.setCookie("https://amgeljodi.com", cookie)
+            cookieManager.setCookie("https://stage.amgeljodi.com", cookie)
             cookieManager.flush()
         }
     }
