@@ -1,63 +1,63 @@
-import type { Metadata, Viewport } from 'next'
-import { DM_Sans, Cormorant_Garamond } from 'next/font/google'
-import './globals.css'
-import Header from './components/Header'
-import AuthCheck from './providers/AuthCheck'
-import Script from 'next/script'
+import type { Metadata, Viewport } from "next";
+import { DM_Sans, Cormorant_Garamond } from "next/font/google";
+import "./globals.css";
+import Header from "./components/Header";
+import AuthCheck from "./providers/AuthCheck";
 
 // Refined sans-serif for body text
 const dmSans = DM_Sans({
-  subsets: ['latin'],
-  variable: '--font-dm-sans',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-})
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
 
 // Elegant serif for display headings - distinctive and memorable
 const cormorant = Cormorant_Garamond({
-  subsets: ['latin'],
-  variable: '--font-cormorant',
-  display: 'swap',
-  weight: ['400', '500', '600', '700'],
-})
+  subsets: ["latin"],
+  variable: "--font-cormorant",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+});
 
-const siteUrl = 'https://amgeljodi.com'
+const siteUrl = "https://amgeljodi.com";
 
 export const viewport: Viewport = {
-  width: 'device-width',
+  width: "device-width",
   initialScale: 1,
   maximumScale: 5,
-  themeColor: '#a763f1',
-}
+  themeColor: "#a763f1",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: 'Amgel Jodi - GSB Konkani Matrimony | Find Your Perfect Match',
-    template: '%s | Amgel Jodi',
+    default: "Amgel Jodi - GSB Konkani Matrimony | Find Your Perfect Match",
+    template: "%s | Amgel Jodi",
   },
-  description: 'Amgel Jodi is the trusted matrimony platform for the GSB Konkani community. Find verified profiles, connect with compatible matches, and begin your beautiful love story. Join 500+ happy families today.',
+  description:
+    "Amgel Jodi is the trusted matrimony platform for the GSB Konkani community. Find verified profiles, connect with compatible matches, and begin your beautiful love story. Join 500+ happy families today.",
   keywords: [
-    'GSB matrimony',
-    'Konkani matrimony',
-    'GSB Konkani marriage',
-    'Saraswat Brahmin matrimony',
-    'GSB bride',
-    'GSB groom',
-    'Konkani bride',
-    'Konkani groom',
-    'GSB wedding',
-    'Saraswat marriage',
-    'Indian matrimony',
-    'Konkani community marriage',
-    'GSB matchmaking',
-    'traditional matrimony',
-    'verified matrimony profiles',
-    'Amgel Jodi',
+    "GSB matrimony",
+    "Konkani matrimony",
+    "GSB Konkani marriage",
+    "Saraswat Brahmin matrimony",
+    "GSB bride",
+    "GSB groom",
+    "Konkani bride",
+    "Konkani groom",
+    "GSB wedding",
+    "Saraswat marriage",
+    "Indian matrimony",
+    "Konkani community marriage",
+    "GSB matchmaking",
+    "traditional matrimony",
+    "verified matrimony profiles",
+    "Amgel Jodi",
   ],
-  authors: [{ name: 'Amgel Jodi' }],
-  creator: 'Amgel Jodi',
-  publisher: 'Amgel Jodi',
+  authors: [{ name: "Amgel Jodi" }],
+  creator: "Amgel Jodi",
+  publisher: "Amgel Jodi",
   formatDetection: {
     email: false,
     address: false,
@@ -65,43 +65,43 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: '48x48', type: 'image/x-icon' },
-      { url: '/favicon-48x48.png', sizes: '48x48', type: 'image/png' },
-      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
-      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: "/favicon.ico", sizes: "48x48", type: "image/x-icon" },
+      { url: "/favicon-48x48.png", sizes: "48x48", type: "image/png" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
     ],
-    shortcut: '/favicon.ico',
+    shortcut: "/favicon.ico",
     apple: [
-      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
     ],
-    other: [
-      { rel: 'mask-icon', url: '/favicon.svg', color: '#a763f1' },
-    ],
+    other: [{ rel: "mask-icon", url: "/favicon.svg", color: "#a763f1" }],
   },
-  manifest: '/manifest.json',
+  manifest: "/manifest.json",
   openGraph: {
-    type: 'website',
-    locale: 'en_IN',
+    type: "website",
+    locale: "en_IN",
     url: siteUrl,
-    siteName: 'Amgel Jodi',
-    title: 'Amgel Jodi - GSB Konkani Matrimony | Find Your Perfect Match',
-    description: 'The trusted matrimony platform for the GSB Konkani community. Find verified profiles, connect with compatible matches, and begin your beautiful love story.',
+    siteName: "Amgel Jodi",
+    title: "Amgel Jodi - GSB Konkani Matrimony | Find Your Perfect Match",
+    description:
+      "The trusted matrimony platform for the GSB Konkani community. Find verified profiles, connect with compatible matches, and begin your beautiful love story.",
     images: [
       {
-        url: '/og-image.jpg',
+        url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: 'Amgel Jodi - GSB Konkani Matrimony',
+        alt: "Amgel Jodi - GSB Konkani Matrimony",
       },
     ],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Amgel Jodi - GSB Konkani Matrimony',
-    description: 'Find your perfect match in the GSB Konkani community. Verified profiles, trusted platform.',
-    images: ['/og-image.jpg'],
-    creator: '@amgeljodi',
+    card: "summary_large_image",
+    title: "Amgel Jodi - GSB Konkani Matrimony",
+    description:
+      "Find your perfect match in the GSB Konkani community. Verified profiles, trusted platform.",
+    images: ["/og-image.jpg"],
+    creator: "@amgeljodi",
   },
   robots: {
     index: true,
@@ -109,121 +109,130 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
   alternates: {
     canonical: siteUrl,
   },
-  category: 'matrimony',
-  classification: 'Matrimony Services',
+  category: "matrimony",
+  classification: "Matrimony Services",
   other: {
-    'msapplication-TileColor': '#a763f1',
-    'apple-mobile-web-app-capable': 'yes',
-    'apple-mobile-web-app-status-bar-style': 'default',
-    'apple-mobile-web-app-title': 'Amgel Jodi',
+    "msapplication-TileColor": "#a763f1",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "default",
+    "apple-mobile-web-app-title": "Amgel Jodi",
   },
-}
+};
 
 // JSON-LD Structured Data
 const jsonLd = {
-  '@context': 'https://schema.org',
-  '@graph': [
+  "@context": "https://schema.org",
+  "@graph": [
     {
-      '@type': 'Organization',
-      '@id': `${siteUrl}/#organization`,
-      name: 'Amgel Jodi',
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      name: "Amgel Jodi",
       url: siteUrl,
+      description:
+        "Amgel Jodi is the trusted GSB Konkani matrimony platform connecting verified profiles within the Gaud Saraswat Brahmin community.",
+      foundingDate: "2026",
       logo: {
-        '@type': 'ImageObject',
+        "@type": "ImageObject",
         url: `${siteUrl}/logo.svg`,
         width: 512,
         height: 512,
       },
       sameAs: [
-        'https://www.instagram.com/amgeljodi',
-        'https://twitter.com/amgeljodi',
-        'https://www.facebook.com/amgeljodi',
+        "https://www.instagram.com/amgeljodi",
+        "https://twitter.com/amgeljodi",
+        "https://www.facebook.com/amgeljodi",
       ],
       contactPoint: {
-        '@type': 'ContactPoint',
-        email: 'amgeljodi26@gmail.com',
-        contactType: 'customer service',
-        availableLanguage: ['English', 'Hindi', 'Konkani'],
+        "@type": "ContactPoint",
+        email: "amgeljodi26@gmail.com",
+        contactType: "customer service",
+        availableLanguage: ["English", "Hindi", "Konkani"],
       },
     },
     {
-      '@type': 'WebSite',
-      '@id': `${siteUrl}/#website`,
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
       url: siteUrl,
-      name: 'Amgel Jodi',
-      description: 'GSB Konkani Matrimony Platform',
+      name: "Amgel Jodi",
+      description: "GSB Konkani Matrimony Platform",
       publisher: {
-        '@id': `${siteUrl}/#organization`,
+        "@id": `${siteUrl}/#organization`,
       },
       potentialAction: {
-        '@type': 'SearchAction',
+        "@type": "SearchAction",
         target: {
-          '@type': 'EntryPoint',
-          urlTemplate: `${siteUrl}/search?q={search_term_string}`,
+          "@type": "EntryPoint",
+          urlTemplate: `${siteUrl}/?s={search_term_string}`,
         },
-        'query-input': 'required name=search_term_string',
+        "query-input": "required name=search_term_string",
       },
     },
     {
-      '@type': 'WebPage',
-      '@id': `${siteUrl}/#webpage`,
+      "@type": "WebPage",
+      "@id": `${siteUrl}/#webpage`,
       url: siteUrl,
-      name: 'Amgel Jodi - GSB Konkani Matrimony',
+      name: "Amgel Jodi - GSB Konkani Matrimony",
       isPartOf: {
-        '@id': `${siteUrl}/#website`,
+        "@id": `${siteUrl}/#website`,
       },
       about: {
-        '@id': `${siteUrl}/#organization`,
+        "@id": `${siteUrl}/#organization`,
       },
-      description: 'Find your perfect match in the GSB Konkani community with Amgel Jodi matrimony platform.',
+      description:
+        "Find your perfect match in the GSB Konkani community with Amgel Jodi matrimony platform.",
     },
     {
-      '@type': 'LocalBusiness',
-      '@id': `${siteUrl}/#localbusiness`,
-      name: 'Amgel Jodi',
-      description: 'Matrimony services for GSB Konkani community',
+      "@type": "LocalBusiness",
+      "@id": `${siteUrl}/#localbusiness`,
+      name: "Amgel Jodi",
+      description: "Matrimony services for GSB Konkani community",
       url: siteUrl,
-      priceRange: 'Free',
+      priceRange: "Free",
       address: {
-        '@type': 'PostalAddress',
-        addressCountry: 'IN',
+        "@type": "PostalAddress",
+        addressCountry: "IN",
       },
       geo: {
-        '@type': 'GeoCoordinates',
-        latitude: '15.4909',
-        longitude: '73.8278',
+        "@type": "GeoCoordinates",
+        latitude: "15.4909",
+        longitude: "73.8278",
       },
       openingHoursSpecification: {
-        '@type': 'OpeningHoursSpecification',
-        dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
-        opens: '10:00',
-        closes: '19:00',
+        "@type": "OpeningHoursSpecification",
+        dayOfWeek: [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+        ],
+        opens: "10:00",
+        closes: "19:00",
       },
     },
   ],
-}
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en" className={`${dmSans.variable} ${cormorant.variable}`}>
       <head>
-        <Script
-          id="json-ld"
+        <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-          strategy="afterInteractive"
         />
       </head>
       <body className="font-sans">
@@ -233,7 +242,5 @@ export default function RootLayout({
         </AuthCheck>
       </body>
     </html>
-  )
+  );
 }
-
-
