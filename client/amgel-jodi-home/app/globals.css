@@ -68,6 +68,25 @@
     }
   }
 
+  @keyframes heroCycle {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    18% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    72% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+  }
+
   @keyframes slideUp {
     from {
       transform: translateY(100%);
@@ -122,6 +141,23 @@
     }
     100% {
       background-position: 200% 0;
+    }
+  }
+
+  @keyframes heroBadgeSweep {
+    0% {
+      background-position: -200% 0;
+      opacity: 0;
+    }
+    12% {
+      opacity: 1;
+    }
+    78% {
+      opacity: 1;
+    }
+    100% {
+      background-position: 200% 0;
+      opacity: 0;
     }
   }
 
@@ -211,6 +247,10 @@
 
   .animate-fade-in-down {
     animation: fadeInDown 0.6s ease-out forwards;
+  }
+
+  .animate-hero-cycle {
+    animation: heroCycle 2.4s ease-in-out forwards;
   }
 
   .animate-slide-up {
@@ -335,6 +375,36 @@
   /* Profile card blur */
   .blur-overlay {
     @apply absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent backdrop-blur-[2px];
+  }
+
+  .hero-badge-shimmer {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .hero-badge-shimmer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: 9999px;
+    background: linear-gradient(
+      115deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.2) 18%,
+      rgba(255, 255, 255, 0.85) 30%,
+      rgba(255, 255, 255, 0.18) 42%,
+      rgba(255, 255, 255, 0.08) 100%
+    );
+    background-size: 220% 100%;
+    animation: heroBadgeSweep 2.8s linear 1 forwards;
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: -1;
   }
 }
 

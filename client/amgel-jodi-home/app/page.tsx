@@ -86,8 +86,6 @@ function useCounter(end: number, duration: number = 2000, startOnView: boolean =
 }
 
 export default function Home() {
-  const [displayText, setDisplayText] = useState('')
-  const [isDeleting, setIsDeleting] = useState(false)
   const [phraseIndex, setPhraseIndex] = useState(0)
 
   const phrases = [
@@ -97,33 +95,14 @@ export default function Home() {
     "Konkani Hearts Unite",
   ]
 
-  // Typewriter effect
+  // Smooth phrase rotation
   useEffect(() => {
-    const currentPhrase = phrases[phraseIndex]
-    const typeSpeed = isDeleting ? 50 : 100
-    const pauseTime = isDeleting ? 500 : 2000
-
-    if (!isDeleting && displayText === currentPhrase) {
-      setTimeout(() => setIsDeleting(true), pauseTime)
-      return
-    }
-
-    if (isDeleting && displayText === '') {
-      setIsDeleting(false)
+    const timeout = window.setTimeout(() => {
       setPhraseIndex((prev) => (prev + 1) % phrases.length)
-      return
-    }
+    }, 2400)
 
-    const timeout = setTimeout(() => {
-      setDisplayText(
-        isDeleting
-          ? currentPhrase.substring(0, displayText.length - 1)
-          : currentPhrase.substring(0, displayText.length + 1)
-      )
-    }, typeSpeed)
-
-    return () => clearTimeout(timeout)
-  }, [displayText, isDeleting, phraseIndex, phrases])
+    return () => window.clearTimeout(timeout)
+  }, [phraseIndex, phrases.length])
 
   const stat1 = useCounter(500, 2000)
   const stat2 = useCounter(150, 2000)
@@ -161,21 +140,23 @@ export default function Home() {
         <div className="relative z-10 container mx-auto px-4 py-20">
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 mb-8 animate-fade-in-down">
+            <div className="hero-badge-shimmer inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 mb-8 animate-fade-in-down">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-white/80 text-sm font-medium">Exclusively for GSB Konkani Community</span>
+              <span className="text-white/80 text-sm font-medium">Exclusively for our community</span>
             </div>
 
             {/* Main Title */}
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-semibold text-white mb-6 animate-fade-in-up tracking-tight">
-              Amgel Jodi
+              Amgel Jodi - GSB Konkani Matrimony
             </h1>
 
             {/* Typewriter Text */}
-            <div className="h-16 md:h-20 flex items-center justify-center mb-6">
-              <p className="text-2xl md:text-4xl lg:text-5xl text-myColor-300 font-medium">
-                {displayText}
-                <span className="typewriter-cursor text-white">|</span>
+            <div className="h-16 md:h-20 flex items-center justify-center mb-6 overflow-hidden">
+              <p
+                key={phrases[phraseIndex]}
+                className="animate-hero-cycle text-2xl md:text-4xl lg:text-5xl text-myColor-300 font-medium"
+              >
+                {phrases[phraseIndex]}
               </p>
             </div>
 
