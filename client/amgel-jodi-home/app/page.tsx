@@ -1,6 +1,47 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
+import { articles } from './articles'
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: [
+    {
+      '@type': 'Question',
+      name: 'What is GSB Konkani Matrimony?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'GSB Konkani Matrimony refers to matrimonial matchmaking services specifically for the Gaud Saraswat Brahmin (GSB) community, who speak Konkani and are primarily settled along India\'s Konkan coast and in cities like Mumbai, Mangalore, and Udupi. Amgel Jodi is a dedicated GSB Konkani matrimony platform offering verified profiles and community-focused matchmaking.'
+      }
+    },
+    {
+      '@type': 'Question',
+      name: 'How does Amgel Jodi verify GSB Konkani profiles?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Amgel Jodi verifies every profile through a manual review process ensuring authenticity within the GSB Konkani community. Over 500 families have found their match through our platform.'
+      }
+    },
+    {
+      '@type': 'Question',
+      name: 'Is Amgel Jodi free to join for GSB Konkani matrimony?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Yes, you can create a free profile on Amgel Jodi and browse GSB Konkani matrimony matches. Premium features are available for enhanced connectivity and direct contact with matches.'
+      }
+    },
+    {
+      '@type': 'Question',
+      name: 'What makes Amgel Jodi different from other GSB Konkani matrimony sites?',
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: 'Amgel Jodi is built exclusively for the GSB Konkani community with a family-first approach, verified profiles, and privacy controls tailored to community values unlike large generic matrimony platforms.'
+      }
+    }
+  ]
+}
 
 // Open login sheet via custom event
 const openLoginSheet = () => {
@@ -89,7 +130,12 @@ export default function Home() {
   const stat3 = useCounter(98, 2000)
 
   return (
-    <main className="min-h-screen overflow-x-hidden">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+      <main className="min-h-screen overflow-x-hidden">
       {/* Hero Section - Emotional & Clean */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background image */}
@@ -134,7 +180,7 @@ export default function Home() {
             </div>
 
             {/* Subtitle */}
-            <p className="text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-10 animate-fade-in-up delay-300">
+            <p className="text-lg md:text-xl text-white/60 max-w-3xl mx-auto mb-10 animate-fade-in-up delay-300">
               Not just another matrimony site. A place where families come together,
               traditions are honored, and love stories begin.
             </p>
@@ -539,6 +585,56 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="bg-[linear-gradient(180deg,#fffdf8_0%,#fdf5ff_100%)] py-20 md:py-24">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto max-w-6xl">
+            <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div className="max-w-2xl">
+                <span className="inline-block rounded-full bg-myColor-100 px-4 py-2 text-sm font-medium text-myColor-700">
+                  Explore Marriage & Community
+                </span>
+                <h2 className="mt-4 text-3xl font-display font-semibold text-myColor-900 md:text-4xl">
+                  Short reads on marriage, traditions, and GSB Konkani life
+                </h2>
+                <p className="mt-3 text-base leading-7 text-myColor-600 md:text-lg">
+                  Browse quick articles on Lagna culture, family values, festival life, and modern matchmaking across Udupi, Mangalore, Mumbai, Bangalore, and beyond.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+              {articles.map((article) => (
+                <Link
+                  key={article.slug}
+                  href={`/${article.slug}`}
+                  className="group overflow-hidden rounded-[1.75rem] border border-myColor-100 bg-white shadow-[0_18px_60px_-36px_rgba(33,20,48,0.28)] transition-transform duration-300 hover:-translate-y-1"
+                >
+                  <div
+                    className="h-44 w-full bg-cover bg-center"
+                    style={{ backgroundImage: `url(${article.image})` }}
+                  />
+                  <div className="p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.24em] text-myColor-400">
+                      {article.eyebrow}
+                    </p>
+                    <h3 className="mt-3 text-xl font-semibold leading-snug text-myColor-900 transition-colors group-hover:text-myColor-700">
+                      {article.title}
+                    </h3>
+                    <p className="mt-3 text-sm leading-6 text-myColor-600">
+                      {article.description}
+                    </p>
+                    <div className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-myColor-700">
+                      Read article
+                      <span aria-hidden="true" className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA Section */}
       <section className="relative py-24 md:py-32 overflow-hidden">
         {/* Gradient background */}
@@ -606,8 +702,8 @@ export default function Home() {
                 <span className="text-2xl font-display font-semibold">Amgel Jodi</span>
               </div>
               <p className="text-myColor-400 max-w-md leading-relaxed">
-                The matrimonial platform designed with love for the GSB Konkani community.
-                Where traditions are honored and new beginnings are celebrated.
+                The dedicated GSB Konkani Matrimony platform trusted by GSB families across Mumbai,
+                Mangalore, and Udupi, with 500+ matched families since 2023 and 100% manually verified profiles.
               </p>
             </div>
 
@@ -669,20 +765,26 @@ export default function Home() {
 
             {/* Social Icons */}
             <div className="flex gap-3">
-              <a href="#" className="w-10 h-10 bg-myColor-800 hover:bg-myColor-700 rounded-full flex items-center justify-center transition-colors" aria-label="Instagram">
+              <a href="https://www.instagram.com/amgel_jodi/" rel="noopener noreferrer" target="_blank" className="w-10 h-10 bg-myColor-800 hover:bg-myColor-700 rounded-full flex items-center justify-center transition-colors" aria-label="Instagram">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                 </svg>
               </a>
-              <a href="#" className="w-10 h-10 bg-myColor-800 hover:bg-myColor-700 rounded-full flex items-center justify-center transition-colors" aria-label="Twitter">
+              <a href="https://facebook.com/amgeljodi" rel="noopener noreferrer" target="_blank" className="w-10 h-10 bg-myColor-800 hover:bg-myColor-700 rounded-full flex items-center justify-center transition-colors" aria-label="Facebook">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073c0 6.019 4.388 11.009 10.125 11.927v-8.437H7.078v-3.49h3.047V9.412c0-3.021 1.792-4.689 4.533-4.689 1.313 0 2.686.235 2.686.235v2.969H15.83c-1.491 0-1.956.931-1.956 1.886v2.26h3.328l-.532 3.49h-2.796V24C19.612 23.082 24 18.092 24 12.073z"/>
+                </svg>
+              </a>
+              <a href="https://wa.me/919108337872" rel="noopener noreferrer" target="_blank" className="w-10 h-10 bg-myColor-800 hover:bg-myColor-700 rounded-full flex items-center justify-center transition-colors" aria-label="WhatsApp">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M20.52 3.48A11.86 11.86 0 0012.06 0C5.5 0 .15 5.34.15 11.91c0 2.1.55 4.16 1.6 5.97L0 24l6.28-1.64a11.8 11.8 0 005.77 1.48h.01c6.56 0 11.91-5.34 11.91-11.91 0-3.18-1.24-6.17-3.45-8.45zm-8.46 18.3h-.01a9.84 9.84 0 01-5.02-1.38l-.36-.21-3.73.98 1-3.64-.24-.37a9.83 9.83 0 01-1.5-5.25c0-5.43 4.42-9.85 9.87-9.85 2.63 0 5.1 1.02 6.96 2.88a9.78 9.78 0 012.88 6.96c0 5.44-4.43 9.88-9.85 9.88zm5.41-7.41c-.3-.15-1.77-.87-2.05-.97-.27-.1-.47-.15-.67.15-.2.3-.76.97-.93 1.17-.17.2-.35.22-.65.07-.3-.15-1.25-.46-2.38-1.48-.88-.78-1.47-1.75-1.65-2.05-.17-.3-.02-.46.13-.61.14-.14.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.62-.92-2.22-.24-.58-.48-.5-.67-.5h-.57c-.2 0-.52.08-.8.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.48.71.31 1.27.5 1.71.64.72.23 1.37.2 1.88.12.57-.08 1.77-.72 2.02-1.42.25-.7.25-1.3.17-1.42-.07-.12-.27-.2-.57-.35z"/>
                 </svg>
               </a>
             </div>
           </div>
         </div>
       </footer>
-    </main>
+      </main>
+    </>
   )
 }

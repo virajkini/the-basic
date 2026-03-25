@@ -183,6 +183,20 @@ export default function ProfilePage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || loading) return
+
+    window.dispatchEvent(new CustomEvent('amgeljodi:profile-nav-visibility', {
+      detail: { hide: !existingProfile }
+    }))
+
+    return () => {
+      window.dispatchEvent(new CustomEvent('amgeljodi:profile-nav-visibility', {
+        detail: { hide: false }
+      }))
+    }
+  }, [loading, existingProfile])
+
   const fetchData = async () => {
     if (!user?.userId) return
 

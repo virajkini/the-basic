@@ -17,12 +17,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -34,7 +30,6 @@ import com.amgeljodi.app.ui.auth.OtpScreen
 import com.amgeljodi.app.ui.auth.PhoneEntryScreen
 import com.amgeljodi.app.ui.main.MainScreen
 import com.amgeljodi.app.util.Constants
-import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +40,6 @@ fun AppEntryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val webUrl = deepLinkUrl ?: uiState.postLoginUrl
-    var hasAutoPrompted by rememberSaveable { mutableStateOf(false) }
     val loginSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     BackHandler(enabled = uiState.route == AppRoute.PhoneEntry || uiState.route == AppRoute.OtpEntry) {
@@ -58,22 +52,6 @@ fun AppEntryScreen(
 
     BackHandler(enabled = uiState.route == AppRoute.WebView && uiState.webViewMode == WebViewMode.Public) {
         viewModel.closePublicWebView()
-    }
-
-    LaunchedEffect(uiState.route) {
-        if (uiState.route == AppRoute.PhoneEntry || uiState.route == AppRoute.OtpEntry) {
-            hasAutoPrompted = true
-        }
-    }
-
-    LaunchedEffect(uiState.route, hasAutoPrompted) {
-        if (uiState.route == AppRoute.Landing && !hasAutoPrompted) {
-            delay(10_000)
-            if (uiState.route == AppRoute.Landing) {
-                hasAutoPrompted = true
-                viewModel.openLogin()
-            }
-        }
     }
 
     AnimatedContent(
@@ -123,11 +101,9 @@ fun AppEntryScreen(
                                 isLoading = uiState.isLoading,
                                 errorMessage = uiState.errorMessage,
                                 sheetMode = true,
-                                onClose = viewModel::goBackToLanding,
                                 onCountrySelected = viewModel::onCountrySelected,
                                 onPhoneChanged = viewModel::onPhoneChanged,
-                                onContinue = viewModel::sendOtp,
-                                onBack = viewModel::goBackToLanding
+                                onContinue = viewModel::sendOtp
                             )
 
                             AppRoute.OtpEntry -> OtpScreen(
@@ -139,7 +115,6 @@ fun AppEntryScreen(
                                 errorMessage = uiState.errorMessage,
                                 infoMessage = uiState.infoMessage,
                                 sheetMode = true,
-                                onClose = viewModel::goBackToLanding,
                                 onOtpChanged = viewModel::onOtpChanged,
                                 onVerify = viewModel::verifyOtp,
                                 onResend = viewModel::resendOtp,
