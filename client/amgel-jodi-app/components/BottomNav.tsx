@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 export default function BottomNav() {
   const pathname = usePathname()
   const [isAndroidApp, setIsAndroidApp] = useState(false)
+  const [hideForProfileCreation, setHideForProfileCreation] = useState(false)
 
   const isActive = (path: string) => pathname === path
 
@@ -18,6 +19,28 @@ export default function BottomNav() {
     )
     setIsAndroidApp(isAndroid)
   }, [])
+
+  useEffect(() => {
+    if (pathname !== '/profile') {
+      setHideForProfileCreation(false)
+      return
+    }
+
+    const handleVisibility = (event: Event) => {
+      const customEvent = event as CustomEvent<{ hide?: boolean }>
+      setHideForProfileCreation(customEvent.detail?.hide === true)
+    }
+
+    window.addEventListener('amgeljodi:profile-nav-visibility', handleVisibility as EventListener)
+
+    return () => {
+      window.removeEventListener('amgeljodi:profile-nav-visibility', handleVisibility as EventListener)
+    }
+  }, [pathname])
+
+  if (pathname === '/profile' && hideForProfileCreation) {
+    return null
+  }
 
   return (
     <nav className="md:hidden bg-white/95 backdrop-blur-sm border-t border-gray-200 shadow-[0_-2px_10px_rgba(0,0,0,0.08)]">

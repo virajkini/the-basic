@@ -39,8 +39,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.KeyboardArrowRight
@@ -55,7 +53,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -176,11 +173,9 @@ fun PhoneEntryScreen(
     isLoading: Boolean,
     errorMessage: String?,
     sheetMode: Boolean = false,
-    onClose: (() -> Unit)? = null,
     onCountrySelected: (String) -> Unit,
     onPhoneChanged: (String) -> Unit,
-    onContinue: () -> Unit,
-    onBack: () -> Unit
+    onContinue: () -> Unit
 ) {
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
@@ -200,30 +195,6 @@ fun PhoneEntryScreen(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = TextPrimary
-                        )
-                    }
-                    if (sheetMode && onClose != null) {
-                        IconButton(onClick = onClose) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Close",
-                                tint = TextPrimary
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.size(48.dp))
-                    }
-                }
-
                 SectionHeader(
                     eyebrow = "OTP login",
                     title = "Sign in to continue"
@@ -347,7 +318,6 @@ fun OtpScreen(
     errorMessage: String?,
     infoMessage: String?,
     sheetMode: Boolean = false,
-    onClose: (() -> Unit)? = null,
     onOtpChanged: (String) -> Unit,
     onVerify: () -> Unit,
     onResend: () -> Unit,
@@ -362,30 +332,6 @@ fun OtpScreen(
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    IconButton(onClick = onChangeNumber) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = TextPrimary
-                        )
-                    }
-                    if (sheetMode && onClose != null) {
-                        IconButton(onClick = onClose) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Close",
-                                tint = TextPrimary
-                            )
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.size(48.dp))
-                    }
-                }
-
                 SectionHeader(
                     eyebrow = "Verify OTP",
                     title = "+${country.dialCode} $phone"
@@ -911,7 +857,7 @@ private fun QuickLinksSection(onLinkClick: (String) -> Unit) {
         ) {
             Text(
                 text = "Quick Links",
-                style = MaterialTheme.typography.headlineMedium,
+                style = MaterialTheme.typography.titleMedium.copy(fontSize = 16.sp),
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -930,12 +876,12 @@ private fun QuickLinksSection(onLinkClick: (String) -> Unit) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                            .padding(horizontal = 10.dp, vertical = 7.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Surface(
-                            modifier = Modifier.size(44.dp),
+                            modifier = Modifier.size(34.dp),
                             shape = CircleShape,
                             color = item.iconBg
                         ) {
@@ -944,13 +890,13 @@ private fun QuickLinksSection(onLinkClick: (String) -> Unit) {
                                     imageVector = item.icon,
                                     contentDescription = null,
                                     tint = item.iconTint,
-                                    modifier = Modifier.size(20.dp)
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                         }
                         Text(
                             text = item.label,
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 12.sp),
                             fontWeight = FontWeight.Medium,
                             color = TextPrimary,
                             modifier = Modifier.weight(1f)
