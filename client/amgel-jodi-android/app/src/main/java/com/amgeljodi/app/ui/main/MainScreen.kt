@@ -218,11 +218,7 @@ fun MainScreen(
                                 viewModel.saveLastVisitedUrl(url)
                             }
 
-                            if (
-                                url.startsWith(Constants.Urls.HOME) ||
-                                url.startsWith("https://amgeljodi.com") ||
-                                url.startsWith("https://stage.amgeljodi.com")
-                            ) {
+                            if (isPublicLandingUrl(url)) {
                                 onAuthLost?.invoke()
                             }
                         },
@@ -298,4 +294,14 @@ fun MainScreen(
             )
         }
     }
+}
+
+private fun isPublicLandingUrl(url: String): Boolean {
+    return runCatching {
+        val uri = Uri.parse(url)
+        val host = uri.host?.removePrefix("www.") ?: return false
+        val path = uri.encodedPath?.trimEnd('/').orEmpty()
+
+        host in setOf("amgeljodi.com", "stage.amgeljodi.com") && path.isEmpty()
+    }.getOrDefault(false)
 }
