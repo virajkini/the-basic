@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { useEffect, useState, useRef } from 'react'
 import { articles } from './articles'
 
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.amgeljodi.app'
+
 const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
@@ -85,6 +87,80 @@ function useCounter(end: number, duration: number = 2000, startOnView: boolean =
   return { count, ref }
 }
 
+function GooglePlayBadge({ compact = false, tone = 'default' }: { compact?: boolean; tone?: 'default' | 'hero' }) {
+  const isHero = tone === 'hero'
+
+  return (
+    <a
+      href={PLAY_STORE_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`group inline-flex items-center gap-3 rounded-2xl border shadow-xl transition-all duration-300 hover:-translate-y-0.5 ${
+        isHero
+          ? 'border-white/14 bg-white/8 text-white shadow-black/20 backdrop-blur-sm hover:border-white/24 hover:bg-white/12'
+          : 'border-white/15 bg-zinc-950/80 text-white shadow-black/20 hover:border-white/30 hover:bg-zinc-900'
+      } ${compact ? 'px-4 py-3' : 'px-5 py-4'}`}
+      aria-label="Download Amgel Jodi on Google Play"
+    >
+      <span
+        className={`flex items-center justify-center rounded-xl ring-1 ${
+          isHero ? 'bg-black/20 ring-white/10' : 'bg-white/10 ring-white/10'
+        } ${compact ? 'h-11 w-11' : 'h-12 w-12'}`}
+      >
+        <svg viewBox="0 0 24 24" className={`${compact ? 'h-6 w-6' : 'h-7 w-7'}`} aria-hidden="true">
+          <path fill="#34A853" d="M4.8 3.8 13.9 13 4.8 20.2c-.5-.3-.8-.9-.8-1.6V5.4c0-.7.3-1.3.8-1.6Z" />
+          <path fill="#4285F4" d="m16.8 10.6 2.9 1.7c1 .6 1 1.8 0 2.4l-2.9 1.7-3.2-3.2 3.2-2.6Z" />
+          <path fill="#FBBC04" d="m4.8 20.2 9.8-7.7 2.2 2.2-8.9 5.1c-1.1.6-2.3.7-3.1.4Z" />
+          <path fill="#EA4335" d="m4.8 3.8 3.1-.4c.8-.1 1.7.1 2.4.5l6.5 3.7-2.2 2.2-9.8-6Z" />
+        </svg>
+      </span>
+      <span className="text-left leading-tight">
+        <span className={`block ${isHero ? 'text-white/55' : 'text-white/60'} ${compact ? 'text-[10px]' : 'text-[11px]'}`}>Get the app on</span>
+        <span className={`block font-semibold tracking-tight ${compact ? 'text-base' : 'text-lg'}`}>Google Play</span>
+      </span>
+      {!compact && (
+        <span className={`hidden text-sm transition-transform duration-300 group-hover:translate-x-0.5 md:inline-flex ${isHero ? 'text-white/55' : 'text-white/60'}`}>
+          Android
+        </span>
+      )}
+    </a>
+  )
+}
+
+function HeroPlayLink() {
+  return (
+    <a
+      href={PLAY_STORE_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group inline-flex items-center gap-3 rounded-full border border-white/14 bg-white/6 px-4 py-3 text-white/88 backdrop-blur-sm transition-all duration-300 hover:border-white/24 hover:bg-white/10"
+      aria-label="Download Amgel Jodi on Google Play"
+    >
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-black/20 ring-1 ring-white/10">
+        <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+          <path fill="#34A853" d="M4.8 3.8 13.9 13 4.8 20.2c-.5-.3-.8-.9-.8-1.6V5.4c0-.7.3-1.3.8-1.6Z" />
+          <path fill="#4285F4" d="m16.8 10.6 2.9 1.7c1 .6 1 1.8 0 2.4l-2.9 1.7-3.2-3.2 3.2-2.6Z" />
+          <path fill="#FBBC04" d="m4.8 20.2 9.8-7.7 2.2 2.2-8.9 5.1c-1.1.6-2.3.7-3.1.4Z" />
+          <path fill="#EA4335" d="m4.8 3.8 3.1-.4c.8-.1 1.7.1 2.4.5l6.5 3.7-2.2 2.2-9.8-6Z" />
+        </svg>
+      </span>
+      <span className="text-left leading-tight">
+        <span className="block text-[11px] text-white/50">Download the Android app</span>
+        <span className="block text-sm font-semibold tracking-tight text-white">Get it on Google Play</span>
+      </span>
+      <svg
+        className="h-4 w-4 text-white/45 transition-transform duration-300 group-hover:translate-x-0.5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </a>
+  )
+}
+
 export default function Home() {
   const [phraseIndex, setPhraseIndex] = useState(0)
 
@@ -160,14 +236,8 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Subtitle */}
-            <p className="text-lg md:text-xl text-white/60 max-w-3xl mx-auto mb-10 animate-fade-in-up delay-300">
-              Not just another matrimony site. A place where families come together,
-              traditions are honored, and love stories begin.
-            </p>
-
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up delay-500">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up delay-300">
               <button
                 onClick={openLoginSheet}
                 className="group relative px-10 py-4 bg-white text-myColor-800 rounded-full font-semibold text-lg shadow-2xl shadow-white/20 hover:shadow-white/30 transition-all duration-300 hover:scale-105 active:scale-95"
@@ -186,6 +256,15 @@ export default function Home() {
               >
                 See How It Works
               </a>
+            </div>
+
+            <div className="mt-9 flex flex-col items-center gap-3 animate-fade-in-up delay-300">
+              <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.24em] text-white/55">
+                <span className="h-px w-10 bg-white/18" />
+                <span>Also on Android</span>
+                <span className="h-px w-10 bg-white/18" />
+              </div>
+              <HeroPlayLink />
             </div>
 
             {/* Scroll indicator */}
@@ -686,6 +765,9 @@ export default function Home() {
                 The dedicated GSB Konkani Matrimony platform trusted by GSB families across Mumbai,
                 Mangalore, and Udupi, with 500+ matched families since 2023 and 100% manually verified profiles.
               </p>
+              <div className="mt-6">
+                <GooglePlayBadge compact />
+              </div>
             </div>
 
             {/* Quick Links */}

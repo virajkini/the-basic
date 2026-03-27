@@ -3,6 +3,7 @@ import { DM_Sans, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import Header from "./components/Header";
 import AuthCheck from "./providers/AuthCheck";
+import { SubpageAndroidAppStrip } from "./components/AndroidAppCta";
 
 // Refined sans-serif for body text
 const dmSans = DM_Sans({
@@ -239,6 +240,7 @@ export default function RootLayout({
         <AuthCheck>
           <Header />
           {children}
+          <SubpageAndroidAppStrip />
         </AuthCheck>
       </body>
     </html>

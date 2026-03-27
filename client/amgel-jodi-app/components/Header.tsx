@@ -7,11 +7,13 @@ import NotificationBell from './NotificationBell'
 
 // Remove trailing slash to prevent double slashes in URLs
 const HOME_URL = (process.env.NEXT_PUBLIC_HOME_URL || 'https://amgeljodi.com').replace(/\/$/, '')
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.amgeljodi.app'
 
 export default function Header() {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
   const [desktopMenuOpen, setDesktopMenuOpen] = useState(false)
+  const [isAndroidApp, setIsAndroidApp] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const desktopMenuRef = useRef<HTMLDivElement>(null)
 
@@ -29,6 +31,18 @@ export default function Header() {
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    setIsAndroidApp(
+      (window as Window & { isAndroidApp?: boolean; isAmgelJodiApp?: boolean }).isAndroidApp === true ||
+      (window as Window & { isAndroidApp?: boolean; isAmgelJodiApp?: boolean }).isAmgelJodiApp === true ||
+      navigator.userAgent.includes('AmgelJodiApp')
+    )
   }, [])
 
   return (
@@ -96,6 +110,23 @@ export default function Header() {
 
               {desktopMenuOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+                  {!isAndroidApp && (
+                    <a
+                      href={PLAY_STORE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setDesktopMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-myColor-50 transition-colors"
+                    >
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="#34A853" d="M4.8 3.8 13.9 13 4.8 20.2c-.5-.3-.8-.9-.8-1.6V5.4c0-.7.3-1.3.8-1.6Z" />
+                        <path fill="#4285F4" d="m16.8 10.6 2.9 1.7c1 .6 1 1.8 0 2.4l-2.9 1.7-3.2-3.2 3.2-2.6Z" />
+                        <path fill="#FBBC04" d="m4.8 20.2 9.8-7.7 2.2 2.2-8.9 5.1c-1.1.6-2.3.7-3.1.4Z" />
+                        <path fill="#EA4335" d="m4.8 3.8 3.1-.4c.8-.1 1.7.1 2.4.5l6.5 3.7-2.2 2.2-9.8-6Z" />
+                      </svg>
+                      <span>Download App</span>
+                    </a>
+                  )}
                   <a
                     href={`${HOME_URL}/contact`}
                     onClick={() => setDesktopMenuOpen(false)}
@@ -179,6 +210,23 @@ export default function Header() {
                     <span>Edit Profile</span>
                   </Link>
                   <div className="border-t border-gray-100 my-1" />
+                  {!isAndroidApp && (
+                    <a
+                      href={PLAY_STORE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-myColor-50 transition-colors"
+                    >
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+                        <path fill="#34A853" d="M4.8 3.8 13.9 13 4.8 20.2c-.5-.3-.8-.9-.8-1.6V5.4c0-.7.3-1.3.8-1.6Z" />
+                        <path fill="#4285F4" d="m16.8 10.6 2.9 1.7c1 .6 1 1.8 0 2.4l-2.9 1.7-3.2-3.2 3.2-2.6Z" />
+                        <path fill="#FBBC04" d="m4.8 20.2 9.8-7.7 2.2 2.2-8.9 5.1c-1.1.6-2.3.7-3.1.4Z" />
+                        <path fill="#EA4335" d="m4.8 3.8 3.1-.4c.8-.1 1.7.1 2.4.5l6.5 3.7-2.2 2.2-9.8-6Z" />
+                      </svg>
+                      <span>Download App</span>
+                    </a>
+                  )}
                   <a
                     href={`${HOME_URL}/contact`}
                     onClick={() => setMenuOpen(false)}
