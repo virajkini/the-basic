@@ -180,9 +180,9 @@ export default function Home() {
     return () => window.clearTimeout(timeout)
   }, [phraseIndex, phrases.length])
 
-  const stat1 = useCounter(500, 2000)
+  const stat1 = useCounter(100, 2000)
   const stat2 = useCounter(150, 2000)
-  const stat3 = useCounter(98, 2000)
+  const stat3 = useCounter(100, 2000)
 
   return (
     <>
@@ -416,7 +416,7 @@ export default function Home() {
               <div className="text-center md:text-left flex-1 bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-amber-100">
                 <h3 className="text-xl md:text-2xl font-bold text-myColor-900 mb-2">Connect & Meet</h3>
                 <p className="text-myColor-600 leading-relaxed">
-                  Start meaningful conversations. Let families come together and write your beautiful love story.
+                  Send a connection request, match with the right profile, and unlock contact details to take the conversation forward.
                 </p>
               </div>
             </div>
@@ -833,7 +833,7 @@ export default function Home() {
                   <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                 </svg>
               </a>
-              <a href="https://facebook.com/amgeljodi" rel="noopener noreferrer" target="_blank" className="w-10 h-10 bg-myColor-800 hover:bg-myColor-700 rounded-full flex items-center justify-center transition-colors" aria-label="Facebook">
+              <a href="https://www.facebook.com/profile.php?id=61576507635393" rel="noopener noreferrer" target="_blank" className="w-10 h-10 bg-myColor-800 hover:bg-myColor-700 rounded-full flex items-center justify-center transition-colors" aria-label="Facebook">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073c0 6.019 4.388 11.009 10.125 11.927v-8.437H7.078v-3.49h3.047V9.412c0-3.021 1.792-4.689 4.533-4.689 1.313 0 2.686.235 2.686.235v2.969H15.83c-1.491 0-1.956.931-1.956 1.886v2.26h3.328l-.532 3.49h-2.796V24C19.612 23.082 24 18.092 24 12.073z"/>
                 </svg>

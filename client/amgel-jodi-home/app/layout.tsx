@@ -149,7 +149,7 @@ const jsonLd = {
       sameAs: [
         "https://www.instagram.com/amgeljodi",
         "https://twitter.com/amgeljodi",
-        "https://www.facebook.com/amgeljodi",
+        "https://www.facebook.com/profile.php?id=61576507635393",
       ],
       contactPoint: {
         "@type": "ContactPoint",
