@@ -17,6 +17,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,6 +33,8 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -75,12 +78,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.amgeljodi.app.R
@@ -134,6 +140,11 @@ fun LandingScreen(
         ) {
             item {
                 Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                    LandingTopBar(onLoginClick = onPrimaryAction)
+                }
+            }
+            item {
+                Box(modifier = Modifier.padding(horizontal = 20.dp)) {
                     HeroCard(onPrimaryAction = onPrimaryAction, progress = drift)
                 }
             }
@@ -180,6 +191,7 @@ fun PhoneEntryScreen(
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
+    val scrollState = rememberScrollState()
 
     LaunchedEffect(sheetMode) {
         focusRequester.requestFocus()
@@ -191,116 +203,126 @@ fun PhoneEntryScreen(
             modifier = (if (sheetMode) Modifier.fillMaxWidth() else Modifier.fillMaxSize())
                 .then(if (sheetMode) Modifier else Modifier.statusBarsPadding().navigationBarsPadding())
                 .imePadding()
+                .verticalScroll(scrollState)
                 .padding(horizontal = 22.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                SectionHeader(
-                    eyebrow = "OTP login",
-                    title = "Sign in to continue"
-                )
+            SectionHeader(
+                eyebrow = "OTP login",
+                title = "Sign in to continue"
+            )
 
-                Card(
-                    shape = RoundedCornerShape(30.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            Card(
+                shape = RoundedCornerShape(30.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceDark),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(22.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(22.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            countries.forEach { country ->
-                                val isSelected = country.code == selectedCountry.code
-                                Surface(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(18.dp))
-                                        .clickable(enabled = !isLoading) { onCountrySelected(country.code) },
-                                    shape = RoundedCornerShape(18.dp),
-                                    color = if (isSelected) SoftLilac else Color.White,
-                                    border = BorderStroke(
-                                        width = 1.dp,
-                                        color = if (isSelected) Lavender else OutlineSoft
-                                    )
-                                ) {
-                                    Text(
-                                        text = "${country.flag} +${country.dialCode}",
-                                        style = MaterialTheme.typography.labelLarge,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = TextPrimary,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 12.dp)
-                                    )
-                                }
-                            }
-                        }
-                        OutlinedTextField(
-                            value = phone,
-                            onValueChange = onPhoneChanged,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .focusRequester(focusRequester),
-                            enabled = !isLoading,
-                            singleLine = true,
-                            shape = RoundedCornerShape(20.dp),
-                            textStyle = MaterialTheme.typography.titleMedium.copy(color = TextPrimary),
-                            prefix = {
+                        countries.forEach { country ->
+                            val isSelected = country.code == selectedCountry.code
+                            Surface(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .clickable(enabled = !isLoading) { onCountrySelected(country.code) },
+                                shape = RoundedCornerShape(18.dp),
+                                color = if (isSelected) SoftLilac else Color.White,
+                                border = BorderStroke(
+                                    width = 1.dp,
+                                    color = if (isSelected) Lavender else OutlineSoft
+                                )
+                            ) {
                                 Text(
-                                    text = "+${selectedCountry.dialCode}",
-                                    style = MaterialTheme.typography.titleMedium,
+                                    text = "${country.flag} +${country.dialCode}",
+                                    style = MaterialTheme.typography.labelLarge,
                                     fontWeight = FontWeight.SemiBold,
-                                    color = TextPrimary
-                                )
-                            },
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Phone,
-                                imeAction = ImeAction.Done
-                            ),
-                            keyboardActions = KeyboardActions(onDone = {
-                                focusManager.clearFocus()
-                                onContinue()
-                            }),
-                            placeholder = { Text("Enter 10-digit mobile number") },
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedTextColor = TextPrimary,
-                                unfocusedTextColor = TextPrimary,
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                disabledContainerColor = SurfaceRaised,
-                                focusedBorderColor = Lavender,
-                                unfocusedBorderColor = OutlineSoft,
-                                focusedPlaceholderColor = TextSecondary,
-                                unfocusedPlaceholderColor = TextSecondary,
-                                cursorColor = Rose
-                            ),
-                            supportingText = {
-                                Text(
-                                    text = errorMessage ?: "We’ll send a 4-digit OTP for verification.",
-                                    color = if (errorMessage != null) MaterialTheme.colorScheme.error else TextSecondary
+                                    color = TextPrimary,
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 12.dp)
                                 )
                             }
-                        )
-                        Button(
-                            onClick = {
-                                focusManager.clearFocus()
-                                onContinue()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !isLoading && phone.length == 10,
-                            shape = RoundedCornerShape(20.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Lavender,
-                                contentColor = Color(0xFF481865)
-                            )
-                        ) {
-                            Text("Send OTP")
                         }
+                    }
+                    OutlinedTextField(
+                        value = phone,
+                        onValueChange = onPhoneChanged,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester),
+                        enabled = !isLoading,
+                        singleLine = true,
+                        shape = RoundedCornerShape(20.dp),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = TextPrimary),
+                        prefix = {
+                            Text(
+                                text = "+${selectedCountry.dialCode}",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = TextPrimary
+                            )
+                        },
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Phone,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(onDone = {
+                            focusManager.clearFocus()
+                            onContinue()
+                        }),
+                        placeholder = {
+                            Text(
+                                text = "Enter mobile number",
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimary,
+                            unfocusedTextColor = TextPrimary,
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            disabledContainerColor = SurfaceRaised,
+                            focusedBorderColor = Lavender,
+                            unfocusedBorderColor = OutlineSoft,
+                            focusedPlaceholderColor = TextSecondary,
+                            unfocusedPlaceholderColor = TextSecondary,
+                            cursorColor = Rose
+                        ),
+                        supportingText = {
+                            Text(
+                                text = errorMessage ?: "We’ll send a 4-digit OTP for verification.",
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                color = if (errorMessage != null) MaterialTheme.colorScheme.error else TextSecondary
+                            )
+                        }
+                    )
+                    Button(
+                        onClick = {
+                            focusManager.clearFocus()
+                            onContinue()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoading && phone.length == 10,
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Lavender,
+                            contentColor = Color(0xFF481865)
+                        )
+                    ) {
+                        Text("Send OTP")
                     }
                 }
             }
@@ -323,84 +345,117 @@ fun OtpScreen(
     onResend: () -> Unit,
     onChangeNumber: () -> Unit
 ) {
+    val scrollState = rememberScrollState()
+    val fontScale = LocalDensity.current.fontScale
+
     AuthContainer(sheetMode = sheetMode) {
         Column(
             modifier = (if (sheetMode) Modifier.fillMaxWidth() else Modifier.fillMaxSize())
                 .then(if (sheetMode) Modifier else Modifier.statusBarsPadding().navigationBarsPadding())
                 .imePadding()
+                .verticalScroll(scrollState)
                 .padding(horizontal = 22.dp, vertical = 18.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
-                SectionHeader(
-                    eyebrow = "Verify OTP",
-                    title = "+${country.dialCode} $phone"
-                )
+            SectionHeader(
+                eyebrow = "Verify OTP",
+                title = "+${country.dialCode} $phone"
+            )
 
-                Card(
-                    shape = RoundedCornerShape(30.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceDark),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            Card(
+                shape = RoundedCornerShape(30.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceDark),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(22.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(22.dp),
-                        verticalArrangement = Arrangement.spacedBy(18.dp)
+                    Text(
+                        text = "Enter the 4-digit code we sent to your number.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = TextSecondary
+                    )
+                    OtpField(
+                        value = otp,
+                        onValueChange = onOtpChanged,
+                        enabled = !isLoading
+                    )
+                    if (!errorMessage.isNullOrBlank()) {
+                        Text(
+                            text = errorMessage,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    } else if (!infoMessage.isNullOrBlank()) {
+                        Text(
+                            text = infoMessage,
+                            color = Lavender,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                    Button(
+                        onClick = onVerify,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoading && otp.length == Constants.Auth.OTP_MAX_LENGTH,
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Lavender,
+                            contentColor = Color(0xFF481865)
+                        )
                     ) {
                         Text(
-                            text = "Enter the 4-digit code we sent to your number.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = TextSecondary
+                            "Verify and continue"
                         )
-                        OtpField(
-                            value = otp,
-                            onValueChange = onOtpChanged,
-                            enabled = !isLoading
-                        )
-                        if (!errorMessage.isNullOrBlank()) {
-                            Text(
-                                text = errorMessage,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        } else if (!infoMessage.isNullOrBlank()) {
-                            Text(
-                                text = infoMessage,
-                                color = Lavender,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
-                        Button(
-                            onClick = onVerify,
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !isLoading && otp.length == Constants.Auth.OTP_MAX_LENGTH,
-                            shape = RoundedCornerShape(20.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Lavender,
-                                contentColor = Color(0xFF481865)
-                            )
-                        ) {
-                            Text("Verify and continue")
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            TextButton(onClick = onChangeNumber, enabled = !isLoading) {
-                                Text("Change number", color = TextPrimary)
-                            }
-                            TextButton(
-                                onClick = onResend,
-                                enabled = !isLoading && resendCooldownSeconds == 0
+                    }
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                        val stackActions = maxWidth < 320.dp || fontScale > 1.1f
+
+                        if (stackActions) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Text(
-                                    text = if (resendCooldownSeconds > 0) {
-                                        "Resend in ${resendCooldownSeconds}s"
-                                    } else {
-                                        "Resend OTP"
-                                    },
-                                    color = if (resendCooldownSeconds > 0) TextSecondary.copy(alpha = 0.45f) else Lavender
-                                )
+                                TextButton(onClick = onChangeNumber, enabled = !isLoading) {
+                                    Text("Change number", color = TextPrimary)
+                                }
+                                TextButton(
+                                    onClick = onResend,
+                                    enabled = !isLoading && resendCooldownSeconds == 0
+                                ) {
+                                    Text(
+                                        text = if (resendCooldownSeconds > 0) {
+                                            "Resend in ${resendCooldownSeconds}s"
+                                        } else {
+                                            "Resend OTP"
+                                        },
+                                        color = if (resendCooldownSeconds > 0) TextSecondary.copy(alpha = 0.45f) else Lavender,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        } else {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                TextButton(onClick = onChangeNumber, enabled = !isLoading) {
+                                    Text("Change number", color = TextPrimary)
+                                }
+                                TextButton(
+                                    onClick = onResend,
+                                    enabled = !isLoading && resendCooldownSeconds == 0
+                                ) {
+                                    Text(
+                                        text = if (resendCooldownSeconds > 0) {
+                                            "Resend in ${resendCooldownSeconds}s"
+                                        } else {
+                                            "Resend OTP"
+                                        },
+                                        color = if (resendCooldownSeconds > 0) TextSecondary.copy(alpha = 0.45f) else Lavender
+                                    )
+                                }
                             }
                         }
                     }
@@ -544,6 +599,38 @@ private fun AnimatedBackdrop(progress: Float) {
 }
 
 @Composable
+private fun LandingTopBar(onLoginClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.amgel_logo),
+            contentDescription = stringResource(id = R.string.app_name),
+            modifier = Modifier.size(42.dp)
+        )
+
+        Surface(
+            modifier = Modifier
+                .clip(RoundedCornerShape(20.dp))
+                .clickable(onClick = onLoginClick),
+            shape = RoundedCornerShape(20.dp),
+            color = Color.White.copy(alpha = 0.92f),
+            border = BorderStroke(1.dp, OutlineSoft)
+        ) {
+            Text(
+                text = "Log In",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = TextPrimary,
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 11.dp)
+            )
+        }
+    }
+}
+
+@Composable
 private fun HeroCard(
     onPrimaryAction: () -> Unit,
     progress: Float
@@ -603,17 +690,16 @@ private fun HeroCard(
                     )
             )
 
-            Row(
+            Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 22.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(horizontal = 24.dp, vertical = 22.dp)
             ) {
                 Button(
                     onClick = onPrimaryAction,
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxWidth()
                         .height(48.dp),
                     shape = RoundedCornerShape(22.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -622,31 +708,6 @@ private fun HeroCard(
                     )
                 ) {
                     Text("Get Started")
-                }
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp)
-                        .clip(RoundedCornerShape(22.dp))
-                        .clickable(onClick = onPrimaryAction),
-                    shape = RoundedCornerShape(22.dp),
-                    color = Color.White,
-                    border = BorderStroke(1.dp, OutlineSoft)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Log In",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = TextPrimary
-                        )
-                    }
                 }
             }
         }
@@ -730,6 +791,7 @@ private fun OtpField(
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
     val interactionSource = remember { MutableInteractionSource() }
+    val fontScale = LocalDensity.current.fontScale
 
     LaunchedEffect(Unit) {
         focusRequester.requestFocus()
@@ -767,37 +829,44 @@ private fun OtpField(
                         keyboardController?.show()
                     }
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally)
-                ) {
-                    repeat(Constants.Auth.OTP_MAX_LENGTH) { index ->
-                        val char = value.getOrNull(index)?.toString().orEmpty()
-                        val isFilled = index < value.length
-                        val isActive = index == value.length.coerceAtMost(Constants.Auth.OTP_MAX_LENGTH - 1)
-                        Surface(
-                            modifier = Modifier.size(width = 58.dp, height = 64.dp),
-                            shape = RoundedCornerShape(20.dp),
-                            color = if (isFilled) SoftLilac else SurfaceRaised,
-                            border = BorderStroke(
-                                width = if (isActive) 2.dp else 1.dp,
-                                color = when {
-                                    isActive -> Lavender
-                                    isFilled -> Color.Transparent
-                                    else -> OutlineSoft
-                                }
-                            )
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                if (char.isNotEmpty()) {
-                                    Text(
-                                        text = char,
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = TextPrimary
-                                    )
-                                } else if (isActive) {
-                                    OtpCaret()
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val compact = maxWidth < 320.dp || fontScale > 1.1f
+                    val spacing = if (compact) 8.dp else 12.dp
+                    val boxWidth = ((maxWidth - (spacing * 3)) / Constants.Auth.OTP_MAX_LENGTH).coerceIn(48.dp, 58.dp)
+                    val boxHeight = if (compact) 58.dp else 64.dp
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(spacing, Alignment.CenterHorizontally)
+                    ) {
+                        repeat(Constants.Auth.OTP_MAX_LENGTH) { index ->
+                            val char = value.getOrNull(index)?.toString().orEmpty()
+                            val isFilled = index < value.length
+                            val isActive = index == value.length.coerceAtMost(Constants.Auth.OTP_MAX_LENGTH - 1)
+                            Surface(
+                                modifier = Modifier.size(width = boxWidth, height = boxHeight),
+                                shape = RoundedCornerShape(20.dp),
+                                color = if (isFilled) SoftLilac else SurfaceRaised,
+                                border = BorderStroke(
+                                    width = if (isActive) 2.dp else 1.dp,
+                                    color = when {
+                                        isActive -> Lavender
+                                        isFilled -> Color.Transparent
+                                        else -> OutlineSoft
+                                    }
+                                )
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    if (char.isNotEmpty()) {
+                                        Text(
+                                            text = char,
+                                            style = MaterialTheme.typography.headlineSmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = TextPrimary
+                                        )
+                                    } else if (isActive) {
+                                        OtpCaret()
+                                    }
                                 }
                             }
                         }

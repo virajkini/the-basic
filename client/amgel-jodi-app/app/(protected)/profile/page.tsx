@@ -48,6 +48,17 @@ interface ExistingImage {
   url: string
 }
 
+declare global {
+  interface Window {
+    isAmgelJodiApp?: boolean
+    isAndroidApp?: boolean
+    __AMGEL_NATIVE_CONTEXT?: {
+      platform?: string
+      fontScale?: number
+    }
+  }
+}
+
 interface Profile {
   _id: string
   creatingFor: CreatingFor
@@ -72,7 +83,7 @@ interface Profile {
 }
 
 const STEPS = [
-  { id: 'basic', title: 'About You', subtitle: 'Let\'s start with the basics' },
+  { id: 'basic', title: 'Abo You', subtitle: 'Let\'s start with the basics' },
   { id: 'photos', title: 'Your Photos', subtitle: 'Show your best self' },
   { id: 'work', title: 'Career & Bio', subtitle: 'Almost there!' },
 ]
@@ -162,6 +173,7 @@ export default function ProfilePage() {
   const hasFetched = useRef(false)
   const validateAndAddFilesRef = useRef<((files: File[]) => void) | null>(null)
   const redirectTimeoutRef = useRef<number | null>(null)
+  const [isCompactMobileWebView, setIsCompactMobileWebView] = useState(false)
 
   const HOME_URL = process.env.NEXT_PUBLIC_HOME_URL || 'https://amgeljodi.com'
 
@@ -196,6 +208,37 @@ export default function ProfilePage() {
       }))
     }
   }, [loading, existingProfile])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const applyNativeLayoutContext = (detail?: { fontScale?: number }) => {
+      const source = detail ?? window.__AMGEL_NATIVE_CONTEXT
+      const fontScale = source?.fontScale ?? 1
+      const isAndroidWebView = window.isAmgelJodiApp === true || window.isAndroidApp === true
+      const isMobileViewport = window.innerWidth < 768
+
+      setIsCompactMobileWebView(isAndroidWebView && isMobileViewport && fontScale > 1.1)
+    }
+
+    const handleResize = () => {
+      applyNativeLayoutContext()
+    }
+
+    const handleNativeContext = (event: Event) => {
+      const customEvent = event as CustomEvent<{ fontScale?: number }>
+      applyNativeLayoutContext(customEvent.detail)
+    }
+
+    applyNativeLayoutContext()
+    window.addEventListener('resize', handleResize)
+    window.addEventListener('amgeljodi:native-context', handleNativeContext as EventListener)
+
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('amgeljodi:native-context', handleNativeContext as EventListener)
+    }
+  }, [])
 
   const fetchData = async () => {
     if (!user?.userId) return
@@ -733,18 +776,18 @@ export default function ProfilePage() {
 
         {/* Step Header */}
         <div className="px-4 py-4">
-          <div className="max-w-lg mx-auto flex items-center justify-between">
+          <div className={`max-w-lg mx-auto flex items-center justify-between ${isCompactMobileWebView ? 'gap-3' : ''}`}>
             <div>
               <p className="text-xs text-myColor-400 uppercase tracking-wider font-medium">
                 Step {currentStep + 1} of {STEPS.length}
               </p>
-              <h1 className="text-xl font-display font-semibold text-myColor-900 mt-0.5">
+              <h1 className={`${isCompactMobileWebView ? 'text-lg leading-tight' : 'text-xl'} font-display font-semibold text-myColor-900 mt-0.5`}>
                 {STEPS[currentStep].title}
               </h1>
             </div>
-            <div className="flex items-center gap-3">
+            <div className={`flex items-center ${isCompactMobileWebView ? 'gap-2 shrink-0' : 'gap-3'}`}>
               {/* Preview Button - Only show if profile exists */}
-              {existingProfile && (
+              {existingProfile && !isCompactMobileWebView && (
                 <button
                   type="button"
                   onClick={() => setShowPreview(true)}
@@ -778,7 +821,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-lg mx-auto px-4 py-6 pb-32">
+      <div className={`max-w-lg mx-auto px-4 py-6 ${isCompactMobileWebView ? 'pb-40' : 'pb-32'}`}>
           {/* Error Message */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-100 rounded-xl flex items-start gap-3 animate-fade-in">
@@ -804,13 +847,13 @@ export default function ProfilePage() {
                 <label className="block text-sm font-medium text-myColor-800 mb-3">
                   This profile is for
                 </label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className={`grid ${isCompactMobileWebView ? 'grid-cols-2 gap-3' : 'grid-cols-4 gap-2'}`}>
                   {(['self', 'daughter', 'son', 'other'] as CreatingFor[]).map((option) => (
                     <button
                       key={option}
                       type="button"
                       onClick={() => updateFormData('creatingFor', option)}
-                      className={`py-3 px-2 rounded-xl text-sm font-medium transition-all duration-200 capitalize ${
+                      className={`${isCompactMobileWebView ? 'min-h-[52px] text-[15px]' : 'py-3 px-2 text-sm'} rounded-xl font-medium transition-all duration-200 capitalize ${
                         formData.creatingFor === option
                           ? 'bg-myColor-600 text-white shadow-lg shadow-myColor-500/25'
                           : 'bg-white border border-myColor-200 text-myColor-600 hover:border-myColor-400'
@@ -826,7 +869,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Name Fields */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid ${isCompactMobileWebView ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-4'}`}>
                 <div>
                   <label htmlFor="firstName" className="block text-sm font-medium text-myColor-800 mb-2">
                     First Name
@@ -866,7 +909,7 @@ export default function ProfilePage() {
               </div>
 
               {/* DOB & Gender */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid ${isCompactMobileWebView ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-4'}`}>
                 <div>
                   <label htmlFor="dob" className="block text-sm font-medium text-myColor-800 mb-2">
                     Date of Birth
@@ -888,14 +931,14 @@ export default function ProfilePage() {
                     Gender
                     {existingProfile && <span className="text-xs text-myColor-400 ml-1">(locked)</span>}
                   </label>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className={`grid ${isCompactMobileWebView ? 'grid-cols-1 gap-3' : 'grid-cols-2 gap-2'}`}>
                     {(['M', 'F'] as Gender[]).map((g) => (
                       <button
                         key={g}
                         type="button"
                         onClick={() => !existingProfile && updateFormData('gender', g)}
                         disabled={!!existingProfile}
-                        className={`py-3.5 rounded-xl font-medium transition-all duration-200 ${
+                        className={`${isCompactMobileWebView ? 'min-h-[52px] text-base' : 'py-3.5'} rounded-xl font-medium transition-all duration-200 ${
                           formData.gender === g
                             ? 'bg-myColor-600 text-white shadow-lg shadow-myColor-500/25'
                             : 'bg-white border border-myColor-200 text-myColor-600 hover:border-myColor-400'
@@ -912,7 +955,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Native Place & Height */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className={`grid ${isCompactMobileWebView ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-4'}`}>
                 <div>
                   <label htmlFor="nativePlace" className="block text-sm font-medium text-myColor-800 mb-2">
                     Native Place
@@ -981,7 +1024,7 @@ export default function ProfilePage() {
 
                 {showKundaliSection && (
                   <div className="mt-4 space-y-4 animate-fade-in">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className={`grid ${isCompactMobileWebView ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-4'}`}>
                       <div>
                         <label htmlFor="placeOfBirth" className="block text-sm font-medium text-myColor-800 mb-2">
                           Place of Birth
@@ -1008,7 +1051,7 @@ export default function ProfilePage() {
                         />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className={`grid ${isCompactMobileWebView ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-4'}`}>
                       <div>
                         <label htmlFor="gothra" className="block text-sm font-medium text-myColor-800 mb-2">
                           Gothra
@@ -1200,7 +1243,7 @@ export default function ProfilePage() {
                 <label className="block text-sm font-medium text-myColor-800 mb-3">
                   Employment Status
                 </label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className={`grid ${isCompactMobileWebView ? 'grid-cols-1 gap-3' : 'grid-cols-3 gap-2'}`}>
                   {[
                     { value: 'employed', label: 'Employed' },
                     { value: 'self-employed', label: 'Business' },
@@ -1210,7 +1253,7 @@ export default function ProfilePage() {
                       key={option.value}
                       type="button"
                       onClick={() => updateFormData('workingStatus', option.value as WorkingStatus)}
-                      className={`py-3 px-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      className={`${isCompactMobileWebView ? 'min-h-[52px] text-[15px]' : 'py-3 px-2 text-sm'} rounded-xl font-medium transition-all duration-200 ${
                         formData.workingStatus === option.value
                           ? 'bg-myColor-600 text-white shadow-lg shadow-myColor-500/25'
                           : 'bg-white border border-myColor-200 text-myColor-600 hover:border-myColor-400'
@@ -1229,7 +1272,7 @@ export default function ProfilePage() {
               {(formData.workingStatus === 'employed' || formData.workingStatus === 'self-employed') && (
                 <div className="space-y-4 p-4 bg-myColor-50/50 rounded-2xl animate-fade-in">
                   <p className="text-xs text-myColor-400 font-medium uppercase tracking-wider">Optional Details</p>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className={`grid ${isCompactMobileWebView ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-4'}`}>
                     <div>
                       <label htmlFor="company" className="block text-sm font-medium text-myColor-800 mb-2">
                         {formData.workingStatus === 'self-employed' ? 'Business' : 'Company'}
@@ -1257,7 +1300,7 @@ export default function ProfilePage() {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className={`grid ${isCompactMobileWebView ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-4'}`}>
                     <div>
                       <label htmlFor="workLocation" className="block text-sm font-medium text-myColor-800 mb-2">
                         Location
@@ -1395,14 +1438,14 @@ export default function ProfilePage() {
             </div>
           )}
 
-          <div className="flex items-center gap-3">
+          <div className={`flex ${isCompactMobileWebView ? 'flex-col items-stretch gap-3' : 'items-center gap-3'}`}>
             {/* Back Button */}
             {currentStep > 0 && (
               <button
                 type="button"
                 onClick={prevStep}
                 disabled={saving}
-                className="flex items-center justify-center w-12 h-12 rounded-xl border border-myColor-200 text-myColor-600 hover:bg-myColor-50 transition-colors disabled:opacity-50"
+                className={`${isCompactMobileWebView ? 'w-full h-12' : 'w-12 h-12'} flex items-center justify-center rounded-xl border border-myColor-200 text-myColor-600 hover:bg-myColor-50 transition-colors disabled:opacity-50`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
