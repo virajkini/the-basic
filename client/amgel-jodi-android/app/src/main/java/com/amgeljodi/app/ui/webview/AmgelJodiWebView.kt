@@ -165,6 +165,7 @@ fun AmgelJodiWebView(
                         state.currentUrl = url
                         state.canGoBack = view?.canGoBack() == true
                         url?.let { onPageFinished?.invoke(it) }
+                        val fontScale = context.resources.configuration.fontScale
 
                         // Flush cookies to disk to ensure persistence across app restarts
                         CookieManager.getInstance().flush()
@@ -174,7 +175,15 @@ fun AmgelJodiWebView(
                             """
                             window.isAmgelJodiApp = true;
                             window.isAndroidApp = true;
+                            window.__AMGEL_NATIVE_CONTEXT = {
+                                platform: 'android',
+                                fontScale: $fontScale
+                            };
                             window.AmgelJodiNative && console.log('Native bridge ready');
+                            window.dispatchEvent(new CustomEvent('amgeljodi:native-context', {
+                                detail: window.__AMGEL_NATIVE_CONTEXT
+                            }));
+                            document.documentElement.style.setProperty('--amgel-native-font-scale', '$fontScale');
 
                             // Ensure proper viewport for native-like scroll
                             var viewportMeta = document.querySelector('meta[name="viewport"]');
