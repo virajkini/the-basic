@@ -52,8 +52,22 @@ router.get('/discover',
       const nameParam = req.query.name as string;
       if (nameParam && nameParam.trim()) filters.name = nameParam.trim();
 
-      // Get profiles (gender from JWT, no DB call needed)
-      const profiles = await listProfiles(currentUserId, currentGender ?? undefined, limit, skip, sortBy, Object.keys(filters).length > 0 ? filters : undefined);
+      const favParam = String(req.query.favoritesOnly ?? '').toLowerCase();
+      const favoritesOnly = favParam === '1' || favParam === 'true' || favParam === 'yes';
+      if (favoritesOnly) {
+        filters.favoritesOnly = true;
+        const viewerProfile = await readProfile(currentUserId);
+        filters.favoriteUserIds = viewerProfile?.favoriteUserIds ?? [];
+      }
+
+      const profiles = await listProfiles(
+        currentUserId,
+        currentGender ?? undefined,
+        limit,
+        skip,
+        sortBy,
+        Object.keys(filters).length > 0 ? filters : undefined
+      );
 
       // Fetch images for all profiles in parallel
       const profilesWithImages = (await Promise.all(
@@ -88,6 +102,8 @@ router.get('/discover',
         })
       )).filter(profile => profile !== null);
 
+      const { favoriteUserIds: _favIdsOmit, ...filtersForResponse } = filters;
+
       res.status(200).json({
         success: true,
         profiles: profilesWithImages,
@@ -96,7 +112,7 @@ router.get('/discover',
         skip,
         limit,
         sort: sortBy,
-        filters
+        filters: filtersForResponse
       });
     } catch (error) {
       console.error('Error discovering profiles:', error);
@@ -271,6 +287,7 @@ router.get('/:userId',
           kuldeva: profile.kuldeva,
           verified: profile.verified,
           subscribed: profile.subscribed,
+          favoriteUserIds: profile.favoriteUserIds ?? [],
           createdAt: profile.createdAt,
           updatedAt: profile.updatedAt
         }
@@ -426,6 +443,7 @@ router.put('/:userId',
         kuldeva: updatedProfile.kuldeva,
         verified: updatedProfile.verified,
         subscribed: updatedProfile.subscribed,
+        favoriteUserIds: updatedProfile.favoriteUserIds ?? [],
         createdAt: updatedProfile.createdAt,
         updatedAt: updatedProfile.updatedAt
       }

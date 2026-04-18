@@ -85,6 +85,9 @@ export interface FilterOptions {
   ageMin?: number;
   ageMax?: number;
   name?: string;
+  /** Restrict discover to these profile _ids (viewer shortlist); use with favoritesOnly */
+  favoritesOnly?: boolean;
+  favoriteUserIds?: string[];
 }
 
 /**
@@ -108,9 +111,17 @@ export async function listProfiles(
   const db = await getDatabase();
   const collection = db.collection<Profile>('profiles');
 
-  const filter: Record<string, unknown> = {
-    _id: { $ne: currentUserId }
-  };
+  const filter: Record<string, unknown> = {};
+
+  if (filters?.favoritesOnly) {
+    const ids = (filters.favoriteUserIds ?? []).filter((id) => id !== currentUserId);
+    if (ids.length === 0) {
+      return [];
+    }
+    filter._id = { $in: ids };
+  } else {
+    filter._id = { $ne: currentUserId };
+  }
 
   // Filter by opposite gender if provided
   if (currentUserGender) {

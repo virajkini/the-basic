@@ -4,7 +4,9 @@ import { useState, useEffect, useRef, useCallback, memo } from 'react'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
 import { authFetch } from '../../utils/authFetch'
+import { useDashboardShortlist } from '../../../hooks/useDashboardShortlist'
 import ProfileDetailView from '../../../components/ProfileDetailView'
+import FavoriteToggle from '../../../components/FavoriteToggle'
 import SortSheet, { SortOption } from '../../../components/SortSheet'
 import FilterSheet, { FilterOptions } from '../../../components/FilterSheet'
 
@@ -25,6 +27,7 @@ interface Profile {
   workingStatus: boolean
   designation?: string
   verified: boolean
+  favoriteUserIds?: string[]
 }
 
 interface DiscoverProfile {
@@ -41,6 +44,16 @@ interface DiscoverProfile {
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const {
+    showFavoritesOnly,
+    setShowFavoritesOnly,
+    favoriteUserIds,
+    favoriteSavingId,
+    handleToggleFavorite,
+    syncFavoriteIdsFromProfile,
+    appendShortlistDiscoverParams,
+  } = useDashboardShortlist(user?.userId)
+
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [discoverProfiles, setDiscoverProfiles] = useState<DiscoverProfile[]>([])
@@ -89,7 +102,12 @@ export default function Dashboard() {
     if (initialLoadComplete.current && user?.userId) {
       fetchDiscoverProfiles()
     }
-  }, [sortBy, filters])
+  }, [sortBy, filters, showFavoritesOnly])
+
+  const handleOpenDiscoverProfile = useCallback((p: DiscoverProfile) => {
+    setShowOwnProfilePreview(false)
+    setSelectedProfile(p)
+  }, [])
 
   const fetchDiscoverProfiles = async () => {
     if (!user?.userId) return
@@ -101,6 +119,7 @@ export default function Dashboard() {
       if (filters.ageMin) params.set('ageMin', filters.ageMin.toString())
       if (filters.ageMax) params.set('ageMax', filters.ageMax.toString())
       if (filters.name) params.set('name', filters.name)
+      appendShortlistDiscoverParams(params)
 
       const discoverRes = await authFetch(`${API_BASE}/profiles/discover?${params.toString()}`)
 
@@ -128,6 +147,7 @@ export default function Dashboard() {
       if (filters.ageMin) params.set('ageMin', filters.ageMin.toString())
       if (filters.ageMax) params.set('ageMax', filters.ageMax.toString())
       if (filters.name) params.set('name', filters.name)
+      appendShortlistDiscoverParams(params)
 
       // Fetch own profile, own photos (for mobile preview), and discover profiles in parallel
       const [profileRes, discoverRes, filesRes] = await Promise.all([
@@ -140,7 +160,9 @@ export default function Dashboard() {
       if (profileRes.ok) {
         const profileData = await profileRes.json()
         if (profileData.success && profileData.profile) {
-          setProfile(profileData.profile)
+          const p = profileData.profile
+          setProfile(p)
+          syncFavoriteIdsFromProfile(p.favoriteUserIds)
         }
       }
 
@@ -391,6 +413,17 @@ export default function Dashboard() {
                 )}
               </button>
 
+              <FavoriteToggle
+                variant="toolbar"
+                active={showFavoritesOnly}
+                onClick={(e) => {
+                  e.preventDefault()
+                  setShowFavoritesOnly((v) => !v)
+                }}
+                aria-label={showFavoritesOnly ? 'Show all profiles' : 'Shortlist only'}
+                title={showFavoritesOnly ? 'Show all profiles' : 'Shortlist only'}
+              />
+
               {/* Profile count - desktop only */}
               <span className="hidden md:block text-sm text-myColor-500 ml-2">
                 {discoverProfiles.length} profiles
@@ -405,8 +438,17 @@ export default function Dashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
               </div>
-              <p className="text-myColor-600">No profiles to show yet</p>
-              <p className="text-sm text-myColor-400 mt-1">Check back soon for new members</p>
+              {showFavoritesOnly ? (
+                <>
+                  <p className="text-myColor-600">Your shortlist is empty</p>
+                  <p className="text-sm text-myColor-400 mt-1">Tap the star on a profile to add them to your shortlist</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-myColor-600">No profiles to show yet</p>
+                  <p className="text-sm text-myColor-400 mt-1">Check back soon for new members</p>
+                </>
+              )}
             </div>
           ) : (
             <div className={`grid transition-all duration-300 ease-in-out ${
@@ -418,12 +460,12 @@ export default function Dashboard() {
                 <ProfileCard
                   key={discoverProfile._id}
                   profile={discoverProfile}
-                  onSelect={(p) => {
-                    setShowOwnProfilePreview(false)
-                    setSelectedProfile(p)
-                  }}
+                  onSelect={handleOpenDiscoverProfile}
                   priority={index < (layout === 'compact' ? 8 : 3)}
                   compact={layout === 'compact'}
+                  isFavorite={favoriteUserIds.includes(discoverProfile._id)}
+                  onToggleFavorite={handleToggleFavorite}
+                  favoriteDisabled={favoriteSavingId === discoverProfile._id}
                 />
               ))}
             </div>
@@ -436,6 +478,9 @@ export default function Dashboard() {
             profileId={selectedProfile._id}
             images={selectedProfile.images}
             onClose={() => setSelectedProfile(null)}
+            isFavorite={favoriteUserIds.includes(selectedProfile._id)}
+            onFavoriteToggle={handleToggleFavorite}
+            favoriteDisabled={favoriteSavingId === selectedProfile._id}
           />
         )}
 
@@ -474,12 +519,18 @@ const ProfileCard = memo(function ProfileCard({
   profile,
   onSelect,
   priority = false,
-  compact = false
+  compact = false,
+  isFavorite,
+  onToggleFavorite,
+  favoriteDisabled = false,
 }: {
   profile: DiscoverProfile
   onSelect: (profile: DiscoverProfile) => void
   priority?: boolean
   compact?: boolean
+  isFavorite: boolean
+  onToggleFavorite: (userId: string) => void
+  favoriteDisabled?: boolean
 }) {
   const carouselRef = useRef<HTMLDivElement>(null)
   const cardRef = useRef<HTMLDivElement>(null)
@@ -551,6 +602,14 @@ const ProfileCard = memo(function ProfileCard({
     setFailedImages(prev => new Set(prev).add(index))
   }, [])
 
+  const handleFavoriteButtonClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.stopPropagation()
+      onToggleFavorite(profile._id)
+    },
+    [onToggleFavorite, profile._id]
+  )
+
   const hasImages = profile.images.length > 0
   const shouldLoadImage = (idx: number) => isInView && loadedImages.has(idx) && !failedImages.has(idx)
 
@@ -558,7 +617,7 @@ const ProfileCard = memo(function ProfileCard({
     <div
       ref={cardRef}
       onClick={handleSelect}
-      className={`group relative bg-white overflow-hidden shadow-lg shadow-myColor-900/10 hover:shadow-2xl hover:shadow-myColor-900/20 transition-all duration-300 ease-in-out hover:-translate-y-1 cursor-pointer ${
+      className={`group relative bg-white overflow-hidden shadow-lg shadow-myColor-900/10 hover:shadow-2xl hover:shadow-myColor-900/20 transition-[transform,box-shadow] duration-300 ease-in-out hover:-translate-y-1 cursor-pointer ${
         compact ? 'rounded-2xl' : 'rounded-3xl'
       }`}
     >
@@ -568,6 +627,17 @@ const ProfileCard = memo(function ProfileCard({
       }`}>
         {hasImages ? (
           <>
+            <div
+              className={`pointer-events-auto absolute z-30 ${compact ? 'top-2 right-2 h-7 w-7' : 'top-3 right-3 h-9 w-9'}`}
+            >
+              <FavoriteToggle
+                variant="overlay"
+                overlayCompact={compact}
+                active={isFavorite}
+                disabled={favoriteDisabled}
+                onClick={handleFavoriteButtonClick}
+              />
+            </div>
             {compact ? (
               /* Compact mode: Single image only, no carousel */
               <div className="absolute inset-0">

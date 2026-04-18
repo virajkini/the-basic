@@ -13,6 +13,41 @@ export const validGenders: Gender[] = ['M', 'F'];
 export const validSalaryRanges: SalaryRange[] = ['<5L', '5-15L', '15-30L', '30-50L', '>50L'];
 export const validWorkingStatuses: WorkingStatus[] = ['employed', 'self-employed', 'not-working'];
 
+/** Matches app user ids (e.g. u_00123, u_stage_001) */
+const USER_ID_PATTERN = /^u_[A-Za-z0-9_-]+$/;
+const MAX_FAVORITE_USER_IDS = 200;
+
+export function parseFavoriteUserIdsInput(
+  raw: unknown,
+  ownUserId: string
+): { ok: false; status: number; error: string } | { ok: true; favoriteUserIds: string[] } {
+  if (!Array.isArray(raw)) {
+    return { ok: false, status: 400, error: 'favoriteUserIds must be an array' };
+  }
+  if (raw.length > MAX_FAVORITE_USER_IDS) {
+    return { ok: false, status: 400, error: `favoriteUserIds cannot exceed ${MAX_FAVORITE_USER_IDS} entries` };
+  }
+  const seen = new Set<string>();
+  const favoriteUserIds: string[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'string') {
+      return { ok: false, status: 400, error: 'Each favoriteUserIds entry must be a string' };
+    }
+    const id = item.trim();
+    if (!USER_ID_PATTERN.test(id)) {
+      return { ok: false, status: 400, error: 'Invalid user id in favoriteUserIds' };
+    }
+    if (id === ownUserId) {
+      return { ok: false, status: 400, error: 'Cannot include your own user id in favoriteUserIds' };
+    }
+    if (!seen.has(id)) {
+      seen.add(id);
+      favoriteUserIds.push(id);
+    }
+  }
+  return { ok: true, favoriteUserIds };
+}
+
 type CreateFail = { ok: false; status: number; error: string };
 type CreateOk = { ok: true; data: Omit<Profile, '_id' | 'createdAt' | 'updatedAt'> };
 
@@ -169,6 +204,7 @@ export function parseProfileUpdateBody(
     kuldeva,
     verified,
     subscribed,
+    favoriteUserIds,
   } = b;
 
   const updateData: Partial<Omit<Profile, '_id' | 'createdAt' | 'updatedAt'>> = {};
@@ -310,6 +346,14 @@ export function parseProfileUpdateBody(
       }
       updateData.subscribed = subscribed;
     }
+  }
+
+  if (favoriteUserIds !== undefined) {
+    const parsedFav = parseFavoriteUserIdsInput(favoriteUserIds, existingProfile._id);
+    if (!parsedFav.ok) {
+      return { ok: false, status: parsedFav.status, error: parsedFav.error };
+    }
+    updateData.favoriteUserIds = parsedFav.favoriteUserIds;
   }
 
   if (Object.keys(updateData).length === 0) {
