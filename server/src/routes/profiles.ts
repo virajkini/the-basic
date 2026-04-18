@@ -1,6 +1,7 @@
 import express from 'express';
 import { readProfile, createProfile, updateProfile, listProfiles, maskString, SortOption, FilterOptions } from '../services/profileManager.js';
-import { Profile, CreatingFor, Gender, SalaryRange, WorkingStatus, calculateAge, parseHeightToCm } from '../models/profile.js';
+import { Profile, calculateAge } from '../models/profile.js';
+import { parseCreateProfileBody, parseProfileUpdateBody } from '../validation/profilePayload.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { verifyUserOwnership, verifyUserIdMatch } from '../middleware/verifyOwnership.js';
 import { getOtherUserProfileImages } from '../services/fileManager.js';
@@ -9,12 +10,6 @@ import { getConnectionBetweenUsers } from '../services/connectionManager.js';
 import { findUserById } from '../services/userManager.js';
 
 const router = express.Router();
-
-// Valid values for enums
-const validCreatingFor: CreatingFor[] = ['self', 'daughter', 'son', 'other'];
-const validGenders: Gender[] = ['M', 'F'];
-const validSalaryRanges: SalaryRange[] = ['<5L', '5-15L', '15-30L', '30-50L', '>50L'];
-const validWorkingStatuses: WorkingStatus[] = ['employed', 'self-employed', 'not-working'];
 
 // Valid sort options
 const validSortOptions: SortOption[] = ['recent', 'updated', 'age_asc', 'age_desc', 'height_asc', 'height_desc'];
@@ -299,129 +294,23 @@ router.post('/',
   verifyUserOwnership,
   async (req, res) => {
     try {
-      const {
-        userId,
-        creatingFor,
-        firstName,
-        lastName,
-        dob,
-        gender,
-        nativePlace,
-        height,
-        workingStatus,
-        company,
-        designation,
-        workLocation,
-        salaryRange,
-        education,
-        aboutMe,
-        // Jatak/Kundali fields (optional)
-        placeOfBirth,
-        birthTiming,
-        gothra,
-        nakshatra,
-        kuldeva
-      } = req.body;
-
+      const { userId } = req.body;
       const authenticatedUserId = req.authenticatedUserId;
 
-      // Validation
       if (!userId) {
         return res.status(400).json({ error: 'User ID is required' });
       }
 
-      // Verify the userId in request matches authenticated user
       if (userId !== authenticatedUserId) {
         return res.status(403).json({ error: 'Access denied: You can only create your own profile' });
       }
 
-      // Validate creatingFor
-      if (!creatingFor || !validCreatingFor.includes(creatingFor)) {
-        return res.status(400).json({ error: 'Creating for must be one of: self, daughter, son, other' });
+      const parsed = parseCreateProfileBody(req.body);
+      if (!parsed.ok) {
+        return res.status(parsed.status).json({ error: parsed.error });
       }
 
-      // Validate firstName
-      if (!firstName || typeof firstName !== 'string' || firstName.trim().length === 0) {
-        return res.status(400).json({ error: 'First name is required' });
-      }
-
-      // Validate lastName
-      if (!lastName || typeof lastName !== 'string' || lastName.trim().length === 0) {
-        return res.status(400).json({ error: 'Last name is required' });
-      }
-
-      // Validate gender
-      if (!gender || !validGenders.includes(gender)) {
-        return res.status(400).json({ error: 'Gender must be M or F' });
-      }
-
-      // Validate dob
-      if (!dob || typeof dob !== 'string') {
-        return res.status(400).json({ error: 'Date of birth (dob) is required' });
-      }
-
-      // Validate DOB format and age
-      const dobDate = new Date(dob);
-      if (isNaN(dobDate.getTime())) {
-        return res.status(400).json({ error: 'Invalid date of birth format' });
-      }
-
-      const age = calculateAge(dob);
-      if (age < 18) {
-        return res.status(400).json({ error: 'Must be at least 18 years old' });
-      }
-
-      // Validate nativePlace
-      if (!nativePlace || typeof nativePlace !== 'string' || nativePlace.trim().length === 0) {
-        return res.status(400).json({ error: 'Native place is required' });
-      }
-
-      // Validate height
-      if (!height || typeof height !== 'string' || height.trim().length === 0) {
-        return res.status(400).json({ error: 'Height is required' });
-      }
-
-      // Validate workingStatus
-      if (!workingStatus || !validWorkingStatuses.includes(workingStatus)) {
-        return res.status(400).json({ error: 'Working status must be one of: employed, self-employed, not-working' });
-      }
-
-      // Work details are optional - validate salaryRange only if provided
-      if (salaryRange && !validSalaryRanges.includes(salaryRange)) {
-        return res.status(400).json({ error: 'Invalid salary range' });
-      }
-
-      const isWorking = workingStatus === 'employed' || workingStatus === 'self-employed';
-      const heightCm = parseHeightToCm(height.trim());
-      const profileData: Omit<Profile, '_id' | 'createdAt' | 'updatedAt'> = {
-        creatingFor: creatingFor as CreatingFor,
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        name: `${firstName.trim()} ${lastName.trim()}`,
-        gender: gender as Gender,
-        dob: dob.trim(),
-        age: age,
-        nativePlace: nativePlace.trim(),
-        height: height.trim(),
-        heightCm: heightCm ?? undefined,
-        workingStatus: workingStatus as WorkingStatus,
-        company: isWorking && company?.trim() ? company.trim() : undefined,
-        designation: isWorking && designation?.trim() ? designation.trim() : undefined,
-        workLocation: isWorking && workLocation?.trim() ? workLocation.trim() : undefined,
-        salaryRange: isWorking && salaryRange ? salaryRange as SalaryRange : undefined,
-        education: education?.trim() || undefined,
-        aboutMe: aboutMe?.trim() || undefined,
-        // Jatak/Kundali fields (optional)
-        placeOfBirth: placeOfBirth?.trim() || undefined,
-        birthTiming: birthTiming || undefined,
-        gothra: gothra || undefined,
-        nakshatra: nakshatra || undefined,
-        kuldeva: kuldeva || undefined,
-        verified: false,
-        subscribed: false
-      };
-
-      const profile = await createProfile(userId, profileData);
+      const profile = await createProfile(userId, parsed.data);
 
       // Generate new access token with gender included
       const newAccessToken = generateAccessToken({
@@ -491,170 +380,20 @@ router.put('/:userId',
   async (req, res) => {
     try {
       const { userId } = req.params;
-      const {
-        creatingFor,
-        firstName,
-        lastName,
-        dob,
-        gender,
-        nativePlace,
-        height,
-        workingStatus,
-        company,
-        designation,
-        workLocation,
-        salaryRange,
-        education,
-        aboutMe,
-        // Jatak/Kundali fields (optional)
-        placeOfBirth,
-        birthTiming,
-        gothra,
-        nakshatra,
-        kuldeva
-      } = req.body;
 
-    // Build update object with only provided fields
-    const updateData: Partial<Omit<Profile, '_id' | 'createdAt' | 'updatedAt'>> = {};
-
-    if (creatingFor !== undefined) {
-      if (!validCreatingFor.includes(creatingFor)) {
-        return res.status(400).json({ error: 'Creating for must be one of: self, daughter, son, other' });
-      }
-      updateData.creatingFor = creatingFor as CreatingFor;
-    }
-
-    if (firstName !== undefined) {
-      if (typeof firstName !== 'string' || firstName.trim().length === 0) {
-        return res.status(400).json({ error: 'Invalid first name' });
-      }
-      updateData.firstName = firstName.trim();
-    }
-
-    if (lastName !== undefined) {
-      if (typeof lastName !== 'string' || lastName.trim().length === 0) {
-        return res.status(400).json({ error: 'Invalid last name' });
-      }
-      updateData.lastName = lastName.trim();
-    }
-
-    // Update combined name if either firstName or lastName changed
-    if (updateData.firstName || updateData.lastName) {
       const existingProfile = await readProfile(userId);
-      if (existingProfile) {
-        const newFirstName = updateData.firstName || existingProfile.firstName;
-        const newLastName = updateData.lastName || existingProfile.lastName;
-        updateData.name = `${newFirstName} ${newLastName}`;
+      if (!existingProfile) {
+        return res.status(404).json({ error: 'Profile not found' });
       }
-    }
 
-    if (gender !== undefined) {
-      if (!validGenders.includes(gender)) {
-        return res.status(400).json({ error: 'Gender must be M or F' });
+      const parsed = parseProfileUpdateBody(req.body, existingProfile, {
+        allowVerifiedSubscribed: false,
+      });
+      if (!parsed.ok) {
+        return res.status(parsed.status).json({ error: parsed.error });
       }
-      updateData.gender = gender as Gender;
-    }
 
-    if (dob !== undefined) {
-      if (typeof dob !== 'string' || dob.trim().length === 0) {
-        return res.status(400).json({ error: 'Invalid date of birth' });
-      }
-      const dobDate = new Date(dob);
-      if (isNaN(dobDate.getTime())) {
-        return res.status(400).json({ error: 'Invalid date of birth format' });
-      }
-      updateData.dob = dob.trim();
-      updateData.age = calculateAge(dob);
-    }
-
-    if (nativePlace !== undefined) {
-      if (typeof nativePlace !== 'string' || nativePlace.trim().length === 0) {
-        return res.status(400).json({ error: 'Invalid native place' });
-      }
-      updateData.nativePlace = nativePlace.trim();
-    }
-
-    if (height !== undefined) {
-      if (typeof height !== 'string' || height.trim().length === 0) {
-        return res.status(400).json({ error: 'Invalid height' });
-      }
-      updateData.height = height.trim();
-      const heightCm = parseHeightToCm(height.trim());
-      if (heightCm !== null) {
-        updateData.heightCm = heightCm;
-      }
-    }
-
-    if (workingStatus !== undefined) {
-      if (!validWorkingStatuses.includes(workingStatus)) {
-        return res.status(400).json({ error: 'Working status must be one of: employed, self-employed, not-working' });
-      }
-      updateData.workingStatus = workingStatus as WorkingStatus;
-
-      // If switching to not working, clear work fields
-      if (workingStatus === 'not-working') {
-        updateData.company = undefined;
-        updateData.designation = undefined;
-        updateData.workLocation = undefined;
-        updateData.salaryRange = undefined;
-      }
-    }
-
-    if (company !== undefined) {
-      updateData.company = company?.trim() || undefined;
-    }
-
-    if (designation !== undefined) {
-      updateData.designation = designation?.trim() || undefined;
-    }
-
-    if (workLocation !== undefined) {
-      updateData.workLocation = workLocation?.trim() || undefined;
-    }
-
-    if (salaryRange !== undefined) {
-      if (salaryRange && !validSalaryRanges.includes(salaryRange)) {
-        return res.status(400).json({ error: 'Invalid salary range' });
-      }
-      updateData.salaryRange = salaryRange as SalaryRange | undefined;
-    }
-
-    if (education !== undefined) {
-      updateData.education = education?.trim() || undefined;
-    }
-
-    if (aboutMe !== undefined) {
-      updateData.aboutMe = aboutMe?.trim() || undefined;
-    }
-
-    // Jatak/Kundali fields (optional)
-    if (placeOfBirth !== undefined) {
-      updateData.placeOfBirth = placeOfBirth?.trim() || undefined;
-    }
-
-    if (birthTiming !== undefined) {
-      updateData.birthTiming = birthTiming || undefined;
-    }
-
-    if (gothra !== undefined) {
-      updateData.gothra = gothra || undefined;
-    }
-
-    if (nakshatra !== undefined) {
-      updateData.nakshatra = nakshatra || undefined;
-    }
-
-    if (kuldeva !== undefined) {
-      updateData.kuldeva = kuldeva || undefined;
-    }
-
-    // Note: verified and subscribed fields cannot be updated by users
-
-    if (Object.keys(updateData).length === 0) {
-      return res.status(400).json({ error: 'No valid fields to update' });
-    }
-
-    const updatedProfile = await updateProfile(userId, updateData);
+    const updatedProfile = await updateProfile(userId, parsed.updateData);
 
     if (!updatedProfile) {
       return res.status(404).json({ error: 'Profile not found' });

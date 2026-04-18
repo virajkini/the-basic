@@ -46,6 +46,8 @@ export default function Dashboard() {
   const [discoverProfiles, setDiscoverProfiles] = useState<DiscoverProfile[]>([])
   const [error, setError] = useState<string | null>(null)
   const [selectedProfile, setSelectedProfile] = useState<DiscoverProfile | null>(null)
+  const [ownProfileImages, setOwnProfileImages] = useState<string[]>([])
+  const [showOwnProfilePreview, setShowOwnProfilePreview] = useState(false)
   const hasFetched = useRef(false)
 
   // Sort, Filter, and Layout state
@@ -127,10 +129,11 @@ export default function Dashboard() {
       if (filters.ageMax) params.set('ageMax', filters.ageMax.toString())
       if (filters.name) params.set('name', filters.name)
 
-      // Fetch own profile and discover profiles in parallel
-      const [profileRes, discoverRes] = await Promise.all([
+      // Fetch own profile, own photos (for mobile preview), and discover profiles in parallel
+      const [profileRes, discoverRes, filesRes] = await Promise.all([
         authFetch(`${API_BASE}/profiles/${user.userId}`),
         authFetch(`${API_BASE}/profiles/discover?${params.toString()}`),
+        authFetch(`${API_BASE}/files`),
       ])
 
       // Handle profile response
@@ -146,6 +149,13 @@ export default function Dashboard() {
         const discoverData = await discoverRes.json()
         if (discoverData.success && discoverData.profiles) {
           setDiscoverProfiles(discoverData.profiles)
+        }
+      }
+
+      if (filesRes.ok) {
+        const filesData = await filesRes.json()
+        if (filesData.success && Array.isArray(filesData.images)) {
+          setOwnProfileImages(filesData.images)
         }
       }
     } catch (err) {
@@ -282,13 +292,40 @@ export default function Dashboard() {
         <div className="animate-fade-in-up delay-100">
           {/* Header Row */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <h2 className="text-2xl md:text-3xl font-display font-bold text-myColor-900">
                 Discover Profiles
               </h2>
-              <span className="text-sm text-myColor-500 md:hidden">
-                {discoverProfiles.length} profiles
-              </span>
+              {/* Mobile: open own profile preview (edit lives in modal top-right) */}
+              <div className="flex items-center shrink-0 md:hidden">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setSelectedProfile(null)
+                    if (ownProfileImages.length === 0 && user?.userId) {
+                      try {
+                        const res = await authFetch(`${API_BASE}/files`)
+                        if (res.ok) {
+                          const d = await res.json()
+                          if (d.success && Array.isArray(d.images)) {
+                            setOwnProfileImages(d.images)
+                          }
+                        }
+                      } catch {
+                        /* ignore */
+                      }
+                    }
+                    setShowOwnProfilePreview(true)
+                  }}
+                  className="p-2.5 rounded-xl text-myColor-600 hover:text-myColor-800 hover:bg-myColor-50 transition-colors"
+                  aria-label="Preview my profile"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             {/* Sort, Filter & Layout Bar - New refined design */}
@@ -381,7 +418,10 @@ export default function Dashboard() {
                 <ProfileCard
                   key={discoverProfile._id}
                   profile={discoverProfile}
-                  onSelect={setSelectedProfile}
+                  onSelect={(p) => {
+                    setShowOwnProfilePreview(false)
+                    setSelectedProfile(p)
+                  }}
                   priority={index < (layout === 'compact' ? 8 : 3)}
                   compact={layout === 'compact'}
                 />
@@ -390,12 +430,22 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Profile Detail View Modal */}
+        {/* Profile Detail View Modal (other members) */}
         {selectedProfile && (
           <ProfileDetailView
             profileId={selectedProfile._id}
             images={selectedProfile.images}
             onClose={() => setSelectedProfile(null)}
+          />
+        )}
+
+        {/* Own profile preview — same as edit profile page (mobile header eye) */}
+        {showOwnProfilePreview && user?.userId && (
+          <ProfileDetailView
+            profileId={user.userId}
+            images={ownProfileImages}
+            onClose={() => setShowOwnProfilePreview(false)}
+            isOwnProfile
           />
         )}
 
