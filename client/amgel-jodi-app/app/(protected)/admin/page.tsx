@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '../../context/AuthContext'
 import { authFetch } from '../../utils/authFetch'
+import OnboardingTab from './OnboardingTab'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
@@ -36,10 +36,9 @@ interface MessageCounts {
   closed: number
 }
 
-type Tab = 'profiles' | 'messages'
+type Tab = 'profiles' | 'messages' | 'onboarding'
 
 export default function AdminPage() {
-  const { user } = useAuth()
   const [activeTab, setActiveTab] = useState<Tab>('profiles')
 
   // Profile state
@@ -286,7 +285,7 @@ export default function AdminPage() {
     )
   }
 
-  if (error && profiles.length === 0 && messages.length === 0) {
+  if (error && profiles.length === 0 && messages.length === 0 && activeTab === 'profiles') {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
@@ -343,6 +342,16 @@ export default function AdminPage() {
                 {messageCounts.new}
               </span>
             )}
+          </button>
+          <button
+            onClick={() => setActiveTab('onboarding')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'onboarding'
+                ? 'border-myColor-600 text-myColor-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Onboarding
           </button>
         </nav>
       </div>
@@ -419,6 +428,8 @@ export default function AdminPage() {
           </div>
         </>
       )}
+
+      {activeTab === 'onboarding' && <OnboardingTab />}
 
       {/* Messages Tab */}
       {activeTab === 'messages' && (

@@ -1,9 +1,12 @@
 'use client'
 
-import { useEffect, useState, memo, useCallback, useRef } from 'react'
+import { useEffect, useState, memo, useCallback, useRef, type MouseEvent } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useProfileData } from '../hooks/useProfileData'
 import ProfileImageHeader from './ProfileImageHeader'
 import ConnectionButton from './ConnectionButton'
+import FavoriteToggle from './FavoriteToggle'
 import Shimmer from './Shimmer'
 
 const MOBILE_BREAKPOINT = 768
@@ -13,6 +16,10 @@ interface ProfileDetailViewProps {
   images: string[]
   onClose: () => void
   isOwnProfile?: boolean
+  /** When set with onFavoriteToggle, shown for other users' profiles (e.g. discover). */
+  isFavorite?: boolean
+  onFavoriteToggle?: (targetUserId: string) => void
+  favoriteDisabled?: boolean
 }
 
 const formatLastUpdated = (dateString?: string) => {
@@ -38,7 +45,16 @@ const formatBirthTime = (time?: string) => {
   return `${hour12}:${minutes} ${ampm}`
 }
 
-function ProfileDetailView({ profileId, images, onClose, isOwnProfile = false }: ProfileDetailViewProps) {
+function ProfileDetailView({
+  profileId,
+  images,
+  onClose,
+  isOwnProfile = false,
+  isFavorite = false,
+  onFavoriteToggle,
+  favoriteDisabled = false,
+}: ProfileDetailViewProps) {
+  const router = useRouter()
   const { profile, loading, error, isConnected } = useProfileData(profileId)
   const [isMobile, setIsMobile] = useState(true)
   const [isVisible, setIsVisible] = useState(false)
@@ -95,6 +111,15 @@ function ProfileDetailView({ profileId, images, onClose, isOwnProfile = false }:
     setTimeout(onClose, 200)
   }, [onClose])
 
+  const handleEditProfileClick = useCallback(
+    (e: MouseEvent<HTMLAnchorElement>) => {
+      e.preventDefault()
+      handleClose()
+      window.setTimeout(() => router.push('/profile'), 220)
+    },
+    [handleClose, router]
+  )
+
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) handleClose()
   }, [handleClose])
@@ -115,6 +140,32 @@ function ProfileDetailView({ profileId, images, onClose, isOwnProfile = false }:
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
+
+        {isOwnProfile && (
+          <Link
+            href="/profile"
+            onClick={handleEditProfileClick}
+            className="fixed top-4 right-4 z-20 w-10 h-10 bg-black/30 hover:bg-black/50 rounded-full flex items-center justify-center transition-colors"
+            aria-label="Edit profile"
+          >
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </Link>
+        )}
+
+        {!isOwnProfile && onFavoriteToggle && (
+          <div className="fixed top-4 right-4 z-20 flex h-10 w-10 items-center justify-center">
+            <FavoriteToggle
+              variant="overlay"
+              active={isFavorite}
+              disabled={favoriteDisabled}
+              onClick={() => {
+                onFavoriteToggle(profileId)
+              }}
+            />
+          </div>
+        )}
 
         {/* Scrollable Content */}
         <div className="h-full overflow-y-auto">
@@ -415,6 +466,33 @@ function ProfileDetailView({ profileId, images, onClose, isOwnProfile = false }:
           className={`relative bg-white rounded-3xl overflow-hidden shadow-2xl max-w-[900px] w-full max-h-[85vh] flex transition-all duration-200 ${isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}
           onClick={(e) => e.stopPropagation()}
         >
+          {/* Edit own profile — top right, left of close */}
+          {isOwnProfile && (
+            <Link
+              href="/profile"
+              onClick={handleEditProfileClick}
+              className="absolute top-4 right-16 z-10 w-10 h-10 flex items-center justify-center bg-black/30 hover:bg-black/50 rounded-full transition-colors"
+              aria-label="Edit profile"
+            >
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            </Link>
+          )}
+
+          {!isOwnProfile && onFavoriteToggle && (
+            <div className="absolute top-4 right-16 z-10 flex h-10 w-10 items-center justify-center">
+              <FavoriteToggle
+                variant="overlay"
+                active={isFavorite}
+                disabled={favoriteDisabled}
+                onClick={() => {
+                  onFavoriteToggle(profileId)
+                }}
+              />
+            </div>
+          )}
+
           {/* Close Button */}
           <button
             onClick={handleClose}

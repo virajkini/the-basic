@@ -83,7 +83,7 @@ interface Profile {
 }
 
 const STEPS = [
-  { id: 'basic', title: 'Abo You', subtitle: 'Let\'s start with the basics' },
+  { id: 'basic', title: 'About You', subtitle: 'Let\'s start with the basics' },
   { id: 'photos', title: 'Your Photos', subtitle: 'Show your best self' },
   { id: 'work', title: 'Career & Bio', subtitle: 'Almost there!' },
 ]

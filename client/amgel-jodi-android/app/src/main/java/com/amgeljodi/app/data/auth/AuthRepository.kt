@@ -1,6 +1,5 @@
 package com.amgeljodi.app.data.auth
 
-import android.util.Log
 import android.webkit.CookieManager
 import com.amgeljodi.app.util.Constants
 import com.google.gson.Gson
@@ -20,60 +19,48 @@ class AuthRepository @Inject constructor(
     private val gson: Gson,
     private val secureSessionStore: SecureSessionStore
 ) {
-    companion object {
-        private const val TAG = "AuthRepository"
-    }
-
-    private fun debugError(prefix: String, exception: Exception): String {
-        val detail = exception.message?.takeIf { it.isNotBlank() } ?: exception.javaClass.simpleName
-        return "$prefix ($detail)"
-    }
-
     suspend fun bootstrapSession(): AuthBootstrapResult {
         val token = secureSessionStore.getAccessToken() ?: return AuthBootstrapResult.LoggedOut
         syncCookies(token)
 
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = execute(
-                    Request.Builder()
-                        .url("${Constants.Urls.API}/auth/me")
-                        .get()
-                        .header("Accept", "application/json")
-                        .header("Cookie", cookieHeader(token))
-                        .build()
-                )
+        return try {
+            val response = execute(
+                Request.Builder()
+                    .url("${Constants.Urls.API}/auth/me")
+                    .get()
+                    .header("Accept", "application/json")
+                    .header("Cookie", cookieHeader(token))
+                    .build()
+            )
 
-                response.use { res ->
-                    val body = res.body?.string().orEmpty()
-                    when {
-                        res.isSuccessful -> {
-                            extractAccessToken(res.headers.values("Set-Cookie"))?.let { refreshedToken ->
-                                persistSession(refreshedToken)
-                            }
-
-                            val json = parseJson(body)
-                            val loggedIn = json?.get("loggedIn")?.asBoolean == true
-                            if (loggedIn) {
-                                AuthBootstrapResult.Authenticated
-                            } else {
-                                clearSession()
-                                AuthBootstrapResult.LoggedOut
-                            }
+            response.use { res ->
+                val body = res.body?.string().orEmpty()
+                when {
+                    res.isSuccessful -> {
+                        extractAccessToken(res.headers.values("Set-Cookie"))?.let { refreshedToken ->
+                            persistSession(refreshedToken)
                         }
 
-                        res.code == 401 -> {
+                        val json = parseJson(body)
+                        val loggedIn = json?.get("loggedIn")?.asBoolean == true
+                        if (loggedIn) {
+                            AuthBootstrapResult.Authenticated
+                        } else {
                             clearSession()
                             AuthBootstrapResult.LoggedOut
                         }
-
-                        else -> AuthBootstrapResult.Error(extractErrorMessage(body))
                     }
+
+                    res.code == 401 -> {
+                        clearSession()
+                        AuthBootstrapResult.LoggedOut
+                    }
+
+                    else -> AuthBootstrapResult.Error(extractErrorMessage(body))
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "bootstrapSession failed", e)
-                AuthBootstrapResult.UseStoredSession
             }
+        } catch (_: Exception) {
+            AuthBootstrapResult.UseStoredSession
         }
     }
 
@@ -91,33 +78,30 @@ class AuthRepository @Inject constructor(
             return verifyResult
         }
 
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = execute(
-                    Request.Builder()
-                        .url("${Constants.Urls.API}/auth/otp/login")
-                        .post(jsonBody(mapOf("phone" to phone)))
-                        .header("Content-Type", "application/json")
-                        .header("Accept", "application/json")
-                        .build()
-                )
+        return try {
+            val response = execute(
+                Request.Builder()
+                    .url("${Constants.Urls.API}/auth/otp/login")
+                    .post(jsonBody(mapOf("phone" to phone)))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .build()
+            )
 
-                response.use { res ->
-                    val body = res.body?.string().orEmpty()
-                    if (!res.isSuccessful) {
-                        return@withContext AuthActionResult.Error(extractErrorMessage(body))
-                    }
-
-                    val token = extractAccessToken(res.headers.values("Set-Cookie"))
-                        ?: return@withContext AuthActionResult.Error("We couldn't save your session. Please try again.")
-
-                    persistSession(token)
-                    AuthActionResult.Success
+            response.use { res ->
+                val body = res.body?.string().orEmpty()
+                if (!res.isSuccessful) {
+                    return AuthActionResult.Error(extractErrorMessage(body))
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "verifyOtpAndCreateSession login step failed", e)
-                AuthActionResult.Error(debugError("Couldn't complete login right now", e))
+
+                val token = extractAccessToken(res.headers.values("Set-Cookie"))
+                    ?: return AuthActionResult.Error("We couldn't save your session. Please try again.")
+
+                persistSession(token)
+                AuthActionResult.Success
             }
+        } catch (_: Exception) {
+            AuthActionResult.Error("Couldn't complete login right now. Please try again.")
         }
     }
 
@@ -137,29 +121,26 @@ class AuthRepository @Inject constructor(
         path: String,
         payload: Map<String, String>
     ): AuthActionResult {
-        return withContext(Dispatchers.IO) {
-            try {
-                val response = execute(
-                    Request.Builder()
-                        .url("${Constants.Urls.API}$path")
-                        .post(jsonBody(payload))
-                        .header("Content-Type", "application/json")
-                        .header("Accept", "application/json")
-                        .build()
-                )
+        return try {
+            val response = execute(
+                Request.Builder()
+                    .url("${Constants.Urls.API}$path")
+                    .post(jsonBody(payload))
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "application/json")
+                    .build()
+            )
 
-                response.use { res ->
-                    val body = res.body?.string().orEmpty()
-                    if (res.isSuccessful) {
-                        AuthActionResult.Success
-                    } else {
-                        AuthActionResult.Error(extractErrorMessage(body))
-                    }
+            response.use { res ->
+                val body = res.body?.string().orEmpty()
+                if (res.isSuccessful) {
+                    AuthActionResult.Success
+                } else {
+                    AuthActionResult.Error(extractErrorMessage(body))
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "postWithoutSession failed for path=$path", e)
-                AuthActionResult.Error(debugError("Network looks unstable", e))
             }
+how         } catch (_: Exception) {
+            AuthActionResult.Error("Network looks unstable. Please try again.")
         }
     }
 

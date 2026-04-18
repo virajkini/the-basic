@@ -1,5 +1,21 @@
 import { getDatabase } from '../db/mongodb.js';
 import { User } from '../models/user.js';
+import { Profile } from '../models/profile.js';
+
+export type AdminUserListRow = {
+  userId: string;
+  phone: string;
+  userCreatedAt: Date;
+  hasProfile: boolean;
+  name: string | null;
+  isVerified: boolean;
+  isSubscribed: boolean;
+  profileCreatedAt: Date | null;
+};
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 /**
  * Generate a unique user ID in format "u_XXXXX"
@@ -63,3 +79,40 @@ export async function findUserById(userId: string): Promise<User | null> {
   return user;
 }
 
+/**
+ * List all users with optional profile summary (admin).
+ */
+export async function listAllUsersWithProfileSummary(q?: string): Promise<AdminUserListRow[]> {
+  const db = await getDatabase();
+  const usersCol = db.collection<User>('users');
+  const profilesCol = db.collection<Profile>('profiles');
+
+  const filter: Record<string, unknown> =
+    q && q.trim()
+      ? { phone: { $regex: escapeRegex(q.trim()), $options: 'i' } }
+      : {};
+
+  const users = await usersCol.find(filter).sort({ createdAt: -1 }).toArray();
+  const ids = users.map((u) => u._id);
+  const profiles = ids.length
+    ? await profilesCol.find({ _id: { $in: ids } }).toArray()
+    : [];
+  const profileById = new Map(profiles.map((p) => [p._id, p]));
+
+  return users.map((u) => {
+    const p = profileById.get(u._id);
+    const name = p
+      ? p.name || `${p.firstName || ''} ${p.lastName || ''}`.trim() || null
+      : null;
+    return {
+      userId: u._id,
+      phone: u.phone,
+      userCreatedAt: u.createdAt,
+      hasProfile: !!p,
+      name,
+      isVerified: p?.verified ?? false,
+      isSubscribed: p?.subscribed ?? false,
+      profileCreatedAt: p?.createdAt ?? null,
+    };
+  });
+}

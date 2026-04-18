@@ -38,6 +38,9 @@ export interface Profile {
   name?: string; // Will be derived from firstName + lastName
   age?: number; // Will be calculated from dob
 
+  // Discover shortlist: other profile _ids this user favorited (own document only)
+  favoriteUserIds?: string[];
+
   // System fields
   verified: boolean;
   subscribed: boolean;
