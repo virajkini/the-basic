@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 const RESEND_OTP_COOLDOWN_SECONDS = 30
+/** National number digits (e.g. India without +91); input and send OTP require exactly this length */
+const LOCAL_PHONE_DIGITS = 10
 
 const COUNTRIES = [
   { code: 'IN', name: 'India', dialCode: '91', flag: '🇮🇳' },
@@ -142,9 +144,12 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
   // Format phone with country code
   const formatPhone = (num: string) => selectedCountry.dialCode + num.replace(/\D/g, '')
 
+  const phoneReadyToSend = phone.length === LOCAL_PHONE_DIGITS
+
   // Send OTP
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!phoneReadyToSend) return
     setError(null)
     setLoading(true)
 
@@ -411,9 +416,15 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
                       <input
                         ref={inputRef}
                         type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel-national"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                        onChange={(e) =>
+                          setPhone(e.target.value.replace(/\D/g, '').slice(0, LOCAL_PHONE_DIGITS))
+                        }
                         placeholder="9876543210"
+                        maxLength={LOCAL_PHONE_DIGITS}
+                        minLength={LOCAL_PHONE_DIGITS}
                         className="flex-1 px-4 py-3.5 bg-myColor-50 border-2 border-l-0 border-myColor-100 rounded-r-xl focus:outline-none focus:bg-white transition-colors text-myColor-900 placeholder:text-myColor-400"
                         required
                       />
@@ -422,7 +433,7 @@ export default function LoginSheet({ isOpen, onClose }: LoginSheetProps) {
 
                   <button
                     type="submit"
-                    disabled={loading || !phone}
+                    disabled={loading || !phoneReadyToSend}
                     className="w-full py-3.5 bg-gradient-to-r from-myColor-600 to-myColor-700 text-white rounded-xl font-semibold shadow-lg shadow-myColor-500/30 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                   >
                     {loading && <Spinner />}

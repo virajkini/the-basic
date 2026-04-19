@@ -17,9 +17,10 @@ const validSortOptions: SortOption[] = ['recent', 'updated', 'age_asc', 'age_des
 /**
  * GET /api/profiles/discover
  * Get profiles for discovery with images in a single call
- * Returns masked data + blurred images for unverified users
- * Returns full data + original images for verified users
- * Query params: limit (default 20), skip (default 0), sort, ageMin, ageMax
+ * Lists verified profiles only (server-side); excludes current user and matches opposite gender.
+ * Returns masked data + blurred images for unverified viewers
+ * Returns full data + original images for verified viewers
+ * Query params: limit (default 20), skip (default 0), sort, ageMin, ageMax, favoritesOnly, name
  */
 router.get('/discover',
   authenticateToken,
