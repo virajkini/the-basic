@@ -91,13 +91,14 @@ export interface FilterOptions {
 }
 
 /**
- * List profiles for discovery (excludes current user, filters by opposite gender)
+ * List profiles for discovery (excludes current user, filters by opposite gender).
+ * Only verified profiles are returned — unverified members never appear in discover.
  * @param currentUserId - Current user's ID to exclude
  * @param currentUserGender - Current user's gender to filter opposite
  * @param limit - Maximum number of profiles to return
  * @param skip - Number of profiles to skip (for pagination)
  * @param sortBy - Sort option (recent, updated, age_asc, age_desc, height_asc, height_desc)
- * @param filters - Filter options (ageMin, ageMax)
+ * @param filters - Filter options (ageMin, ageMax, favoritesOnly, etc.)
  * @returns Array of profiles
  */
 export async function listProfiles(
@@ -127,6 +128,8 @@ export async function listProfiles(
   if (currentUserGender) {
     filter.gender = currentUserGender === 'M' ? 'F' : 'M';
   }
+
+  filter.verified = true;
 
   // Apply age filter using dob field
   if (filters?.ageMin !== undefined || filters?.ageMax !== undefined) {
