@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, memo } from 'react'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, memo } from 'react'
 import posthog from 'posthog-js'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
@@ -13,6 +13,12 @@ import FilterSheet, { FilterOptions } from '../../../components/FilterSheet'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 const LAYOUT_STORAGE_KEY = 'dashboard-layout'
+/** YYYY-MM-DD in local calendar; first dashboard visit per day shows welcome header */
+const DAILY_WELCOME_LS_KEY = 'amgel-dashboard-daily-welcome'
+
+function localCalendarYmd(): string {
+  return new Date().toLocaleDateString('en-CA')
+}
 
 type LayoutType = 'default' | 'compact'
 
@@ -70,9 +76,28 @@ export default function Dashboard() {
   const [showSortSheet, setShowSortSheet] = useState(false)
   const [showFilterSheet, setShowFilterSheet] = useState(false)
   const [layout, setLayout] = useState<LayoutType>('default')
+  const [showDailyWelcome, setShowDailyWelcome] = useState(false)
 
   // Track if initial data load is complete (not just started)
   const initialLoadComplete = useRef(false)
+
+  useLayoutEffect(() => {
+    if (!profile) return
+    const today = localCalendarYmd()
+    try {
+      const raw = localStorage.getItem(DAILY_WELCOME_LS_KEY)
+      const parsed = raw ? (JSON.parse(raw) as { date?: string }) : null
+      const last = typeof parsed?.date === 'string' ? parsed.date : null
+      if (last !== today) {
+        localStorage.setItem(DAILY_WELCOME_LS_KEY, JSON.stringify({ date: today }))
+        setShowDailyWelcome(true)
+      } else {
+        setShowDailyWelcome(false)
+      }
+    } catch {
+      setShowDailyWelcome(false)
+    }
+  }, [profile?._id])
 
   // Load layout preference from localStorage
   useEffect(() => {
@@ -323,9 +348,22 @@ export default function Dashboard() {
           {/* Header Row */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
             <div className="flex items-center justify-between gap-2">
-              <h2 className="text-2xl md:text-3xl font-display font-bold text-myColor-900">
-                Discover Profiles
-              </h2>
+              <div className="min-w-0 flex-1">
+                {showDailyWelcome ? (
+                  <>
+                    <h2 className="text-2xl md:text-3xl font-display font-bold text-myColor-900">
+                      Welcome {profile.firstName?.trim() || profile.name?.split(/\s+/)[0] || 'there'}
+                    </h2>
+                    <p className="mt-0.5 text-sm md:text-base font-medium text-myColor-600">
+                      Discover profiles..
+                    </p>
+                  </>
+                ) : (
+                  <h2 className="text-2xl md:text-3xl font-display font-bold text-myColor-900">
+                    Discover Profiles
+                  </h2>
+                )}
+              </div>
               {/* Mobile: open own profile preview (edit lives in modal top-right) */}
               <div className="flex items-center shrink-0 md:hidden">
                 <button
