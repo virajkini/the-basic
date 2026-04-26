@@ -24,9 +24,7 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
             window.location.href = APP_URL
           }
         }
-      } catch (error) {
-        console.error('Auth check failed:', error)
-      }
+      } catch {}
     }
 
     // Only redirect from homepage (not from legal pages like /privacy, /terms, /contact)

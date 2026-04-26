@@ -11,6 +11,7 @@ if (typeof window !== 'undefined') {
     defaults: '2026-01-30',
     capture_exceptions: true,
     debug: process.env.NODE_ENV === 'development',
+    disable_surveys: true,
   })
   registerPosthogClientSurface()
 }
