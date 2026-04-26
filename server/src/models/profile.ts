@@ -3,6 +3,11 @@ export type Gender = 'M' | 'F';
 export type SalaryRange = '<5L' | '5-15L' | '15-30L' | '30-50L' | '>50L';
 export type WorkingStatus = 'employed' | 'self-employed' | 'not-working';
 
+/** Optional diet preference; absent or null means not specified (legacy profiles). */
+export type FoodPreference = 'pure_veg' | 'non_veg' | 'eggetarian';
+
+export const FOOD_PREFERENCE_VALUES: FoodPreference[] = ['pure_veg', 'non_veg', 'eggetarian'];
+
 export interface Profile {
   _id: string; // Same as user id: "u_12345"
 
@@ -26,6 +31,8 @@ export interface Profile {
   // Additional
   education?: string;
   aboutMe?: string;
+  /** Diet; omit or null = not set */
+  foodPreference?: FoodPreference | null;
 
   // Jatak/Kundali Information (optional)
   placeOfBirth?: string;

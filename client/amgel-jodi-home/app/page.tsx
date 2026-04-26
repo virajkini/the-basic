@@ -456,6 +456,8 @@ export default function Home() {
                   <img
                     src={profile.img}
                     alt={profile.name}
+                    loading="lazy"
+                    decoding="async"
                     className="w-full h-full object-cover blur-[3px] group-hover:blur-[5px] transition-all duration-300"
                   />
                   {/* Gradient overlay */}
@@ -669,10 +671,15 @@ export default function Home() {
                   href={`/${article.slug}`}
                   className="group overflow-hidden rounded-[1.75rem] border border-myColor-100 bg-white shadow-[0_18px_60px_-36px_rgba(33,20,48,0.28)] transition-transform duration-300 hover:-translate-y-1"
                 >
-                  <div
-                    className="h-44 w-full bg-cover bg-center"
-                    style={{ backgroundImage: `url(${article.image})` }}
-                  />
+                  <div className="relative h-44 w-full overflow-hidden bg-myColor-100">
+                    <img
+                      src={article.image}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
                   <div className="p-5">
                     <p className="text-xs font-semibold uppercase tracking-[0.24em] text-myColor-400">
                       {article.eyebrow}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import posthog from 'posthog-js'
 import { authFetch } from '../app/utils/authFetch'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
@@ -44,6 +45,11 @@ export function useDashboardShortlist(userId: string | undefined) {
       setFavoriteUserIds(next)
       favoriteSaveLockRef.current = true
       setFavoriteSavingId(targetUserId)
+
+      posthog.capture(isFav ? 'shortlist_profile_removed' : 'shortlist_profile_added', {
+        target_user_id: targetUserId,
+        shortlist_count: next.length,
+      })
 
       try {
         const res = await authFetch(`${API_BASE}/profiles/${userId}`, {

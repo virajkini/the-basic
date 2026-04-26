@@ -1,10 +1,21 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import imageCompression from 'browser-image-compression'
 import { authFetch } from '../../utils/authFetch'
+import { FOOD_PREFERENCE_OPTIONS, type FoodPreference } from '@/lib/foodPreference'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
+
+/** Same values as user profile form: `app/(protected)/profile/page.tsx` */
+const HEIGHT_OPTIONS = [
+  "4'6\" (137 cm)", "4'7\" (140 cm)", "4'8\" (142 cm)", "4'9\" (145 cm)", "4'10\" (147 cm)", "4'11\" (150 cm)",
+  "5'0\" (152 cm)", "5'1\" (155 cm)", "5'2\" (157 cm)", "5'3\" (160 cm)", "5'4\" (163 cm)", "5'5\" (165 cm)",
+  "5'6\" (168 cm)", "5'7\" (170 cm)", "5'8\" (173 cm)", "5'9\" (175 cm)", "5'10\" (178 cm)", "5'11\" (180 cm)",
+  "6'0\" (183 cm)", "6'1\" (185 cm)", "6'2\" (188 cm)", "6'3\" (191 cm)", "6'4\" (193 cm)", "6'5\" (196 cm)",
+  "6'6\" (198 cm)", "6'7\" (201 cm)", "6'8\" (203 cm)",
+]
 
 interface AdminUserRow {
   userId: string
@@ -37,6 +48,7 @@ type ProfileForm = {
   gothra: string
   nakshatra: string
   kuldeva: string
+  foodPreference: FoodPreference | ''
   verified: boolean
   subscribed: boolean
 }
@@ -61,6 +73,7 @@ const emptyForm = (): ProfileForm => ({
   gothra: '',
   nakshatra: '',
   kuldeva: '',
+  foodPreference: '',
   verified: false,
   subscribed: false,
 })
@@ -93,6 +106,12 @@ function profileToForm(p: Record<string, unknown>): ProfileForm {
     gothra: (p.gothra as string) || '',
     nakshatra: (p.nakshatra as string) || '',
     kuldeva: (p.kuldeva as string) || '',
+    foodPreference:
+      p.foodPreference === 'pure_veg' ||
+      p.foodPreference === 'non_veg' ||
+      p.foodPreference === 'eggetarian'
+        ? (p.foodPreference as FoodPreference)
+        : '',
     verified: Boolean(p.verified),
     subscribed: Boolean(p.subscribed),
   }
@@ -120,6 +139,11 @@ function buildProfilePayload(form: ProfileForm, mode: 'create' | 'edit'): Record
     gothra: form.gothra || undefined,
     nakshatra: form.nakshatra || undefined,
     kuldeva: form.kuldeva || undefined,
+  }
+  if (mode === 'edit') {
+    base.foodPreference = form.foodPreference || null
+  } else if (form.foodPreference) {
+    base.foodPreference = form.foodPreference
   }
   if (mode === 'create') {
     base.verified = form.verified
@@ -149,6 +173,25 @@ export default function OnboardingTab() {
   const [existingImages, setExistingImages] = useState<Array<{ key: string; url: string }>>([])
   const [uploadingImages, setUploadingImages] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [mounted, setMounted] = useState(false)
+  const [imageLightbox, setImageLightbox] = useState<{ url: string; key: string } | null>(null)
+  const [imageDeleteKey, setImageDeleteKey] = useState<string | null>(null)
+  const [imageDeleteBusy, setImageDeleteBusy] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!imageLightbox && !imageDeleteKey) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      setImageLightbox(null)
+      if (!imageDeleteBusy) setImageDeleteKey(null)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [imageLightbox, imageDeleteKey, imageDeleteBusy])
 
   const loadUsers = async () => {
     try {
@@ -240,6 +283,8 @@ export default function OnboardingTab() {
     setForm(emptyForm())
     setExistingImages([])
     setImageFiles([])
+    setImageLightbox(null)
+    setImageDeleteKey(null)
   }
 
   const saveProfile = async () => {
@@ -333,28 +378,115 @@ export default function OnboardingTab() {
     }
   }
 
-  const deleteImage = async (key: string) => {
+  const removeProfileImage = async (key: string) => {
     if (!editorUserId) return
+    const res = await authFetch(`${API_BASE}/admin/users/${editorUserId}/files`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || 'Delete failed')
+    }
+    setExistingImages((prev) => prev.filter((x) => x.key !== key))
+  }
+
+  const confirmDeleteImage = async () => {
+    if (!imageDeleteKey) return
+    const keyToRemove = imageDeleteKey
     try {
+      setImageDeleteBusy(true)
       setError(null)
-      const res = await authFetch(`${API_BASE}/admin/users/${editorUserId}/files`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || 'Delete failed')
-      }
-      setExistingImages((prev) => prev.filter((x) => x.key !== key))
+      await removeProfileImage(keyToRemove)
+      setImageDeleteKey(null)
+      setImageLightbox((cur) => (cur?.key === keyToRemove ? null : cur))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Delete failed')
+    } finally {
+      setImageDeleteBusy(false)
     }
   }
 
   const updateField = <K extends keyof ProfileForm>(key: K, value: ProfileForm[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
+
+  const imageModals =
+    mounted &&
+    (imageLightbox || imageDeleteKey) &&
+    createPortal(
+      <>
+        {imageLightbox && (
+          <div
+            className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/85 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Image preview"
+            onClick={() => setImageLightbox(null)}
+          >
+            <button
+              type="button"
+              onClick={() => setImageLightbox(null)}
+              className="absolute top-4 right-4 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20 transition-colors"
+              aria-label="Close preview"
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageLightbox.url}
+              alt="Profile photo preview"
+              className="max-h-[min(90vh,900px)] max-w-full w-auto object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <p className="mt-3 text-center text-sm text-white/70">Click outside or press Esc to close</p>
+          </div>
+        )}
+        {imageDeleteKey && (
+          <div
+            className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="admin-delete-photo-title"
+            onClick={() => !imageDeleteBusy && setImageDeleteKey(null)}
+          >
+            <div
+              className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 id="admin-delete-photo-title" className="text-lg font-semibold text-gray-900">
+                Remove this photo?
+              </h3>
+              <p className="mt-2 text-sm text-gray-600">
+                It will be deleted from storage for this user. You cannot undo this action.
+              </p>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  disabled={imageDeleteBusy}
+                  onClick={() => setImageDeleteKey(null)}
+                  className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={imageDeleteBusy}
+                  onClick={() => void confirmDeleteImage()}
+                  className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {imageDeleteBusy ? 'Removing…' : 'Remove photo'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>,
+      document.body
+    )
 
   return (
     <div className="space-y-6">
@@ -509,8 +641,22 @@ export default function OnboardingTab() {
                   <input value={form.nativePlace} onChange={(e) => updateField('nativePlace', e.target.value)} className="w-full border rounded-lg px-2 py-2" />
                 </label>
                 <label className="text-sm sm:col-span-2">
-                  <span className="text-gray-600 block mb-1">Height (e.g. 5&apos;8&quot; (173 cm))</span>
-                  <input value={form.height} onChange={(e) => updateField('height', e.target.value)} className="w-full border rounded-lg px-2 py-2" />
+                  <span className="text-gray-600 block mb-1">Height</span>
+                  <select
+                    value={form.height}
+                    onChange={(e) => updateField('height', e.target.value)}
+                    className="w-full border rounded-lg px-2 py-2 bg-white"
+                  >
+                    <option value="">— Select height —</option>
+                    {form.height && !HEIGHT_OPTIONS.includes(form.height) && (
+                      <option value={form.height}>{form.height}</option>
+                    )}
+                    {HEIGHT_OPTIONS.map((h) => (
+                      <option key={h} value={h}>
+                        {h}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="text-sm">
                   <span className="text-gray-600 block mb-1">Working status</span>
@@ -580,6 +726,22 @@ export default function OnboardingTab() {
                   <span className="text-gray-600 block mb-1">Kuldeva</span>
                   <input value={form.kuldeva} onChange={(e) => updateField('kuldeva', e.target.value)} className="w-full border rounded-lg px-2 py-2" />
                 </label>
+                <label className="text-sm sm:col-span-2">
+                  <span className="text-gray-600 block mb-1">Food preference (optional)</span>
+                  <select
+                    value={form.foodPreference}
+                    onChange={(e) =>
+                      updateField('foodPreference', (e.target.value || '') as FoodPreference | '')
+                    }
+                    className="w-full border rounded-lg px-2 py-2 bg-white"
+                  >
+                    {FOOD_PREFERENCE_OPTIONS.map((o) => (
+                      <option key={o.value || 'unset'} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={form.verified} onChange={(e) => updateField('verified', e.target.checked)} />
                   Verified
@@ -593,18 +755,34 @@ export default function OnboardingTab() {
               <div className="border-t border-gray-100 pt-4 space-y-2">
                 <h3 className="font-medium text-gray-900">Photos (stored under this user in S3)</h3>
                 <p className="text-xs text-gray-500">Max 5 originals. Processing to compressed/blurred may take a minute after upload.</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-4">
                   {existingImages.map((img) => (
-                    <div key={img.key} className="relative w-24 h-24 border rounded overflow-hidden group">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={img.url} alt="" className="w-full h-full object-cover" />
+                    <div key={img.key} className="flex w-28 flex-col gap-1.5">
                       <button
                         type="button"
-                        onClick={() => deleteImage(img.key)}
-                        className="absolute inset-0 bg-black/50 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => setImageLightbox({ url: img.url, key: img.key })}
+                        className="relative block h-28 w-28 overflow-hidden rounded-lg border border-gray-200 bg-gray-100 text-left ring-offset-2 transition-shadow hover:ring-2 hover:ring-myColor-400 focus:outline-none focus:ring-2 focus:ring-myColor-500"
+                        aria-label="View photo larger"
                       >
-                        Remove
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={img.url} alt="" className="h-full w-full object-cover" />
                       </button>
+                      <div className="flex flex-col gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setImageLightbox({ url: img.url, key: img.key })}
+                          className="text-xs font-medium text-myColor-700 hover:underline"
+                        >
+                          View full size
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setImageDeleteKey(img.key)}
+                          className="text-left text-xs font-medium text-red-600 hover:underline"
+                        >
+                          Remove…
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -643,6 +821,7 @@ export default function OnboardingTab() {
           </div>
         </div>
       )}
+      {imageModals}
     </div>
   )
 }

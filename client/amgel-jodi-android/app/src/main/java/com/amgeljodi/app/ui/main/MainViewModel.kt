@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.amgeljodi.app.data.preferences.AppPreferences
 import com.amgeljodi.app.data.repository.ImageData
 import com.amgeljodi.app.data.repository.ImageRepository
+import com.posthog.PostHog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -82,6 +83,13 @@ class MainViewModel @Inject constructor(
                     )
                 }
 
+            PostHog.capture(
+                event = "images_uploaded",
+                properties = mapOf(
+                    "image_count" to successfulImages.size,
+                    "requested_count" to uris.size
+                )
+            )
             _uiState.update {
                 it.copy(
                     isProcessingImages = false,

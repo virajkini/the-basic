@@ -1,6 +1,7 @@
 'use client'
 
-import { createContext, useContext, ReactNode } from 'react'
+import { createContext, useContext, useEffect, ReactNode } from 'react'
+import posthog from 'posthog-js'
 
 interface User {
   phone: string
@@ -22,6 +23,16 @@ export function AuthProvider({
   children: ReactNode
   user: User | null
 }) {
+  useEffect(() => {
+    if (user?.userId) {
+      posthog.identify(user.userId, {
+        phone: user.phone,
+        verified: user.verified,
+        subscribed: user.subscribed,
+      })
+    }
+  }, [user?.userId])
+
   return (
     <AuthContext.Provider value={{ user }}>
       {children}

@@ -4,6 +4,8 @@ import {
   Gender,
   SalaryRange,
   WorkingStatus,
+  FoodPreference,
+  FOOD_PREFERENCE_VALUES,
   calculateAge,
   parseHeightToCm,
 } from '../models/profile.js';
@@ -80,6 +82,7 @@ export function parseCreateProfileBody(body: unknown): CreateFail | CreateOk {
     gothra,
     nakshatra,
     kuldeva,
+    foodPreference,
   } = b;
 
   if (!creatingFor || !validCreatingFor.includes(creatingFor as CreatingFor)) {
@@ -128,6 +131,14 @@ export function parseCreateProfileBody(body: unknown): CreateFail | CreateOk {
     return { ok: false, status: 400, error: 'Invalid salary range' };
   }
 
+  let foodPreferenceForCreate: FoodPreference | undefined;
+  if (foodPreference !== undefined && foodPreference !== null && foodPreference !== '') {
+    if (typeof foodPreference !== 'string' || !FOOD_PREFERENCE_VALUES.includes(foodPreference as FoodPreference)) {
+      return { ok: false, status: 400, error: 'foodPreference must be pure_veg, non_veg, or eggetarian' };
+    }
+    foodPreferenceForCreate = foodPreference as FoodPreference;
+  }
+
   const isWorking = workingStatus === 'employed' || workingStatus === 'self-employed';
   const heightCm = parseHeightToCm((height as string).trim());
   const profileData: Omit<Profile, '_id' | 'createdAt' | 'updatedAt'> = {
@@ -158,6 +169,7 @@ export function parseCreateProfileBody(body: unknown): CreateFail | CreateOk {
     kuldeva: typeof kuldeva === 'string' ? kuldeva || undefined : undefined,
     verified: false,
     subscribed: false,
+    ...(foodPreferenceForCreate !== undefined ? { foodPreference: foodPreferenceForCreate } : {}),
   };
 
   return { ok: true, data: profileData };
@@ -202,6 +214,7 @@ export function parseProfileUpdateBody(
     gothra,
     nakshatra,
     kuldeva,
+    foodPreference,
     verified,
     subscribed,
     favoriteUserIds,
@@ -331,6 +344,16 @@ export function parseProfileUpdateBody(
 
   if (kuldeva !== undefined) {
     updateData.kuldeva = typeof kuldeva === 'string' ? kuldeva || undefined : undefined;
+  }
+
+  if (foodPreference !== undefined) {
+    if (foodPreference === null || foodPreference === '') {
+      updateData.foodPreference = null;
+    } else if (typeof foodPreference === 'string' && FOOD_PREFERENCE_VALUES.includes(foodPreference as FoodPreference)) {
+      updateData.foodPreference = foodPreference as FoodPreference;
+    } else {
+      return { ok: false, status: 400, error: 'foodPreference must be pure_veg, non_veg, eggetarian, or empty' };
+    }
   }
 
   if (options.allowVerifiedSubscribed) {

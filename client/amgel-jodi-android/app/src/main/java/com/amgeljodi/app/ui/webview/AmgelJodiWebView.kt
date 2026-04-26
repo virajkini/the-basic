@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.amgeljodi.app.bridge.WebViewBridge
 import com.amgeljodi.app.util.Constants
+import com.posthog.PostHog
 
 /**
  * State holder for WebView
@@ -215,6 +216,13 @@ fun AmgelJodiWebView(
                     ) {
                         // Only handle main frame errors
                         if (request?.isForMainFrame == true) {
+                            PostHog.capture(
+                                event = "webview_load_error",
+                                properties = mapOf(
+                                    "error_description" to (error?.description?.toString() ?: "unknown"),
+                                    "failed_url" to (request?.url?.toString() ?: "unknown")
+                                )
+                            )
                             state.hasError = true
                             state.isLoading = false
                             state.errorMessage = error?.description?.toString()

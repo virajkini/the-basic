@@ -11,6 +11,7 @@ import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import com.amgeljodi.app.util.Constants
 import com.google.gson.Gson
+import com.posthog.PostHog
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -95,6 +96,10 @@ class WebViewBridge @Inject constructor(
      */
     @JavascriptInterface
     fun share(title: String, text: String, url: String? = null) {
+        PostHog.capture(
+            event = "native_share_triggered",
+            properties = mapOf("has_url" to (url != null))
+        )
         val shareText = if (url != null) "$text\n$url" else text
 
         val sendIntent = Intent().apply {
@@ -173,6 +178,7 @@ class WebViewBridge @Inject constructor(
      */
     @JavascriptInterface
     fun authenticateWithBiometric() {
+        PostHog.capture(event = "biometric_auth_requested")
         scope.launch {
             _bridgeEvents.emit(BridgeEvent.AuthenticateBiometric)
         }

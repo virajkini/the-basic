@@ -7,6 +7,7 @@ import com.amgeljodi.app.data.auth.AuthBootstrapResult
 import com.amgeljodi.app.data.auth.AuthRepository
 import com.amgeljodi.app.data.preferences.AppPreferences
 import com.amgeljodi.app.util.Constants
+import com.posthog.PostHog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -57,6 +58,7 @@ class AppEntryViewModel @Inject constructor(
 
             when (val result = authRepository.bootstrapSession()) {
                 is AuthBootstrapResult.Authenticated -> {
+                    PostHog.capture(event = "app_session_started")
                     _uiState.update {
                         it.copy(route = AppRoute.WebView, postLoginUrl = targetUrl, webViewMode = WebViewMode.Authenticated)
                     }
@@ -69,12 +71,17 @@ class AppEntryViewModel @Inject constructor(
                 }
 
                 is AuthBootstrapResult.UseStoredSession -> {
+                    PostHog.capture(event = "app_session_started")
                     _uiState.update {
                         it.copy(route = AppRoute.WebView, postLoginUrl = targetUrl, webViewMode = WebViewMode.Authenticated)
                     }
                 }
 
                 is AuthBootstrapResult.Error -> {
+                    PostHog.capture(
+                        event = "bootstrap_error",
+                        properties = mapOf("error_message" to result.message)
+                    )
                     _uiState.update {
                         it.copy(
                             route = AppRoute.BootstrapError,
@@ -147,6 +154,10 @@ class AppEntryViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, errorMessage = null, infoMessage = null) }
             when (val result = authRepository.sendOtp(formatPhone(localPhone, state.selectedCountry))) {
                 is AuthActionResult.Success -> {
+                    PostHog.capture(
+                        event = "otp_requested",
+                        properties = mapOf("country_code" to state.selectedCountry.code)
+                    )
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -159,6 +170,13 @@ class AppEntryViewModel @Inject constructor(
                 }
 
                 is AuthActionResult.Error -> {
+                    PostHog.capture(
+                        event = "otp_send_failed",
+                        properties = mapOf(
+                            "country_code" to state.selectedCountry.code,
+                            "error_message" to result.message
+                        )
+                    )
                     _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
                 }
             }
@@ -176,6 +194,10 @@ class AppEntryViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             when (val result = authRepository.resendOtp(formatPhone(localPhone, state.selectedCountry))) {
                 is AuthActionResult.Success -> {
+                    PostHog.capture(
+                        event = "otp_resent",
+                        properties = mapOf("country_code" to state.selectedCountry.code)
+                    )
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -203,6 +225,19 @@ class AppEntryViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, errorMessage = null) }
             when (val result = authRepository.verifyOtpAndCreateSession(formatPhone(state.phone, state.selectedCountry), state.otp)) {
                 is AuthActionResult.Success -> {
+                    val phone = formatPhone(state.phone, state.selectedCountry)
+                    PostHog.identify(
+                        distinctId = phone,
+                        userProperties = mapOf(
+                            "phone" to phone,
+                            "country_code" to state.selectedCountry.code
+                        ),
+                        userPropertiesSetOnce = mapOf("first_login_date" to System.currentTimeMillis())
+                    )
+                    PostHog.capture(
+                        event = "login_completed",
+                        properties = mapOf("country_code" to state.selectedCountry.code)
+                    )
                     authRepository.syncStoredSessionToWebView()
                     _uiState.update {
                         it.copy(
@@ -217,6 +252,13 @@ class AppEntryViewModel @Inject constructor(
                 }
 
                 is AuthActionResult.Error -> {
+                    PostHog.capture(
+                        event = "login_failed",
+                        properties = mapOf(
+                            "country_code" to state.selectedCountry.code,
+                            "error_message" to result.message
+                        )
+                    )
                     _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
                 }
             }
@@ -238,6 +280,8 @@ class AppEntryViewModel @Inject constructor(
 
     fun onWebAuthLost() {
         viewModelScope.launch {
+            PostHog.capture(event = "session_expired")
+            PostHog.reset()
             authRepository.clearSession()
             _uiState.update {
                 it.copy(

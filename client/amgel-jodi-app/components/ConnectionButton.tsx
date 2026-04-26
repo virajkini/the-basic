@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, memo, useCallback } from 'react'
+import posthog from 'posthog-js'
 import { useAuth } from '../app/context/AuthContext'
 import { authFetch } from '../app/utils/authFetch'
 
@@ -142,11 +143,21 @@ function ConnectionButton({ targetUserId, onStatusChange }: ConnectionButtonProp
         })
         onStatusChange?.('PENDING')
 
+        posthog.capture('connection_request_sent', {
+          target_user_id: targetUserId,
+          daily_remaining: quotaStatus?.dailyRemaining,
+        })
+
         // Show success animation
         setShowSuccess(true)
         setTimeout(() => setShowSuccess(false), 2500)
       } else if (response.status === 429) {
         // Quota exceeded
+        posthog.capture('connection_request_quota_exceeded', {
+          target_user_id: targetUserId,
+          error_type: data.error,
+          daily_remaining: data.quota?.dailyRemaining,
+        })
         setError({
           type: data.error,
           message: data.message || 'You have reached your limit.',
@@ -182,6 +193,10 @@ function ConnectionButton({ targetUserId, onStatusChange }: ConnectionButtonProp
       if (response.ok) {
         setConnectionState((prev) => ({ ...prev, status: 'ACCEPTED' }))
         onStatusChange?.('ACCEPTED')
+        posthog.capture('connection_request_accepted', {
+          target_user_id: targetUserId,
+          connection_id: connectionState.connectionId,
+        })
       }
     } catch (error) {
       console.error('Error accepting request:', error)
@@ -202,6 +217,10 @@ function ConnectionButton({ targetUserId, onStatusChange }: ConnectionButtonProp
       })
 
       if (response.ok) {
+        posthog.capture('connection_request_declined', {
+          target_user_id: targetUserId,
+          connection_id: connectionState.connectionId,
+        })
         setConnectionState({
           status: null,
           connectionId: null,
@@ -479,9 +498,12 @@ function ConnectionButton({ targetUserId, onStatusChange }: ConnectionButtonProp
                 </span>
               </div>
 
-              <p className="text-xs text-gray-500 text-center">
-                You can send only {quotaStatus.dailyLimit ?? 2} requests per day
-              </p>
+              <div className="text-xs text-gray-500 text-center space-y-1">
+                <p>You can send only {quotaStatus.dailyLimit ?? 2} requests per day.</p>
+                {quotaStatus.dailyRemaining !== -1 && quotaStatus.dailyRemaining === 0 && (
+                  <p className="font-medium text-myColor-600">Come back tomorrow!</p>
+                )}
+              </div>
             </div>
 
             {/* Actions */}

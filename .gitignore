@@ -5,3 +5,5 @@ build/
 .DS_Store
 *.log
 .agents/
+local.properties
+.env.local

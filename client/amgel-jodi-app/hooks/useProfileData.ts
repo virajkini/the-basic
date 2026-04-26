@@ -29,6 +29,7 @@ export interface FullProfile {
   gothra?: string | null
   nakshatra?: string | null
   kuldeva?: string | null
+  foodPreference?: 'pure_veg' | 'non_veg' | 'eggetarian' | null
 }
 
 // Module-level cache - persists across component lifecycle
