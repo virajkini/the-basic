@@ -29,6 +29,44 @@ interface Connection {
   }
 }
 
+/** User-facing copy for the Connections screen — edit here to tune messaging. */
+const CONNECTIONS_COPY = {
+  pageTitle: 'Connections',
+  tabs: {
+    matches: 'Unlocked',
+    interested: 'Incoming',
+    awaiting: 'Pending',
+  },
+  card: {
+    notInterested: 'Not Interested',
+    accept: 'Accept',
+    awaitingPrimary: 'Awaiting their response',
+    awaitingHint: 'Contact details unlock after they accept.',
+    contactDetailsUnlocked: 'Contact details unlocked',
+  },
+  empty: {
+    interested: {
+      title: 'No incoming requests',
+      subtitle:
+        'When someone sends you a connection request, it appears here. Accept to view their contact details.',
+    },
+    awaiting: {
+      title: 'No pending requests',
+      subtitle:
+        "Connection requests you've sent stay here until they respond. After they accept, contact details unlock and they appear under Unlocked.",
+    },
+    matches: {
+      title: 'No unlocked contacts yet',
+      subtitle:
+        "When you and someone both accept a connection request, you unlock each other's contact details. They'll appear here.",
+    },
+  },
+  listCount: {
+    singular: 'profile',
+    plural: 'profiles',
+  },
+} as const
+
 export default function ConnectionsPage() {
   const { user } = useAuth()
   const searchParams = useSearchParams()
@@ -152,9 +190,9 @@ export default function ConnectionsPage() {
   }
 
   const tabs: { id: TabType; label: string }[] = [
-    { id: 'matches', label: 'Matches' },
-    { id: 'interested', label: 'Interested' },
-    { id: 'awaiting', label: 'Sent' },
+    { id: 'matches', label: CONNECTIONS_COPY.tabs.matches },
+    { id: 'interested', label: CONNECTIONS_COPY.tabs.interested },
+    { id: 'awaiting', label: CONNECTIONS_COPY.tabs.awaiting },
   ]
 
   const formatTimeAgo = (dateString: string) => {
@@ -250,7 +288,7 @@ export default function ConnectionsPage() {
                 disabled={actionLoading === connection._id}
                 className="flex-1 py-2.5 text-sm font-medium text-myColor-600 bg-myColor-50 hover:bg-myColor-100 rounded-xl transition-colors disabled:opacity-50"
               >
-                Not Interested
+                {CONNECTIONS_COPY.card.notInterested}
               </button>
               <button
                 onClick={() => handleAccept(connection._id)}
@@ -267,15 +305,22 @@ export default function ConnectionsPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                   </svg>
                 )}
-                Accept
+                {CONNECTIONS_COPY.card.accept}
               </button>
             </div>
           )}
 
           {activeTab === 'awaiting' && (
-            <div className="flex items-center justify-between py-2 px-3 bg-amber-50 rounded-xl">
-              <span className="text-sm text-amber-700 font-medium">Awaiting their response</span>
-              <span className="text-xs text-amber-500">{formatTimeAgo(connection.createdAt)}</span>
+            <div className="flex items-start justify-between gap-2 py-2 px-3 bg-amber-50 rounded-xl">
+              <div className="min-w-0">
+                <span className="text-sm text-amber-700 font-medium block">
+                  {CONNECTIONS_COPY.card.awaitingPrimary}
+                </span>
+                <span className="text-xs text-amber-600/90 block mt-0.5">
+                  {CONNECTIONS_COPY.card.awaitingHint}
+                </span>
+              </div>
+              <span className="text-xs text-amber-500 shrink-0">{formatTimeAgo(connection.createdAt)}</span>
             </div>
           )}
 
@@ -285,7 +330,7 @@ export default function ConnectionsPage() {
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
-                You're connected!
+                {CONNECTIONS_COPY.card.contactDetailsUnlocked}
               </span>
               <span className="text-xs text-green-500">{formatTimeAgo(connection.updatedAt)}</span>
             </div>
@@ -298,8 +343,8 @@ export default function ConnectionsPage() {
   const renderEmptyState = () => {
     const states = {
       interested: {
-        title: 'No requests yet',
-        subtitle: 'When someone shows interest in your profile, they\'ll appear here. Keep your profile updated to attract more interest!',
+        title: CONNECTIONS_COPY.empty.interested.title,
+        subtitle: CONNECTIONS_COPY.empty.interested.subtitle,
         icon: (
           <svg className="w-12 h-12 text-myColor-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -307,8 +352,8 @@ export default function ConnectionsPage() {
         ),
       },
       awaiting: {
-        title: 'No pending requests',
-        subtitle: 'When you express interest in someone, they\'ll show here until they respond. Browse profiles to find your match!',
+        title: CONNECTIONS_COPY.empty.awaiting.title,
+        subtitle: CONNECTIONS_COPY.empty.awaiting.subtitle,
         icon: (
           <svg className="w-12 h-12 text-myColor-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -316,8 +361,8 @@ export default function ConnectionsPage() {
         ),
       },
       matches: {
-        title: 'No matches yet',
-        subtitle: 'When both you and someone else express mutual interest, you\'ll be matched and appear here. Start exploring profiles!',
+        title: CONNECTIONS_COPY.empty.matches.title,
+        subtitle: CONNECTIONS_COPY.empty.matches.subtitle,
         icon: (
           <svg className="w-12 h-12 text-myColor-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -363,10 +408,18 @@ export default function ConnectionsPage() {
     <div className="min-h-full">
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-white border-b border-myColor-100">
-        <div className="max-w-2xl mx-auto px-4 py-4">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between gap-3">
           <h1 className="text-2xl font-display font-semibold text-myColor-900">
-            Connections
+            {CONNECTIONS_COPY.pageTitle}
           </h1>
+          {!loading && connections.length > 0 && (
+            <span className="text-sm text-myColor-500 tabular-nums shrink-0">
+              {connections.length}{' '}
+              {connections.length === 1
+                ? CONNECTIONS_COPY.listCount.singular
+                : CONNECTIONS_COPY.listCount.plural}
+            </span>
+          )}
         </div>
 
         {/* Tabs */}
@@ -391,13 +444,6 @@ export default function ConnectionsPage() {
 
       {/* Content */}
       <div className="max-w-2xl mx-auto px-4 py-6">
-        {/* Count Badge */}
-        {!loading && connections.length > 0 && (
-          <p className="text-sm text-myColor-500 mb-4">
-            {connections.length} {connections.length === 1 ? 'profile' : 'profiles'}
-          </p>
-        )}
-
         {loading ? renderSkeleton() : connections.length === 0 ? renderEmptyState() : (
           <div className="space-y-4">
             {connections.map(renderConnectionCard)}

@@ -479,9 +479,12 @@ function ConnectionButton({ targetUserId, onStatusChange }: ConnectionButtonProp
                 </span>
               </div>
 
-              <p className="text-xs text-gray-500 text-center">
-                You can send only {quotaStatus.dailyLimit ?? 2} requests per day
-              </p>
+              <div className="text-xs text-gray-500 text-center space-y-1">
+                <p>You can send only {quotaStatus.dailyLimit ?? 2} requests per day.</p>
+                {quotaStatus.dailyRemaining !== -1 && quotaStatus.dailyRemaining === 0 && (
+                  <p className="font-medium text-myColor-600">Come back tomorrow!</p>
+                )}
+              </div>
             </div>
 
             {/* Actions */}
