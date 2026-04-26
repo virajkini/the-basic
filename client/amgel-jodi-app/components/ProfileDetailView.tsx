@@ -9,6 +9,7 @@ import ProfileImageHeader from './ProfileImageHeader'
 import ConnectionButton from './ConnectionButton'
 import FavoriteToggle from './FavoriteToggle'
 import Shimmer from './Shimmer'
+import { foodPreferenceLabel } from '../lib/foodPreference'
 
 const MOBILE_BREAKPOINT = 768
 
@@ -196,6 +197,7 @@ function ProfileDetailView({
 
   const hasKundaliInfo = profile?.placeOfBirth || profile?.birthTiming || profile?.gothra || profile?.nakshatra || profile?.kuldeva
   const isWorking = profile?.workingStatus === 'employed' || profile?.workingStatus === 'self-employed' || profile?.workingStatus === true
+  const foodPrefDisplay = profile ? foodPreferenceLabel(profile.foodPreference ?? undefined) : null
 
   // ===== MOBILE VIEW =====
   if (isMobile) {
@@ -295,6 +297,15 @@ function ProfileDetailView({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                       <span className="truncate max-w-[160px]">{profile.designation}</span>
+                    </span>
+                  )}
+
+                  {foodPrefDisplay && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 rounded-full text-sm font-medium text-emerald-800 border border-emerald-100">
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                      </svg>
+                      {foodPrefDisplay}
                     </span>
                   )}
 
@@ -626,6 +637,15 @@ function ProfileDetailView({
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                       </svg>
                       {profile.designation}
+                    </span>
+                  )}
+
+                  {foodPrefDisplay && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-50 rounded-full text-sm font-medium text-emerald-800 border border-emerald-100">
+                      <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z" />
+                      </svg>
+                      {foodPrefDisplay}
                     </span>
                   )}
 

@@ -8,6 +8,7 @@ import Dropdown from '../../components/Dropdown'
 import DatePicker from '../../components/DatePicker'
 import ProfileDetailView from '../../../components/ProfileDetailView'
 import DeleteAccountModal from '../../../components/DeleteAccountModal'
+import { FOOD_PREFERENCE_OPTIONS, type FoodPreference } from '@/lib/foodPreference'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
@@ -36,6 +37,8 @@ interface FormData {
   gothra: string
   nakshatra: string
   kuldeva: string
+  /** Empty string = not specified */
+  foodPreference: FoodPreference | ''
 }
 
 interface FileWithPreview {
@@ -81,6 +84,7 @@ interface Profile {
   gothra?: string
   nakshatra?: string
   kuldeva?: string
+  foodPreference?: FoodPreference | null
 }
 
 const STEPS = [
@@ -156,6 +160,7 @@ export default function ProfilePage() {
     gothra: '',
     nakshatra: '',
     kuldeva: '',
+    foodPreference: '',
   })
   const [showKundaliSection, setShowKundaliSection] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<FileWithPreview[]>([])
@@ -283,7 +288,16 @@ export default function ProfilePage() {
             gothra: p.gothra || '',
             nakshatra: p.nakshatra || '',
             kuldeva: p.kuldeva || '',
+            foodPreference:
+              p.foodPreference === 'pure_veg' ||
+              p.foodPreference === 'non_veg' ||
+              p.foodPreference === 'eggetarian'
+                ? p.foodPreference
+                : '',
           })
+          if (p.placeOfBirth || p.birthTiming || p.gothra || p.nakshatra || p.kuldeva) {
+            setShowKundaliSection(true)
+          }
         }
       }
 
@@ -616,6 +630,13 @@ export default function ProfilePage() {
         gothra: formData.gothra || undefined,
         nakshatra: formData.nakshatra || undefined,
         kuldeva: formData.kuldeva || undefined,
+      }
+
+      if (existingProfile) {
+        ;(profilePayload as Record<string, unknown>).foodPreference =
+          formData.foodPreference || null
+      } else if (formData.foodPreference) {
+        ;(profilePayload as Record<string, unknown>).foodPreference = formData.foodPreference
       }
 
       setUploadProgress(80)
@@ -1007,6 +1028,25 @@ export default function ProfilePage() {
                     <p className="mt-1.5 text-sm text-red-500">{fieldErrors.height}</p>
                   )}
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="foodPreference" className="block text-sm font-medium text-myColor-800 mb-2">
+                  Food preference <span className="text-myColor-400 font-normal">(optional)</span>
+                </label>
+                <Dropdown
+                  id="foodPreference"
+                  label="Food preference"
+                  options={FOOD_PREFERENCE_OPTIONS}
+                  value={formData.foodPreference}
+                  onChange={(value) =>
+                    updateFormData(
+                      'foodPreference',
+                      value as FoodPreference | ''
+                    )
+                  }
+                  placeholder="Prefer not to say"
+                />
               </div>
 
               {/* Kundali Section - Collapsible */}
