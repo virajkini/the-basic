@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback, memo } from 'react'
+import posthog from 'posthog-js'
 import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
 import { authFetch } from '../../utils/authFetch'
@@ -85,6 +86,7 @@ export default function Dashboard() {
     const newLayout = layout === 'default' ? 'compact' : 'default'
     setLayout(newLayout)
     localStorage.setItem(LAYOUT_STORAGE_KEY, newLayout)
+    posthog.capture('discover_layout_changed', { layout: newLayout })
   }
 
 
@@ -107,6 +109,12 @@ export default function Dashboard() {
   const handleOpenDiscoverProfile = useCallback((p: DiscoverProfile) => {
     setShowOwnProfilePreview(false)
     setSelectedProfile(p)
+    posthog.capture('discover_profile_opened', {
+      target_user_id: p._id,
+      target_age: p.age,
+      target_native_place: p.nativePlace,
+      target_verified: p.verified,
+    })
   }, [])
 
   const fetchDiscoverProfiles = async () => {
@@ -418,7 +426,10 @@ export default function Dashboard() {
                 active={showFavoritesOnly}
                 onClick={(e) => {
                   e.preventDefault()
-                  setShowFavoritesOnly((v) => !v)
+                  setShowFavoritesOnly((v) => {
+                    posthog.capture('shortlist_filter_toggled', { enabled: !v })
+                    return !v
+                  })
                 }}
                 aria-label={showFavoritesOnly ? 'Show all profiles' : 'Shortlist only'}
                 title={showFavoritesOnly ? 'Show all profiles' : 'Shortlist only'}
@@ -499,7 +510,10 @@ export default function Dashboard() {
           isOpen={showSortSheet}
           onClose={() => setShowSortSheet(false)}
           currentSort={sortBy}
-          onSortChange={setSortBy}
+          onSortChange={(newSort) => {
+            posthog.capture('discover_sort_changed', { sort_by: newSort, previous_sort: sortBy })
+            setSortBy(newSort)
+          }}
         />
 
         {/* Filter Sheet */}
@@ -507,7 +521,14 @@ export default function Dashboard() {
           isOpen={showFilterSheet}
           onClose={() => setShowFilterSheet(false)}
           currentFilters={filters}
-          onApply={setFilters}
+          onApply={(newFilters) => {
+            posthog.capture('discover_filter_applied', {
+              age_min: newFilters.ageMin,
+              age_max: newFilters.ageMax,
+              name_filter: !!newFilters.name,
+            })
+            setFilters(newFilters)
+          }}
         />
       </div>
     </div>

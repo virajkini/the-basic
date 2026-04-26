@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import posthog from 'posthog-js'
 import imageCompression from 'browser-image-compression'
 import { useAuth } from '../../context/AuthContext'
 import Dropdown from '../../components/Dropdown'
@@ -283,9 +284,6 @@ export default function ProfilePage() {
             nakshatra: p.nakshatra || '',
             kuldeva: p.kuldeva || '',
           })
-          if (p.placeOfBirth || p.birthTiming || p.gothra || p.nakshatra || p.kuldeva) {
-            setShowKundaliSection(true)
-          }
         }
       }
 
@@ -443,7 +441,11 @@ export default function ProfilePage() {
         credentials: 'include',
       })
       if (!res.ok) throw new Error('Failed to delete')
-      setExistingImages(prev => prev.filter(img => img.key !== key))
+      setExistingImages(prev => {
+        const next = prev.filter(img => img.key !== key)
+        posthog.capture('profile_image_deleted', { remaining_images: next.length })
+        return next
+      })
     } catch {
       setError('Failed to delete image')
     }
@@ -636,6 +638,19 @@ export default function ProfilePage() {
       }
 
       setUploadProgress(100)
+
+      posthog.identify(user.userId, { phone: user.phone })
+      posthog.capture(existingProfile ? 'profile_updated' : 'profile_created', {
+        gender: formData.gender,
+        native_place: formData.nativePlace,
+        working_status: formData.workingStatus,
+        has_kundali: !!(formData.gothra || formData.nakshatra || formData.placeOfBirth),
+        image_count: selectedFiles.length,
+      })
+      if (selectedFiles.length > 0) {
+        posthog.capture('profile_image_uploaded', { count: selectedFiles.length })
+      }
+
       setSuccessState(existingProfile ? 'updated' : 'created')
 
       selectedFiles.forEach(f => URL.revokeObjectURL(f.preview))

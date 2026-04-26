@@ -6,6 +6,15 @@ import { authFetch } from '../../utils/authFetch'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
+/** Same values as user profile form: `app/(protected)/profile/page.tsx` */
+const HEIGHT_OPTIONS = [
+  "4'6\" (137 cm)", "4'7\" (140 cm)", "4'8\" (142 cm)", "4'9\" (145 cm)", "4'10\" (147 cm)", "4'11\" (150 cm)",
+  "5'0\" (152 cm)", "5'1\" (155 cm)", "5'2\" (157 cm)", "5'3\" (160 cm)", "5'4\" (163 cm)", "5'5\" (165 cm)",
+  "5'6\" (168 cm)", "5'7\" (170 cm)", "5'8\" (173 cm)", "5'9\" (175 cm)", "5'10\" (178 cm)", "5'11\" (180 cm)",
+  "6'0\" (183 cm)", "6'1\" (185 cm)", "6'2\" (188 cm)", "6'3\" (191 cm)", "6'4\" (193 cm)", "6'5\" (196 cm)",
+  "6'6\" (198 cm)", "6'7\" (201 cm)", "6'8\" (203 cm)",
+]
+
 interface AdminUserRow {
   userId: string
   phone: string
@@ -509,8 +518,22 @@ export default function OnboardingTab() {
                   <input value={form.nativePlace} onChange={(e) => updateField('nativePlace', e.target.value)} className="w-full border rounded-lg px-2 py-2" />
                 </label>
                 <label className="text-sm sm:col-span-2">
-                  <span className="text-gray-600 block mb-1">Height (e.g. 5&apos;8&quot; (173 cm))</span>
-                  <input value={form.height} onChange={(e) => updateField('height', e.target.value)} className="w-full border rounded-lg px-2 py-2" />
+                  <span className="text-gray-600 block mb-1">Height</span>
+                  <select
+                    value={form.height}
+                    onChange={(e) => updateField('height', e.target.value)}
+                    className="w-full border rounded-lg px-2 py-2 bg-white"
+                  >
+                    <option value="">— Select height —</option>
+                    {form.height && !HEIGHT_OPTIONS.includes(form.height) && (
+                      <option value={form.height}>{form.height}</option>
+                    )}
+                    {HEIGHT_OPTIONS.map((h) => (
+                      <option key={h} value={h}>
+                        {h}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="text-sm">
                   <span className="text-gray-600 block mb-1">Working status</span>

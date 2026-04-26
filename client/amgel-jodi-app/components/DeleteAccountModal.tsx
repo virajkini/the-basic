@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import posthog from 'posthog-js'
 import { createPortal } from 'react-dom'
 
 interface DeleteAccountModalProps {
@@ -36,6 +37,9 @@ export default function DeleteAccountModal({ isOpen, onClose }: DeleteAccountMod
         const data = await response.json()
         throw new Error(data.message || data.error || 'Failed to delete account')
       }
+
+      posthog.capture('account_deleted')
+      posthog.reset()
 
       // Clear local storage and redirect to home page
       localStorage.clear()

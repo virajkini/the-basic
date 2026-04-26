@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { DM_Sans, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
+import { PostHogProvider } from "./providers";
 import Header from "./components/Header";
 import AuthCheck from "./providers/AuthCheck";
 import { SubpageAndroidAppStrip } from "./components/AndroidAppCta";
@@ -253,11 +254,13 @@ gtag('config', 'AW-18060357479');`,
         />
       </head>
       <body className="font-sans">
-        <AuthCheck>
-          <Header />
-          {children}
-          <SubpageAndroidAppStrip />
-        </AuthCheck>
+        <PostHogProvider>
+          <AuthCheck>
+            <Header />
+            {children}
+            <SubpageAndroidAppStrip />
+          </AuthCheck>
+        </PostHogProvider>
       </body>
     </html>
   );

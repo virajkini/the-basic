@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Script from 'next/script'
 import { DM_Sans, Cormorant_Garamond } from 'next/font/google'
 import './globals.css'
+import { PostHogProvider } from './providers'
 
 // Refined sans-serif for body text
 const dmSans = DM_Sans({
@@ -63,7 +64,9 @@ gtag('config', 'AW-18060357479');`,
           }}
         />
       </head>
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <PostHogProvider>{children}</PostHogProvider>
+      </body>
     </html>
   )
 }

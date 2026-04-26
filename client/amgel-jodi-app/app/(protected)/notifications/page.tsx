@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
+import posthog from 'posthog-js'
 import Link from 'next/link'
 import { authFetch } from '../../utils/authFetch'
 
@@ -255,6 +256,10 @@ export default function NotificationsPage() {
                   key={notification._id}
                   href={getNotificationLink(notification)}
                   onClick={() => {
+                    posthog.capture('notification_clicked', {
+                      notification_type: notification.type,
+                      was_unread: !notification.read,
+                    })
                     if (!notification.read) {
                       markAsRead(notification._id)
                     }

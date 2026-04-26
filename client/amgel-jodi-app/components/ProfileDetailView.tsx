@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, memo, useCallback, useRef, type MouseEvent } from 'react'
+import posthog from 'posthog-js'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useProfileData } from '../hooks/useProfileData'
@@ -121,6 +122,16 @@ function ProfileDetailView({
 
   const historyPushedRef = useRef(false)
   const closingViaUIRef = useRef(false)
+  const contactViewedRef = useRef(false)
+
+  useEffect(() => {
+    if (!contactViewedRef.current && isConnected && !isOwnProfile && profile?.phone) {
+      contactViewedRef.current = true
+      posthog.capture('contact_details_viewed', {
+        target_user_id: profileId,
+      })
+    }
+  }, [isConnected, isOwnProfile, profile?.phone, profileId])
 
   useEffect(() => {
     setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)

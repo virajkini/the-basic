@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import posthog from 'posthog-js'
 import { useSearchParams } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import { authFetch } from '../../utils/authFetch'
@@ -161,6 +162,7 @@ export default function ConnectionsPage() {
       })
 
       if (response.ok) {
+        posthog.capture('connection_accepted', { connection_id: connectionId })
         setConnections((prev) => prev.filter((c) => c._id !== connectionId))
       }
     } catch (error) {
@@ -180,6 +182,7 @@ export default function ConnectionsPage() {
       })
 
       if (response.ok) {
+        posthog.capture('connection_declined', { connection_id: connectionId })
         setConnections((prev) => prev.filter((c) => c._id !== connectionId))
       }
     } catch (error) {
@@ -428,7 +431,10 @@ export default function ConnectionsPage() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  posthog.capture('connections_tab_changed', { tab: tab.id })
+                  setActiveTab(tab.id)
+                }}
                 className={`flex-1 py-3 px-4 text-center rounded-xl font-medium transition-all duration-200 ${
                   activeTab === tab.id
                     ? 'bg-myColor-600 text-white shadow-lg shadow-myColor-500/25'

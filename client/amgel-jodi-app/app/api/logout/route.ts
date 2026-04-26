@@ -1,5 +1,8 @@
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { getClientSurfaceFromUserAgent } from '../../../lib/clientSurface'
+import { getUserIdFromAccessToken } from '../../../lib/userIdFromAccessToken'
+import { getPostHogClient } from '../../posthog-server'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 const HOME_URL = process.env.NEXT_PUBLIC_HOME_URL || 'http://localhost:3000'
@@ -12,6 +15,8 @@ export async function POST() {
     .map((cookie) => `${cookie.name}=${cookie.value}`)
     .join('; ')
 
+  const userId = getUserIdFromAccessToken(cookieStore.get('accessToken')?.value)
+
   try {
     await fetch(`${API_BASE}/auth/logout`, {
       method: 'POST',
@@ -22,6 +27,18 @@ export async function POST() {
     })
   } catch (error) {
     console.error('Logout failed:', error)
+  }
+
+  if (userId) {
+    const ua = (await headers()).get('user-agent')
+    const client_surface = getClientSurfaceFromUserAgent(ua)
+    const posthog = getPostHogClient()
+    posthog.capture({
+      distinctId: userId,
+      event: 'user_logged_out',
+      properties: { client_surface },
+    })
+    await posthog.shutdown()
   }
 
   // Create response with redirect
