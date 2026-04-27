@@ -20,7 +20,7 @@ const validSortOptions: SortOption[] = ['recent', 'updated', 'age_asc', 'age_des
  * Lists verified profiles only (server-side); excludes current user and matches opposite gender.
  * Returns masked data + blurred images for unverified viewers
  * Returns full data + original images for verified viewers
- * Query params: limit (default 20), skip (default 0), sort, ageMin, ageMax, favoritesOnly, name
+ * Query params: limit (default 200), skip (default 0), sort, ageMin, ageMax, favoritesOnly, name
  */
 router.get('/discover',
   authenticateToken,
@@ -35,7 +35,12 @@ router.get('/discover',
         return res.status(401).json({ error: 'User ID not found in token' });
       }
 
-      const limit = Math.min(parseInt(req.query.limit as string) || 20, 50);
+      const DISCOVER_LIMIT_DEFAULT = 200;
+      const DISCOVER_LIMIT_MAX = 200;
+      const limit = Math.min(
+        parseInt(req.query.limit as string, 10) || DISCOVER_LIMIT_DEFAULT,
+        DISCOVER_LIMIT_MAX
+      );
       const skip = parseInt(req.query.skip as string) || 0;
 
       // Parse sort option
