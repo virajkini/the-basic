@@ -182,11 +182,11 @@ export default function Dashboard() {
       if (filters.name) params.set('name', filters.name)
       appendShortlistDiscoverParams(params)
 
-      // Fetch own profile, own photos (for mobile preview), and discover profiles in parallel
-      const [profileRes, discoverRes, filesRes] = await Promise.all([
+      // Own profile + discover in parallel. /files is not included here — GET /profiles/:id has no
+      // image URLs; we lazy-load /files when the user opens "Preview my profile" (see eye button).
+      const [profileRes, discoverRes] = await Promise.all([
         authFetch(`${API_BASE}/profiles/${user.userId}`),
         authFetch(`${API_BASE}/profiles/discover?${params.toString()}`),
-        authFetch(`${API_BASE}/files`),
       ])
 
       // Handle profile response
@@ -204,13 +204,6 @@ export default function Dashboard() {
         const discoverData = await discoverRes.json()
         if (discoverData.success && discoverData.profiles) {
           setDiscoverProfiles(discoverData.profiles)
-        }
-      }
-
-      if (filesRes.ok) {
-        const filesData = await filesRes.json()
-        if (filesData.success && Array.isArray(filesData.images)) {
-          setOwnProfileImages(filesData.images)
         }
       }
     } catch (err) {
