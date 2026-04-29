@@ -96,7 +96,7 @@ router.get('/discover',
       const profilesWithImages = (await Promise.all(
         profiles.map(async (profile) => {
           // Get images (blurred for unverified, compressed for verified)
-          const files = await getOtherUserProfileImages(profile._id, isVerified);
+          const files = await getOtherUserProfileImages(profile._id, isVerified, profile.primaryPhotoKey);
           const images = files.map(f => f.url);
 
           // Skip profiles with no images
@@ -190,7 +190,7 @@ router.get('/view/:userId',
       }
 
       // Get images (blurred for unverified, compressed for verified)
-      const files = await getOtherUserProfileImages(targetUserId, isVerified);
+      const files = await getOtherUserProfileImages(targetUserId, isVerified, profile.primaryPhotoKey);
       const images = files.map(f => f.url);
 
       const age = profile.dob ? calculateAge(profile.dob) : profile.age;
@@ -313,6 +313,7 @@ router.get('/:userId',
           verified: profile.verified,
           subscribed: profile.subscribed,
           favoriteUserIds: profile.favoriteUserIds ?? [],
+          primaryPhotoKey: profile.primaryPhotoKey ?? null,
           createdAt: profile.createdAt,
           updatedAt: profile.updatedAt
         }
@@ -392,6 +393,7 @@ router.post('/',
           foodPreference: profile.foodPreference ?? null,
           verified: profile.verified,
           subscribed: profile.subscribed,
+          primaryPhotoKey: profile.primaryPhotoKey ?? null,
           createdAt: profile.createdAt,
           updatedAt: profile.updatedAt
         }
@@ -471,6 +473,7 @@ router.put('/:userId',
         verified: updatedProfile.verified,
         subscribed: updatedProfile.subscribed,
         favoriteUserIds: updatedProfile.favoriteUserIds ?? [],
+        primaryPhotoKey: updatedProfile.primaryPhotoKey ?? null,
         createdAt: updatedProfile.createdAt,
         updatedAt: updatedProfile.updatedAt
       }

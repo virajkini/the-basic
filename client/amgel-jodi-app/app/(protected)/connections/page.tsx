@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import posthog from 'posthog-js'
-import { useSearchParams } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '../../context/AuthContext'
 import { authFetch } from '../../utils/authFetch'
 import ProfileDetailView from '../../../components/ProfileDetailView'
@@ -70,32 +70,39 @@ const CONNECTIONS_COPY = {
 
 export default function ConnectionsPage() {
   const { user } = useAuth()
+  const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  // Initialize tab from URL param or default to 'matches'
-  const getInitialTab = (): TabType => {
-    const tabParam = searchParams.get('tab')
-    if (tabParam === 'matches' || tabParam === 'interested' || tabParam === 'awaiting') {
-      return tabParam
+  /** Single source of truth: URL `tab` query. Depends on string primitive — not whole searchParams object — so Next ref churn does not retrigger fetch. */
+  const tabQuery = searchParams.get('tab')
+  const activeTab = useMemo((): TabType => {
+    if (tabQuery === 'matches' || tabQuery === 'interested' || tabQuery === 'awaiting') {
+      return tabQuery
     }
     return 'matches'
-  }
+  }, [tabQuery])
 
-  const [activeTab, setActiveTab] = useState<TabType>(getInitialTab)
   const [connections, setConnections] = useState<Connection[]>([])
   const [loading, setLoading] = useState(true)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [selectedProfile, setSelectedProfile] = useState<{ id: string; images: string[] } | null>(null)
 
-  // Update tab when URL param changes
-  useEffect(() => {
-    const tabParam = searchParams.get('tab')
-    if (tabParam === 'matches' || tabParam === 'interested' || tabParam === 'awaiting') {
-      setActiveTab(tabParam)
-    }
-  }, [searchParams])
+  /** Skip duplicate effect runs with the same tab + user (double mount / overlapping updates). */
+  const connectionsFetchGuardRef = useRef<string | null>(null)
 
   useEffect(() => {
+    if (!user?.userId) {
+      setLoading(false)
+      return
+    }
+
+    const fetchKey = `${activeTab}:${user.userId}`
+    if (connectionsFetchGuardRef.current === fetchKey) {
+      return
+    }
+    connectionsFetchGuardRef.current = fetchKey
+
     const fetchConnections = async () => {
       setLoading(true)
       try {
@@ -111,38 +118,46 @@ export default function ConnectionsPage() {
         const response = await authFetch(url)
         if (response.ok) {
           const data = await response.json()
+          const list: Connection[] = data.connections || []
 
-          const connectionsWithProfiles = await Promise.all(
-            data.connections.map(async (conn: Connection) => {
-              const otherUserId = activeTab === 'awaiting' ? conn.toUserId :
-                                  activeTab === 'interested' ? conn.fromUserId :
-                                  (conn.fromUserId === user?.userId ? conn.toUserId : conn.fromUserId)
+          const withOther = list.map((conn) => {
+            const otherUserId =
+              activeTab === 'awaiting'
+                ? conn.toUserId
+                : activeTab === 'interested'
+                  ? conn.fromUserId
+                  : conn.fromUserId === user.userId
+                    ? conn.toUserId
+                    : conn.fromUserId
+            return { conn, otherUserId }
+          })
 
+          const uniqueIds = Array.from(new Set(withOther.map((x) => x.otherUserId)))
+
+          const profileById = new Map<string, NonNullable<Connection['profile']>>()
+          await Promise.all(
+            uniqueIds.map(async (id) => {
               try {
-                const profileRes = await authFetch(`${API_BASE}/profiles/view/${otherUserId}`)
+                const profileRes = await authFetch(`${API_BASE}/profiles/view/${id}`)
                 if (profileRes.ok) {
                   const profileData = await profileRes.json()
-                  const filesRes = await authFetch(`${API_BASE}/files/${otherUserId}`)
-                  const filesData = filesRes.ok ? await filesRes.json() : { images: [] }
-
-                  return {
-                    ...conn,
-                    profile: {
-                      ...profileData.profile,
-                      images: filesData.images || [],
-                    },
-                  }
+                  profileById.set(id, profileData.profile)
                 }
               } catch {
                 // Profile fetch failed
               }
-              return conn
             })
           )
+
+          const connectionsWithProfiles = withOther.map(({ conn, otherUserId }) => {
+            const profile = profileById.get(otherUserId)
+            return profile ? { ...conn, profile } : conn
+          })
 
           setConnections(connectionsWithProfiles)
         }
       } catch (error) {
+        if (error instanceof Error && error.message === 'Session expired') return
         console.error('Error fetching connections:', error)
       } finally {
         setLoading(false)
@@ -433,7 +448,9 @@ export default function ConnectionsPage() {
                 key={tab.id}
                 onClick={() => {
                   posthog.capture('connections_tab_changed', { tab: tab.id })
-                  setActiveTab(tab.id)
+                  const params = new URLSearchParams(searchParams.toString())
+                  params.set('tab', tab.id)
+                  router.replace(`${pathname}?${params.toString()}`, { scroll: false })
                 }}
                 className={`flex-1 py-3 px-4 text-center rounded-xl font-medium transition-all duration-200 ${
                   activeTab === tab.id

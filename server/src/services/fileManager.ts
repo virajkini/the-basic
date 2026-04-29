@@ -36,6 +36,36 @@ function getCloudFrontUrl(key: string): string {
   return `https://${CLOUDFRONT_DOMAIN}/${encodedKey}`;
 }
 
+/** Compressed WebP key derived from an original profile image key (matches image-blur-handler lambda). */
+export function compressedKeyFromOriginal(originalKey: string, userId: string): string | null {
+  const prefix = `profiles/${userId}/original/`;
+  if (!originalKey.startsWith(prefix)) return null;
+  const filename = originalKey.slice(prefix.length);
+  if (!filename || filename.includes('/') || filename.includes('..')) return null;
+  const webpName = filename.replace(/\.[^.]+$/, '.webp');
+  return `profiles/${userId}/compressed/${webpName}`;
+}
+
+function blurredKeyFromOriginal(originalKey: string, userId: string): string | null {
+  const prefix = `profiles/${userId}/original/`;
+  if (!originalKey.startsWith(prefix)) return null;
+  const filename = originalKey.slice(prefix.length);
+  if (!filename || filename.includes('/') || filename.includes('..')) return null;
+  return `profiles/${userId}/blurred/${filename}`;
+}
+
+function sortFilesPrimaryFirst<T extends { key: string }>(
+  files: T[],
+  primaryKey: string | null | undefined
+): T[] {
+  const sorted = [...files].sort((a, b) => a.key.localeCompare(b.key));
+  if (!primaryKey) return sorted;
+  const idx = sorted.findIndex((f) => f.key === primaryKey);
+  if (idx <= 0) return sorted;
+  const [primary] = sorted.splice(idx, 1);
+  return [primary, ...sorted];
+}
+
 /**
  * Get count of existing files in user's profile folder
  * @param userId - User ID
@@ -142,9 +172,13 @@ export async function generateMultiplePresignedUrls(
 /**
  * Get all profile image URLs for a user (own profile - always returns original with signed URLs)
  * @param userId - User ID
+ * @param primaryPhotoKey - Optional original S3 key to list first (from profile document)
  * @returns Array of file objects with signed CloudFront URLs
  */
-export async function getUserProfileImages(userId: string): Promise<Array<{
+export async function getUserProfileImages(
+  userId: string,
+  primaryPhotoKey?: string | null
+): Promise<Array<{
   key: string;
   url: string;
   size?: number;
@@ -182,7 +216,9 @@ export async function getUserProfileImages(userId: string): Promise<Array<{
       })
       .filter((file): file is NonNullable<typeof file> => file !== null);
 
-    return files;
+    const primary =
+      primaryPhotoKey && files.some((f) => f.key === primaryPhotoKey) ? primaryPhotoKey : null;
+    return sortFilesPrimaryFirst(files, primary);
   } catch (error) {
     console.error('Error getting user profile images:', error);
     throw error;
@@ -193,13 +229,15 @@ export async function getUserProfileImages(userId: string): Promise<Array<{
  * Get profile images for another user based on viewer's verified status
  * @param targetUserId - User ID of the profile being viewed
  * @param viewerIsVerified - Whether the viewing user is verified
+ * @param primaryPhotoKey - Optional original S3 key: first in returned list (verified); preferred blurred object (unverified) when present
  * @returns Array of file objects with appropriate URLs
  *          - Verified viewers: All compressed images (WebP) with signed URLs
  *          - Unverified viewers: Only first blurred image if it exists (public URL)
  */
 export async function getOtherUserProfileImages(
   targetUserId: string,
-  viewerIsVerified: boolean
+  viewerIsVerified: boolean,
+  primaryPhotoKey?: string | null
 ): Promise<Array<{
   key: string;
   url: string;
@@ -235,7 +273,7 @@ export async function getOtherUserProfileImages(
           .filter((item) => item.Key && item.Key !== originalPrefix && item.Size && item.Size > 0)
           .sort((a, b) => (a.Key || '').localeCompare(b.Key || ''));
 
-        return originalItems.map((item) => {
+        const mapped = originalItems.map((item) => {
           const cloudFrontUrl = `https://${CLOUDFRONT_DOMAIN}/${item.Key}`;
           const signedUrl = getCloudFrontSignedUrl({
             url: cloudFrontUrl,
@@ -251,9 +289,12 @@ export async function getOtherUserProfileImages(
             lastModified: item.LastModified,
           };
         });
+        const primary =
+          primaryPhotoKey && mapped.some((f) => f.key === primaryPhotoKey) ? primaryPhotoKey : null;
+        return sortFilesPrimaryFirst(mapped, primary);
       }
 
-      return items.map((item) => {
+      const mapped = items.map((item) => {
         const cloudFrontUrl = `https://${CLOUDFRONT_DOMAIN}/${item.Key}`;
         const signedUrl = getCloudFrontSignedUrl({
           url: cloudFrontUrl,
@@ -269,6 +310,14 @@ export async function getOtherUserProfileImages(
           lastModified: item.LastModified,
         };
       });
+      const preferredCompressed = primaryPhotoKey
+        ? compressedKeyFromOriginal(primaryPhotoKey, targetUserId)
+        : null;
+      const primary =
+        preferredCompressed && mapped.some((f) => f.key === preferredCompressed)
+          ? preferredCompressed
+          : null;
+      return sortFilesPrimaryFirst(mapped, primary);
     } else {
       // For unverified viewers: check if blurred folder has images
       const blurredPrefix = `profiles/${targetUserId}/blurred/`;
@@ -288,12 +337,18 @@ export async function getOtherUserProfileImages(
         return [];
       }
 
-      const firstBlurred = blurredItems[0];
+      const preferredBlurred =
+        primaryPhotoKey && blurredKeyFromOriginal(primaryPhotoKey, targetUserId);
+      const chosen =
+        preferredBlurred &&
+        blurredItems.some((b) => b.Key === preferredBlurred)
+          ? blurredItems.find((b) => b.Key === preferredBlurred)!
+          : blurredItems[0];
       return [{
-        key: firstBlurred.Key!,
-        url: `https://${CLOUDFRONT_DOMAIN}/${firstBlurred.Key}`,
-        size: firstBlurred.Size,
-        lastModified: firstBlurred.LastModified,
+        key: chosen.Key!,
+        url: `https://${CLOUDFRONT_DOMAIN}/${chosen.Key}`,
+        size: chosen.Size,
+        lastModified: chosen.LastModified,
       }];
     }
   } catch (error) {
@@ -303,25 +358,51 @@ export async function getOtherUserProfileImages(
 }
 
 /**
- * Delete a file from S3
- * @param key - S3 object key
+ * Keys for compressed WebP and blurred copies produced by the image pipeline
+ * (see server/lambda/image-blur-handler/index.js).
+ */
+function profileOriginalDerivedKeys(originalKey: string, userId: string): string[] {
+  const expectedPrefix = `profiles/${userId}/original/`;
+  if (!originalKey.startsWith(expectedPrefix)) {
+    return [];
+  }
+  const filename = originalKey.slice(expectedPrefix.length);
+  if (!filename || filename.includes('/') || filename.includes('..')) {
+    return [];
+  }
+  const compressedFilename = filename.replace(/\.[^.]+$/, '.webp');
+  return [
+    `profiles/${userId}/compressed/${compressedFilename}`,
+    `profiles/${userId}/blurred/${filename}`,
+  ];
+}
+
+/**
+ * Delete a profile original from S3 and remove derived compressed/blurred objects
+ * so viewers using compressed URLs do not keep seeing removed photos.
+ * @param key - S3 object key (must be under profiles/{userId}/original/)
  * @param userId - User ID (for verification)
- * @returns Success message
  */
 export async function deleteFile(key: string, userId: string): Promise<void> {
   try {
-    // Verify the file belongs to the user
     const expectedPrefix = `profiles/${userId}/original/`;
     if (!key.startsWith(expectedPrefix)) {
       throw new Error('Access denied: File does not belong to this user');
     }
 
-    const command = new DeleteObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: key,
-    });
+    const derived = profileOriginalDerivedKeys(key, userId);
+    const keysToDelete = [key, ...derived];
 
-    await s3Client.send(command);
+    await Promise.all(
+      keysToDelete.map((k) =>
+        s3Client.send(
+          new DeleteObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: k,
+          })
+        )
+      )
+    );
   } catch (error) {
     console.error('Error deleting file:', error);
     throw error;
