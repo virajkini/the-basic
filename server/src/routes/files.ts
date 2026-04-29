@@ -1,5 +1,6 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
+import { readProfile } from '../services/profileManager.js';
 import {
   generateMultiplePresignedUrls,
   getUserProfileImages,
@@ -114,7 +115,8 @@ router.get('/',
         return res.status(401).json({ error: 'User ID not found in token' });
       }
 
-      const files = await getUserProfileImages(userId);
+      const profile = await readProfile(userId);
+      const files = await getUserProfileImages(userId, profile?.primaryPhotoKey);
 
       res.json({
         success: true,
@@ -154,12 +156,16 @@ router.get('/:userId',
 
       // Check if viewing own profile
       if (viewerUserId === targetUserId) {
-        // Own profile - always return original with signed URLs
-        const files = await getUserProfileImages(targetUserId);
+        const targetProfile = await readProfile(targetUserId);
+        const files = await getUserProfileImages(targetUserId, targetProfile?.primaryPhotoKey);
         images = files.map(file => file.url);
       } else {
-        // Other user's profile - check if viewer is verified
-        const files = await getOtherUserProfileImages(targetUserId, viewerIsVerified);
+        const targetProfile = await readProfile(targetUserId);
+        const files = await getOtherUserProfileImages(
+          targetUserId,
+          viewerIsVerified,
+          targetProfile?.primaryPhotoKey
+        );
         images = files.map(file => file.url);
         isBlurred = !viewerIsVerified;
       }

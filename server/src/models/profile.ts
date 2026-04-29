@@ -48,6 +48,9 @@ export interface Profile {
   // Discover shortlist: other profile _ids this user favorited (own document only)
   favoriteUserIds?: string[];
 
+  /** S3 key under profiles/{_id}/original/... — shown first in galleries; null/absent = lexicographic first */
+  primaryPhotoKey?: string | null;
+
   // System fields
   verified: boolean;
   subscribed: boolean;

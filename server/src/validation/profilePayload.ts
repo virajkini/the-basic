@@ -19,6 +19,27 @@ export const validWorkingStatuses: WorkingStatus[] = ['employed', 'self-employed
 const USER_ID_PATTERN = /^u_[A-Za-z0-9_-]+$/;
 const MAX_FAVORITE_USER_IDS = 200;
 
+export function parsePrimaryPhotoKeyInput(
+  raw: unknown,
+  userId: string
+): { ok: false; status: number; error: string } | { ok: true; value: string | null | undefined } {
+  if (raw === undefined) {
+    return { ok: true, value: undefined };
+  }
+  if (raw === null || raw === '') {
+    return { ok: true, value: null };
+  }
+  if (typeof raw !== 'string') {
+    return { ok: false, status: 400, error: 'primaryPhotoKey must be a string, null, or omitted' };
+  }
+  const expectedPrefix = `profiles/${userId}/original/`;
+  const rest = raw.startsWith(expectedPrefix) ? raw.slice(expectedPrefix.length) : '';
+  if (!rest || rest.includes('/') || rest.includes('..')) {
+    return { ok: false, status: 400, error: 'primaryPhotoKey must be a key under profiles/{userId}/original/' };
+  }
+  return { ok: true, value: raw };
+}
+
 export function parseFavoriteUserIdsInput(
   raw: unknown,
   ownUserId: string
@@ -83,6 +104,7 @@ export function parseCreateProfileBody(body: unknown): CreateFail | CreateOk {
     nakshatra,
     kuldeva,
     foodPreference,
+    primaryPhotoKey: primaryPhotoKeyRaw,
   } = b;
 
   if (!creatingFor || !validCreatingFor.includes(creatingFor as CreatingFor)) {
@@ -172,6 +194,20 @@ export function parseCreateProfileBody(body: unknown): CreateFail | CreateOk {
     ...(foodPreferenceForCreate !== undefined ? { foodPreference: foodPreferenceForCreate } : {}),
   };
 
+  if (primaryPhotoKeyRaw !== undefined) {
+    const uid = typeof b.userId === 'string' ? b.userId : '';
+    if (!uid) {
+      return { ok: false, status: 400, error: 'userId is required when setting primaryPhotoKey' };
+    }
+    const pk = parsePrimaryPhotoKeyInput(primaryPhotoKeyRaw, uid);
+    if (!pk.ok) {
+      return { ok: false, status: pk.status, error: pk.error };
+    }
+    if (pk.value !== undefined) {
+      (profileData as { primaryPhotoKey?: string | null }).primaryPhotoKey = pk.value ?? null;
+    }
+  }
+
   return { ok: true, data: profileData };
 }
 
@@ -218,6 +254,7 @@ export function parseProfileUpdateBody(
     verified,
     subscribed,
     favoriteUserIds,
+    primaryPhotoKey: primaryPhotoKeyRaw,
   } = b;
 
   const updateData: Partial<Omit<Profile, '_id' | 'createdAt' | 'updatedAt'>> = {};
@@ -377,6 +414,16 @@ export function parseProfileUpdateBody(
       return { ok: false, status: parsedFav.status, error: parsedFav.error };
     }
     updateData.favoriteUserIds = parsedFav.favoriteUserIds;
+  }
+
+  if (primaryPhotoKeyRaw !== undefined) {
+    const pk = parsePrimaryPhotoKeyInput(primaryPhotoKeyRaw, existingProfile._id);
+    if (!pk.ok) {
+      return { ok: false, status: pk.status, error: pk.error };
+    }
+    if (pk.value !== undefined) {
+      updateData.primaryPhotoKey = pk.value;
+    }
   }
 
   if (Object.keys(updateData).length === 0) {

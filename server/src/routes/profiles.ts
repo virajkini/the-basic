@@ -18,6 +18,7 @@ const validSortOptions: SortOption[] = ['recent', 'updated', 'age_asc', 'age_des
  * GET /api/profiles/discover
  * Get profiles for discovery with images in a single call
  * Lists verified profiles only (server-side); excludes current user and matches opposite gender.
+ * If the authenticated user has no profile document yet, returns an empty list (200).
  * Returns masked data + blurred images for unverified viewers
  * Returns full data + original images for verified viewers
  * Query params: limit (default 200), skip (default 0), sort, ageMin, ageMax, favoritesOnly, name
@@ -49,6 +50,8 @@ router.get('/discover',
         ? sortParam as SortOption
         : 'recent';
 
+      const viewerProfile = await readProfile(currentUserId);
+
       // Parse filter options
       const filters: FilterOptions = {};
       const ageMin = parseInt(req.query.ageMin as string);
@@ -62,8 +65,22 @@ router.get('/discover',
       const favoritesOnly = favParam === '1' || favParam === 'true' || favParam === 'yes';
       if (favoritesOnly) {
         filters.favoritesOnly = true;
-        const viewerProfile = await readProfile(currentUserId);
         filters.favoriteUserIds = viewerProfile?.favoriteUserIds ?? [];
+      }
+
+      // Must complete own profile before discovery lists anyone else
+      if (!viewerProfile) {
+        const { favoriteUserIds: _favIdsOmit, ...filtersForResponse } = filters;
+        return res.status(200).json({
+          success: true,
+          profiles: [],
+          count: 0,
+          isVerified,
+          skip,
+          limit,
+          sort: sortBy,
+          filters: filtersForResponse,
+        });
       }
 
       const profiles = await listProfiles(
@@ -79,7 +96,7 @@ router.get('/discover',
       const profilesWithImages = (await Promise.all(
         profiles.map(async (profile) => {
           // Get images (blurred for unverified, compressed for verified)
-          const files = await getOtherUserProfileImages(profile._id, isVerified);
+          const files = await getOtherUserProfileImages(profile._id, isVerified, profile.primaryPhotoKey);
           const images = files.map(f => f.url);
 
           // Skip profiles with no images
@@ -173,7 +190,7 @@ router.get('/view/:userId',
       }
 
       // Get images (blurred for unverified, compressed for verified)
-      const files = await getOtherUserProfileImages(targetUserId, isVerified);
+      const files = await getOtherUserProfileImages(targetUserId, isVerified, profile.primaryPhotoKey);
       const images = files.map(f => f.url);
 
       const age = profile.dob ? calculateAge(profile.dob) : profile.age;
@@ -296,6 +313,7 @@ router.get('/:userId',
           verified: profile.verified,
           subscribed: profile.subscribed,
           favoriteUserIds: profile.favoriteUserIds ?? [],
+          primaryPhotoKey: profile.primaryPhotoKey ?? null,
           createdAt: profile.createdAt,
           updatedAt: profile.updatedAt
         }
@@ -375,6 +393,7 @@ router.post('/',
           foodPreference: profile.foodPreference ?? null,
           verified: profile.verified,
           subscribed: profile.subscribed,
+          primaryPhotoKey: profile.primaryPhotoKey ?? null,
           createdAt: profile.createdAt,
           updatedAt: profile.updatedAt
         }
@@ -454,6 +473,7 @@ router.put('/:userId',
         verified: updatedProfile.verified,
         subscribed: updatedProfile.subscribed,
         favoriteUserIds: updatedProfile.favoriteUserIds ?? [],
+        primaryPhotoKey: updatedProfile.primaryPhotoKey ?? null,
         createdAt: updatedProfile.createdAt,
         updatedAt: updatedProfile.updatedAt
       }
