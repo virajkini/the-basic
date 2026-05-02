@@ -8,6 +8,7 @@ import contactRoutes from './routes/contact.js';
 import userRoutes from './routes/users.js';
 import profileRoutes from './routes/profiles.js';
 import fileRoutes from './routes/files.js';
+import profilePdfRoutes from './routes/profilePdf.js';
 import connectionRoutes from './routes/connections.js';
 import notificationRoutes from './routes/notifications.js';
 import adminRoutes from './routes/admin.js';
@@ -105,6 +106,9 @@ app.use('/api/profiles', profileRoutes);
 
 // File routes
 app.use('/api/files', fileRoutes);
+
+// Profile PDF routes (generate / list / delete)
+app.use('/api/profile-pdfs', profilePdfRoutes);
 
 // Connection routes
 app.use('/api/connections', connectionRoutes);
