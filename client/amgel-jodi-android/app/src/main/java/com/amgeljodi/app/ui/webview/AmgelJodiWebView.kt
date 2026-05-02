@@ -269,6 +269,71 @@ fun AmgelJodiWebView(
                     }
                 }
 
+                // Download handler — needed because the WebView itself cannot render
+                // PDFs and `static.amgeljodi.com` is in the in-app allow-list (so a
+                // PDF link is not opened in an external browser either). Hand the
+                // request off to the Android DownloadManager which saves the file
+                // to the user's public Downloads folder.
+                setDownloadListener { url, _, contentDisposition, mimeType, _ ->
+                    try {
+                        val resolvedMime = mimeType ?: "application/pdf"
+                        val fileName = android.webkit.URLUtil.guessFileName(
+                            url, contentDisposition, resolvedMime
+                        )
+                        val request = android.app.DownloadManager.Request(
+                            android.net.Uri.parse(url)
+                        ).apply {
+                            setMimeType(resolvedMime)
+                            // Forward cookies so signed CloudFront URLs (and any
+                            // session cookies) keep working server-side.
+                            val cookies = CookieManager.getInstance().getCookie(url)
+                            if (!cookies.isNullOrEmpty()) {
+                                addRequestHeader("Cookie", cookies)
+                            }
+                            addRequestHeader("User-Agent", settings.userAgentString)
+                            setDescription("Downloading $fileName")
+                            setTitle(fileName)
+                            setNotificationVisibility(
+                                android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
+                            )
+                            setDestinationInExternalPublicDir(
+                                android.os.Environment.DIRECTORY_DOWNLOADS,
+                                fileName
+                            )
+                            setAllowedOverMetered(true)
+                            setAllowedOverRoaming(true)
+                        }
+                        val dm = context.getSystemService(android.content.Context.DOWNLOAD_SERVICE)
+                                as android.app.DownloadManager
+                        dm.enqueue(request)
+                        android.widget.Toast.makeText(
+                            context,
+                            "Downloading $fileName…",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                        PostHog.capture(
+                            event = "webview_download_started",
+                            properties = mapOf(
+                                "file_name" to fileName,
+                                "mime_type" to resolvedMime
+                            )
+                        )
+                    } catch (e: Exception) {
+                        PostHog.capture(
+                            event = "webview_download_error",
+                            properties = mapOf(
+                                "error" to (e.message ?: "unknown"),
+                                "url" to url
+                            )
+                        )
+                        android.widget.Toast.makeText(
+                            context,
+                            "Could not start download",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
                 state.webView = this
             }
         },

@@ -336,6 +336,33 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Bio-Data PDF Banner — verified users only */}
+        {profile.verified && (
+          <Link
+            href="/profile-pdf"
+            onClick={() =>
+              posthog.capture('dashboard_bio_data_banner_clicked', { destination: '/profile-pdf' })
+            }
+            className="group relative mb-4 flex items-center gap-3 px-4 py-3.5 rounded-xl overflow-hidden
+                       bg-gradient-to-r from-amber-50 via-white to-amber-50
+                       border border-amber-200/80 hover:border-amber-300
+                       shadow-sm hover:shadow-md transition-all"
+          >
+            <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center shrink-0 ring-1 ring-amber-200/60">
+              <svg className="w-5 h-5 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div className="relative min-w-0 flex-1">
+              <div className="text-sm font-semibold text-amber-900">Download your matrimony bio-data</div>
+              <div className="text-xs text-amber-700/80 mt-0.5">Generate a beautifully formatted PDF profile</div>
+            </div>
+            <svg className="relative w-5 h-5 text-amber-700 shrink-0 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        )}
+
         {/* Discover Profiles Section */}
         <div className="animate-fade-in-up delay-100">
           {/* Header Row */}
