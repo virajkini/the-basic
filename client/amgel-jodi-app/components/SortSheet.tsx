@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 
-export type SortOption = 'recent' | 'updated' | 'age_asc' | 'age_desc' | 'height_asc' | 'height_desc'
+export type SortOption = 'recent' | 'updated' | 'active' | 'age_asc' | 'age_desc' | 'height_asc' | 'height_desc'
 
 interface SortSheetProps {
   isOpen: boolean
@@ -13,6 +13,7 @@ interface SortSheetProps {
 
 const sortOptions: { value: SortOption; label: string }[] = [
   { value: 'recent', label: 'Recently Added' },
+  { value: 'active', label: 'Recently Active' },
   { value: 'updated', label: 'Recently Updated' },
   { value: 'age_asc', label: 'Age: Youngest First' },
   { value: 'age_desc', label: 'Age: Oldest First' },

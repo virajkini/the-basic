@@ -26,6 +26,21 @@ interface AdminUserRow {
   isVerified: boolean
   isSubscribed: boolean
   profileCreatedAt: string | null
+  profileUpdatedAt: string | null
+  profileLastActive: string | null
+}
+
+function formatAdminDate(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return '—'
+  return d.toLocaleString('en-IN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 type ProfileForm = {
@@ -546,13 +561,16 @@ export default function OnboardingTab() {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Profile</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Verified</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Created at</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Updated at</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Last active</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {users.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                       No users found
                     </td>
                   </tr>
@@ -563,6 +581,15 @@ export default function OnboardingTab() {
                       <td className="px-4 py-3 text-xs font-mono">{u.userId}</td>
                       <td className="px-4 py-3 text-sm">{u.hasProfile ? (u.name || 'Yes') : '—'}</td>
                       <td className="px-4 py-3 text-sm">{u.hasProfile ? (u.isVerified ? 'Yes' : 'No') : '—'}</td>
+                      <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
+                        {formatAdminDate(u.profileCreatedAt ?? undefined)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
+                        {formatAdminDate(u.profileUpdatedAt ?? undefined)}
+                      </td>
+                      <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
+                        {formatAdminDate(u.profileLastActive ?? undefined)}
+                      </td>
                       <td className="px-4 py-3">
                         <button
                           type="button"

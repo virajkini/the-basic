@@ -11,6 +11,8 @@ export type AdminUserListRow = {
   isVerified: boolean;
   isSubscribed: boolean;
   profileCreatedAt: Date | null;
+  profileUpdatedAt: Date | null;
+  profileLastActive: Date | null;
 };
 
 function escapeRegex(s: string): string {
@@ -113,6 +115,8 @@ export async function listAllUsersWithProfileSummary(q?: string): Promise<AdminU
       isVerified: p?.verified ?? false,
       isSubscribed: p?.subscribed ?? false,
       profileCreatedAt: p?.createdAt ?? null,
+      profileUpdatedAt: p?.updatedAt ?? null,
+      profileLastActive: p?.lastActive ?? null,
     };
   });
 }
