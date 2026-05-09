@@ -119,7 +119,7 @@ export default function ProfilePdfPage() {
   }
 
   return (
-    <div className="min-h-full bg-myColor-50">
+    <div className="min-h-full bg-myColor-100">
       <header className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-myColor-100">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-2">
           <button
@@ -163,7 +163,7 @@ export default function ProfilePdfPage() {
           </div>
         ) : (
           <>
-            <section className="rounded-2xl border border-myColor-200 bg-gradient-to-br from-myColor-50 to-myColor-100 p-5 shadow-sm">
+            <section className="rounded-2xl border border-myColor-200/90 bg-white p-5 shadow-md shadow-myColor-900/[0.06] ring-1 ring-myColor-100/80">
               <div className="flex gap-4 items-start justify-between">
                 <div className="min-w-0 flex-1 pt-0.5">
                   <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-myColor-600">New file</p>
@@ -183,7 +183,7 @@ export default function ProfilePdfPage() {
                 />
               </div>
 
-              <div className="mt-5 rounded-xl border border-myColor-200 bg-white overflow-hidden shadow-[0_1px_0_rgba(202,161,247,0.15)]">
+              <div className="mt-5 rounded-xl border border-myColor-200/90 bg-myColor-50/40 overflow-hidden shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
                 <button
                   type="button"
                   id="family-accordion-trigger"
@@ -191,7 +191,7 @@ export default function ProfilePdfPage() {
                   aria-controls="family-details-panel"
                   onClick={() => setFamilyDetailsOpen((o) => !o)}
                   disabled={generating}
-                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left bg-white hover:bg-myColor-50/60 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-3.5 text-left bg-white/90 hover:bg-white disabled:opacity-50 disabled:pointer-events-none transition-colors"
                 >
                   <span className="inline-flex shrink-0 rounded-lg bg-myColor-100 p-2.5 text-myColor-600">
                     <IconUsersFamily className="w-5 h-5" aria-hidden />
@@ -248,10 +248,10 @@ export default function ProfilePdfPage() {
                 onClick={handleGenerate}
                 disabled={generating || limitReached}
                 className={[
-                  'mt-4 w-full py-3.5 rounded-xl text-base font-semibold transition-colors border-2 flex items-center justify-center gap-2',
+                  'mt-4 w-full py-3.5 rounded-xl text-base font-semibold transition-all border-2 flex items-center justify-center gap-2 shadow-sm',
                   generating || limitReached
-                    ? 'border-myColor-200 bg-myColor-100/50 text-myColor-400 cursor-not-allowed'
-                    : 'border-myColor-300 bg-myColor-50 text-myColor-900 hover:border-myColor-400 hover:bg-myColor-100/60 active:bg-myColor-100',
+                    ? 'border-myColor-200 bg-myColor-100/80 text-myColor-400 cursor-not-allowed shadow-none'
+                    : 'border-myColor-700 bg-myColor-700 text-white hover:bg-myColor-800 hover:border-myColor-800 active:bg-myColor-900 active:border-myColor-900',
                 ].join(' ')}
               >
                 {generating ? (
@@ -260,7 +260,7 @@ export default function ProfilePdfPage() {
                   `Limit reached (${max})`
                 ) : (
                   <>
-                    <span className="text-myColor-600 text-lg leading-none">+</span>
+                    <span className="text-white/90 text-lg leading-none">+</span>
                     Create bio-data
                   </>
                 )}
