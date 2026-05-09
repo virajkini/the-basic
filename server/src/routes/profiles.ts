@@ -1,5 +1,5 @@
 import express from 'express';
-import { readProfile, createProfile, updateProfile, listProfiles, maskString, SortOption, FilterOptions } from '../services/profileManager.js';
+import { readProfile, createProfile, updateProfile, updateLastActive, listProfiles, maskString, SortOption, FilterOptions } from '../services/profileManager.js';
 import { Profile, calculateAge } from '../models/profile.js';
 import { parseCreateProfileBody, parseProfileUpdateBody } from '../validation/profilePayload.js';
 import { authenticateToken } from '../middleware/auth.js';
@@ -12,7 +12,37 @@ import { findUserById } from '../services/userManager.js';
 const router = express.Router();
 
 // Valid sort options
-const validSortOptions: SortOption[] = ['recent', 'updated', 'age_asc', 'age_desc', 'height_asc', 'height_desc'];
+const validSortOptions: SortOption[] = ['recent', 'updated', 'active', 'age_asc', 'age_desc', 'height_asc', 'height_desc'];
+
+/**
+ * POST /api/profiles/last-active
+ * Update own profile lastActive timestamp (dashboard ping).
+ */
+router.post(
+  '/last-active',
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const userId = req.authenticatedUserId;
+      if (!userId) {
+        return res.status(401).json({ error: 'User ID not found in token' });
+      }
+
+      const updated = await updateLastActive(userId);
+      if (!updated) {
+        return res.status(404).json({ error: 'Profile not found' });
+      }
+
+      return res.status(200).json({ success: true, lastActive: updated.lastActive ?? null });
+    } catch (error) {
+      console.error('Error updating last active:', error);
+      return res.status(500).json({
+        error: 'Failed to update last active',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
 
 /**
  * GET /api/profiles/discover
@@ -227,6 +257,7 @@ router.get('/view/:userId',
           kuldeva: profile.kuldeva || null,
           foodPreference: profile.foodPreference ?? null,
           verified: profile.verified,
+          lastActive: profile.lastActive ?? null,
           updatedAt: profile.updatedAt,
           images,
         },
@@ -314,6 +345,7 @@ router.get('/:userId',
           subscribed: profile.subscribed,
           favoriteUserIds: profile.favoriteUserIds ?? [],
           primaryPhotoKey: profile.primaryPhotoKey ?? null,
+          lastActive: profile.lastActive ?? null,
           createdAt: profile.createdAt,
           updatedAt: profile.updatedAt
         }

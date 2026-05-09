@@ -51,6 +51,28 @@ export async function createProfile(
 }
 
 /**
+ * Update a user's lastActive timestamp (dashboard activity ping).
+ * @param userId - User ID (same as profile _id)
+ * @returns Updated profile object or null if not found
+ */
+export async function updateLastActive(userId: string): Promise<Profile | null> {
+  const db = await getDatabase();
+  const collection = db.collection<Profile>('profiles');
+
+  const updatedProfile = await collection.findOneAndUpdate(
+    { _id: userId },
+    {
+      $set: {
+        lastActive: new Date(),
+      },
+    },
+    { returnDocument: 'after' }
+  );
+
+  return updatedProfile || null;
+}
+
+/**
  * Update an existing profile
  * @param userId - User ID (same as profile _id)
  * @param updateData - Fields to update (excluding _id, createdAt)
@@ -78,7 +100,7 @@ export async function updateProfile(
 }
 
 // Sort options for profile listing
-export type SortOption = 'recent' | 'updated' | 'age_asc' | 'age_desc' | 'height_asc' | 'height_desc';
+export type SortOption = 'recent' | 'updated' | 'active' | 'age_asc' | 'age_desc' | 'height_asc' | 'height_desc';
 
 // Filter options for profile listing
 export interface FilterOptions {
@@ -169,6 +191,21 @@ export async function listProfiles(
   }
 
   // Determine sort order
+  if (sortBy === 'active') {
+    // Backward compatible: users without lastActive fall back to updatedAt.
+    const profiles = await collection
+      .aggregate<Profile>([
+        { $match: filter },
+        { $addFields: { sortActiveAt: { $ifNull: ['$lastActive', '$updatedAt'] } } },
+        { $sort: { sortActiveAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        { $project: { sortActiveAt: 0 } },
+      ])
+      .toArray();
+    return profiles;
+  }
+
   let sortOrder: Record<string, 1 | -1>;
   switch (sortBy) {
     case 'updated':

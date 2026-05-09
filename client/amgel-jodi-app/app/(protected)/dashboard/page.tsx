@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useAuth } from '../../context/AuthContext'
 import { authFetch } from '../../utils/authFetch'
 import { useDashboardShortlist } from '../../../hooks/useDashboardShortlist'
+import { useLastActivePing } from '../../../hooks/useLastActivePing'
 import ProfileDetailView from '../../../components/ProfileDetailView'
 import FavoriteToggle from '../../../components/FavoriteToggle'
 import SortSheet, { SortOption } from '../../../components/SortSheet'
@@ -51,6 +52,7 @@ interface DiscoverProfile {
 
 export default function Dashboard() {
   const { user } = useAuth()
+  useLastActivePing(user?.userId)
   const {
     showFavoritesOnly,
     setShowFavoritesOnly,
@@ -142,6 +144,25 @@ export default function Dashboard() {
     })
   }, [])
 
+  const handleOpenOwnProfilePreview = useCallback(async () => {
+    setSelectedProfile(null)
+    if (ownProfileImages.length === 0 && user?.userId) {
+      try {
+        const res = await authFetch(`${API_BASE}/files`)
+        if (res.ok) {
+          const d = await res.json()
+          if (d.success && Array.isArray(d.images)) {
+            setOwnProfileImages(d.images)
+          }
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    setShowOwnProfilePreview(true)
+    posthog.capture('dashboard_my_profile_preview_opened')
+  }, [user?.userId, ownProfileImages.length])
+
   const fetchDiscoverProfiles = async () => {
     if (!user?.userId) return
 
@@ -183,7 +204,7 @@ export default function Dashboard() {
       appendShortlistDiscoverParams(params)
 
       // Own profile + discover in parallel. /files is not included here — GET /profiles/:id has no
-      // image URLs; we lazy-load /files when the user opens "Preview my profile" (see eye button).
+      // image URLs; we lazy-load /files when the user opens "My profile" in the toolbar.
       const [profileRes, discoverRes] = await Promise.all([
         authFetch(`${API_BASE}/profiles/${user.userId}`),
         authFetch(`${API_BASE}/profiles/discover?${params.toString()}`),
@@ -336,38 +357,11 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Bio-Data PDF Banner — verified users only */}
-        {profile.verified && (
-          <Link
-            href="/profile-pdf"
-            onClick={() =>
-              posthog.capture('dashboard_bio_data_banner_clicked', { destination: '/profile-pdf' })
-            }
-            className="group relative mb-4 flex items-center gap-3 px-4 py-3.5 rounded-xl overflow-hidden
-                       bg-gradient-to-r from-amber-50 via-white to-amber-50
-                       border border-amber-200/80 hover:border-amber-300
-                       shadow-sm hover:shadow-md transition-all"
-          >
-            <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center shrink-0 ring-1 ring-amber-200/60">
-              <svg className="w-5 h-5 text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <div className="relative min-w-0 flex-1">
-              <div className="text-sm font-semibold text-amber-900">Download your matrimony bio-data</div>
-              <div className="text-xs text-amber-700/80 mt-0.5">Generate a beautifully formatted PDF profile</div>
-            </div>
-            <svg className="relative w-5 h-5 text-amber-700 shrink-0 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-        )}
-
         {/* Discover Profiles Section */}
         <div className="animate-fade-in-up delay-100">
           {/* Header Row */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
                 {showDailyWelcome ? (
                   <>
@@ -384,39 +378,17 @@ export default function Dashboard() {
                   </h2>
                 )}
               </div>
-              {/* Mobile: open own profile preview (edit lives in modal top-right) */}
-              <div className="flex items-center shrink-0 md:hidden">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setSelectedProfile(null)
-                    if (ownProfileImages.length === 0 && user?.userId) {
-                      try {
-                        const res = await authFetch(`${API_BASE}/files`)
-                        if (res.ok) {
-                          const d = await res.json()
-                          if (d.success && Array.isArray(d.images)) {
-                            setOwnProfileImages(d.images)
-                          }
-                        }
-                      } catch {
-                        /* ignore */
-                      }
-                    }
-                    setShowOwnProfilePreview(true)
-                  }}
-                  className="p-2.5 rounded-xl text-myColor-600 hover:text-myColor-800 hover:bg-myColor-50 transition-colors"
-                  aria-label="Preview my profile"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => void handleOpenOwnProfilePreview()}
+                title="See how your profile appears to others"
+                className="shrink-0 rounded-full border border-myColor-200/90 bg-white px-3.5 py-2 text-sm font-medium text-myColor-700 shadow-sm transition-all hover:border-myColor-300 hover:bg-myColor-50 hover:text-myColor-900 active:scale-[0.98]"
+              >
+                My profile
+              </button>
             </div>
 
-            {/* Sort, Filter & Layout Bar - New refined design */}
+            {/* Sort, Filter & Layout Bar */}
             <div className="flex items-center gap-2">
               {/* Sort Button */}
               <button
@@ -553,7 +525,7 @@ export default function Dashboard() {
           />
         )}
 
-        {/* Own profile preview — same as edit profile page (mobile header eye) */}
+        {/* Own profile preview — opened from “My profile” next to the heading */}
         {showOwnProfilePreview && user?.userId && (
           <ProfileDetailView
             profileId={user.userId}

@@ -54,6 +54,8 @@ export interface Profile {
   // System fields
   verified: boolean;
   subscribed: boolean;
+  /** Last time the user was active in the app (dashboard ping). Optional for legacy profiles. */
+  lastActive?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

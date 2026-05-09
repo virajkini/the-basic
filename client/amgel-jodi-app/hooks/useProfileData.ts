@@ -22,6 +22,7 @@ export interface FullProfile {
   education: string | null
   aboutMe: string | null
   verified: boolean
+  lastActive?: string | null
   updatedAt?: string
   // Jatak/Kundali fields (optional)
   placeOfBirth?: string | null

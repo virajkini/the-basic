@@ -349,10 +349,10 @@ function ProfileDetailView({
                     </span>
                   )}
 
-                  {profile.updatedAt && (
+                  {(profile.lastActive || profile.updatedAt) && (
                     <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-50 rounded-full text-sm text-green-700">
                       <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                      {formatLastUpdated(profile.updatedAt)}
+                      {formatLastUpdated(profile.lastActive ?? profile.updatedAt)}
                     </span>
                   )}
                 </div>
@@ -694,10 +694,10 @@ function ProfileDetailView({
                     </span>
                   )}
 
-                  {profile.updatedAt && (
+                  {(profile.lastActive || profile.updatedAt) && (
                     <span className="inline-flex items-center gap-1.5 px-3 py-2 bg-green-100 rounded-full text-sm text-green-700">
                       <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                      {formatLastUpdated(profile.updatedAt)}
+                      {formatLastUpdated(profile.lastActive ?? profile.updatedAt)}
                     </span>
                   )}
                 </div>
