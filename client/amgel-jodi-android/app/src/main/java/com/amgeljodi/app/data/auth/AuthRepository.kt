@@ -139,7 +139,7 @@ class AuthRepository @Inject constructor(
                     AuthActionResult.Error(extractErrorMessage(body))
                 }
             }
-how         } catch (_: Exception) {
+         } catch (_: Exception) {
             AuthActionResult.Error("Network looks unstable. Please try again.")
         }
     }
