@@ -6,6 +6,10 @@ import { articles } from './articles'
 
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.amgeljodi.app'
 
+/** Public CloudFront origin for S3 `page-assets/` (see server fileManager.ts CLOUDFRONT_DOMAIN). */
+const PAGE_ASSETS_CDN =
+  process.env.NEXT_PUBLIC_PAGE_ASSETS_CDN_BASE ?? 'https://static.amgeljodi.com/page-assets'
+
 const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
@@ -478,12 +482,12 @@ export default function Home() {
           {/* Profile Cards Grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6 mb-12">
             {[
-              { name: 'Chetana S.', age: 26, city: 'Mumbai', img: '/images/community/chetana.jpg' },
-              { name: 'Raksha K.', age: 28, city: 'Bangalore', img: '/images/community/raksha.jpg' },
-              { name: 'Archana R.', age: 25, city: 'Goa', img: '/images/community/archana.jpg' },
-              { name: 'Suhas M.', age: 30, city: 'Pune', img: '/images/community/suhas.png' },
-              { name: 'Ninaad P.', age: 27, city: 'Chennai', img: '/images/community/ninaad.png' },
-              { name: 'Ashish D.', age: 29, city: 'Delhi', img: '/images/community/ashish.png' },
+              { name: 'Chetana S.', age: 26, city: 'Mumbai', img: `${PAGE_ASSETS_CDN}/chetana.jpg` },
+              { name: 'Raksha K.', age: 28, city: 'Bangalore', img: `${PAGE_ASSETS_CDN}/raksha.jpg` },
+              { name: 'Archana R.', age: 25, city: 'Goa', img: `${PAGE_ASSETS_CDN}/archana.jpg` },
+              { name: 'Suhas M.', age: 30, city: 'Pune', img: `${PAGE_ASSETS_CDN}/suhas.png` },
+              { name: 'Ninaad P.', age: 27, city: 'Chennai', img: `${PAGE_ASSETS_CDN}/ninaad.png` },
+              { name: 'Ashish D.', age: 29, city: 'Delhi', img: `${PAGE_ASSETS_CDN}/ashish.png` },
             ].map((profile, index) => (
               <div key={index} className="group relative">
                 <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-myColor-100">
