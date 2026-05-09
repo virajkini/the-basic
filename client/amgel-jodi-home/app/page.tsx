@@ -335,6 +335,41 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Marriage biodata — landing CTA */}
+      <section className="relative border-t border-myColor-100/80 bg-gradient-to-b from-myColor-50/90 to-white py-12 md:py-16">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto flex max-w-5xl flex-col gap-8 overflow-hidden rounded-3xl border border-myColor-100/90 bg-white p-6 shadow-[0_24px_80px_-40px_rgba(33,20,48,0.2)] ring-1 ring-myColor-100/50 md:flex-row md:items-center md:justify-between md:p-10">
+            <div className="flex flex-1 flex-col gap-4 md:flex-row md:items-center md:gap-6">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-myColor-500 to-myColor-700 text-white shadow-lg shadow-myColor-600/30">
+                <svg className="h-9 w-9" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-myColor-500">New</p>
+                <h2 className="mt-1 font-display text-2xl font-semibold tracking-tight text-myColor-900 md:text-3xl">
+                  Create marriage bio-data for <span className="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">FREE</span>
+                </h2>
+                <p className="mt-2 max-w-xl text-myColor-600 md:text-lg">
+                  Build a polished marriage biodata PDF from your verified profile—download and share in minutes.
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
+              <Link
+                href="/create-free-biodata"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-myColor-700 to-myColor-800 px-8 py-3.5 text-center text-base font-semibold text-white shadow-lg shadow-myColor-700/25 transition-all hover:from-myColor-800 hover:to-myColor-900 hover:shadow-xl active:scale-[0.98]"
+              >
+                Learn more
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* How It Works - Visual Journey */}
       <section id="how-it-works" className="relative py-24 md:py-32 bg-myColor-50 overflow-hidden">
         {/* Background decorations */}
