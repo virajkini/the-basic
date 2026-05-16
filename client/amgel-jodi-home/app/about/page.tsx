@@ -49,7 +49,7 @@ export default function AboutPage() {
                   Connecting Families, Honoring Traditions
                 </h2>
                 <p className="text-myColor-600 leading-relaxed mb-4">
-                  Amgel Jodi was born from a simple yet profound understanding: in our GSB Konkani community, marriage is not just about two individuals—it&apos;s about two families coming together.
+                  Amgel Jodi was born from a simple yet profound understanding: in our GSB Konkani community, marriage is not just about two individuals, it's about two families coming together.
                 </p>
                 <p className="text-myColor-600 leading-relaxed">
                   We created a platform that respects this beautiful tradition while embracing the convenience of modern technology. Our mission is to make the journey of finding a life partner meaningful, secure, and true to our cultural values.
@@ -172,7 +172,7 @@ export default function AboutPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-lg mb-2">Free to Start</h3>
-                    <p className="text-myColor-300">Create your profile and explore matches for free. Premium features available when you need them.</p>
+                    <p className="text-myColor-300">Create your profile, get manually verified, browse matches, and connect with families—Amgel Jodi is completely free, with no paid tiers.</p>
                   </div>
                 </div>
               </div>

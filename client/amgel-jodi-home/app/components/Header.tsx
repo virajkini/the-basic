@@ -84,7 +84,7 @@ export default function Header() {
             </a>
 
             {/* Navigation Links */}
-            <nav className="hidden md:flex items-center gap-8">
+            <nav className="hidden md:flex items-center gap-6 lg:gap-8">
               <a
                 href="/about"
                 className={`font-medium transition-colors duration-300 ${
@@ -101,20 +101,31 @@ export default function Header() {
               >
                 Contact
               </a>
-              {/* Login Button - only show on homepage */}
-              {isHomepage && (
+              <div className="flex items-center gap-3">
                 <button
+                  type="button"
                   onClick={() => setIsLoginOpen(true)}
-                  className={`group relative px-5 py-2.5 md:px-6 md:py-2.5 rounded-full font-medium text-sm md:text-base transition-all duration-300 overflow-hidden ${
+                  className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 md:px-6 md:text-base ${
                     showSolidHeader
-                      ? 'bg-myColor-600 text-white hover:bg-myColor-700 shadow-lg shadow-myColor-500/30 hover:shadow-xl hover:shadow-myColor-500/40'
-                      : 'bg-white/10 backdrop-blur-sm text-white border border-white/30 hover:bg-white/20 hover:border-white/50'
+                      ? 'border border-myColor-200 bg-white text-myColor-800 hover:border-myColor-300 hover:bg-myColor-50'
+                      : 'border border-white/35 bg-white/10 text-white backdrop-blur-sm hover:border-white/50 hover:bg-white/18'
+                  } hover:scale-[1.02] active:scale-95`}
+                >
+                  Register Free
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsLoginOpen(true)}
+                  className={`group relative overflow-hidden rounded-full px-5 py-2.5 text-sm font-medium transition-all duration-300 md:px-6 md:text-base ${
+                    showSolidHeader
+                      ? 'bg-myColor-600 text-white shadow-lg shadow-myColor-500/30 hover:bg-myColor-700 hover:shadow-xl hover:shadow-myColor-500/40'
+                      : 'border border-white/30 bg-white/10 text-white backdrop-blur-sm hover:border-white/50 hover:bg-white/20'
                   } hover:scale-105 active:scale-95`}
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     Login
                     <svg
-                      className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5"
+                      className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -128,22 +139,34 @@ export default function Header() {
                     </svg>
                   </span>
                 </button>
-              )}
+              </div>
             </nav>
 
-            {/* Mobile Login Button - only show on homepage */}
-            {isHomepage && (
+            {/* Mobile: Register + Login */}
+            <div className="flex items-center gap-2 md:hidden">
               <button
+                type="button"
                 onClick={() => setIsLoginOpen(true)}
-                className={`md:hidden group relative px-5 py-2.5 rounded-full font-medium text-sm transition-all duration-300 overflow-hidden ${
+                className={`rounded-full px-3.5 py-2 text-xs font-semibold transition-all duration-300 sm:px-4 sm:text-sm ${
                   showSolidHeader
-                    ? 'bg-myColor-600 text-white hover:bg-myColor-700 shadow-lg shadow-myColor-500/30'
-                    : 'bg-white/10 backdrop-blur-sm text-white border border-white/30 hover:bg-white/20'
-                } hover:scale-105 active:scale-95`}
+                    ? 'border border-myColor-200 bg-white text-myColor-800 hover:bg-myColor-50'
+                    : 'border border-white/35 bg-white/10 text-white backdrop-blur-sm hover:bg-white/18'
+                } active:scale-95`}
               >
-                <span className="relative z-10">Login</span>
+                Register Free
               </button>
-            )}
+              <button
+                type="button"
+                onClick={() => setIsLoginOpen(true)}
+                className={`rounded-full px-3.5 py-2 text-xs font-medium transition-all duration-300 sm:px-4 sm:text-sm ${
+                  showSolidHeader
+                    ? 'bg-myColor-600 text-white shadow-md shadow-myColor-500/25 hover:bg-myColor-700'
+                    : 'border border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/20'
+                } active:scale-95`}
+              >
+                Login
+              </button>
+            </div>
           </div>
         </div>
       </header>

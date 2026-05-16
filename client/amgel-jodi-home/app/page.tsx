@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { articles } from './articles'
 
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.amgeljodi.app'
@@ -27,7 +27,7 @@ const faqJsonLd = {
       name: 'How does Amgel Jodi verify GSB Konkani profiles?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Amgel Jodi verifies every profile through a manual review process ensuring authenticity within the GSB Konkani community. Over 500 families have found their match through our platform.'
+        text: 'Every profile is manually verified by our team: we place a phone call to the number on file to confirm identity and check that the member belongs to the GSB Konkani community and is genuinely open to looking for matches.'
       }
     },
     {
@@ -35,7 +35,7 @@ const faqJsonLd = {
       name: 'Is Amgel Jodi free to join for GSB Konkani matrimony?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'Yes, you can create a free profile on Amgel Jodi and browse GSB Konkani matrimony matches. Premium features are available for enhanced connectivity and direct contact with matches.'
+        text: 'Yes. Amgel Jodi is completely free to use: creating a profile, manual verification, browsing matches, connecting with families, and using core matrimony features are all included at no cost. There are no paid tiers or hidden fees on the platform.'
       }
     },
     {
@@ -54,42 +54,16 @@ const openLoginSheet = () => {
   window.dispatchEvent(new Event('openLoginSheet'))
 }
 
-// Animated counter hook
-function useCounter(end: number, duration: number = 2000, startOnView: boolean = true) {
-  const [count, setCount] = useState(0)
-  const [hasStarted, setHasStarted] = useState(!startOnView)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (startOnView && ref.current) {
-      const observer = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setHasStarted(true)
-            observer.disconnect()
-          }
-        },
-        { threshold: 0.5 }
-      )
-      observer.observe(ref.current)
-      return () => observer.disconnect()
-    }
-  }, [startOnView])
-
-  useEffect(() => {
-    if (!hasStarted) return
-    let startTime: number
-    const animate = (timestamp: number) => {
-      if (!startTime) startTime = timestamp
-      const progress = Math.min((timestamp - startTime) / duration, 1)
-      setCount(Math.floor(progress * end))
-      if (progress < 1) requestAnimationFrame(animate)
-    }
-    requestAnimationFrame(animate)
-  }, [end, duration, hasStarted])
-
-  return { count, ref }
-}
+/** Public stats (static HTML for crawlers and first paint—must match footer copy). */
+const TRUST_STATS = {
+  happyFamilies: '500+',
+  freeHeadline: 'Free',
+  freeSubtext: 'Entire platform',
+  verifiedPercent: '100%',
+  taglineFamilies: 'Trusted by GSB Konkani families across India.',
+  taglineFree: 'No membership fees, upgrades, or paid unlocks.',
+  taglineVerified: 'Human phone checks before profiles appear in search.',
+} as const
 
 function GooglePlayBadge({ compact = false, tone = 'default' }: { compact?: boolean; tone?: 'default' | 'hero' }) {
   const isHero = tone === 'hero'
@@ -183,10 +157,6 @@ export default function Home() {
 
     return () => window.clearTimeout(timeout)
   }, [phraseIndex, phrases.length])
-
-  const stat1 = useCounter(100, 2000)
-  const stat2 = useCounter(150, 2000)
-  const stat3 = useCounter(100, 2000)
 
   return (
     <>
@@ -284,56 +254,46 @@ export default function Home() {
       {/* Trust Indicators - Stats Section */}
       <section className="relative py-16 md:py-20 bg-white">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3 md:items-stretch">
             {/* Stat 1 */}
-            <div ref={stat1.ref} className="group relative bg-white rounded-2xl p-6 md:p-8 shadow-lg shadow-myColor-500/5 border border-myColor-100 hover:shadow-xl hover:shadow-myColor-500/10 hover:-translate-y-1 transition-all duration-300">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-myColor-500 to-myColor-600 rounded-xl flex items-center justify-center shadow-lg shadow-myColor-500/30">
-                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="text-3xl md:text-4xl font-display font-semibold text-myColor-900">
-                    {stat1.count}+
-                  </div>
-                  <p className="text-myColor-600 font-medium">Happy Families</p>
-                </div>
+            <div className="group relative flex h-full flex-col items-center rounded-2xl border border-myColor-100 bg-white p-6 text-center shadow-lg shadow-myColor-500/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-myColor-500/10 md:p-8">
+              <div className="mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-myColor-500 to-myColor-600 shadow-lg shadow-myColor-500/30">
+                <svg className="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
               </div>
+              <p className="text-3xl font-display font-semibold text-myColor-900 md:text-4xl">{TRUST_STATS.happyFamilies}</p>
+              <p className="mt-2 font-medium text-myColor-600">Happy Families</p>
+              <p className="mt-3 min-h-[2.75rem] text-sm leading-snug text-myColor-500">{TRUST_STATS.taglineFamilies}</p>
             </div>
 
             {/* Stat 2 */}
-            <div ref={stat2.ref} className="group relative bg-white rounded-2xl p-6 md:p-8 shadow-lg shadow-myColor-500/5 border border-myColor-100 hover:shadow-xl hover:shadow-myColor-500/10 hover:-translate-y-1 transition-all duration-300">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/30">
-                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="text-3xl md:text-4xl font-display font-semibold text-myColor-900">
-                    {stat2.count}+
-                  </div>
-                  <p className="text-myColor-600 font-medium">Successful Matches</p>
-                </div>
+            <div className="group relative flex h-full flex-col items-center rounded-2xl border border-myColor-100 bg-white p-6 text-center shadow-lg shadow-myColor-500/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-myColor-500/10 md:p-8">
+              <div className="mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg shadow-green-500/30">
+                <svg className="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                  />
+                </svg>
               </div>
+              <p className="text-3xl font-display font-semibold text-myColor-900 md:text-4xl">{TRUST_STATS.freeHeadline}</p>
+              <p className="mt-2 font-medium text-myColor-600">{TRUST_STATS.freeSubtext}</p>
+              <p className="mt-3 min-h-[2.75rem] text-sm leading-snug text-myColor-500">{TRUST_STATS.taglineFree}</p>
             </div>
 
             {/* Stat 3 */}
-            <div ref={stat3.ref} className="group relative bg-white rounded-2xl p-6 md:p-8 shadow-lg shadow-myColor-500/5 border border-myColor-100 hover:shadow-xl hover:shadow-myColor-500/10 hover:-translate-y-1 transition-all duration-300">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/30">
-                  <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="text-3xl md:text-4xl font-display font-semibold text-myColor-900">
-                    {stat3.count}%
-                  </div>
-                  <p className="text-myColor-600 font-medium">Verified Profiles</p>
-                </div>
+            <div className="group relative flex h-full flex-col items-center rounded-2xl border border-myColor-100 bg-white p-6 text-center shadow-lg shadow-myColor-500/5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-myColor-500/10 md:p-8">
+              <div className="mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30">
+                <svg className="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
               </div>
+              <p className="text-3xl font-display font-semibold text-myColor-900 md:text-4xl">{TRUST_STATS.verifiedPercent}</p>
+              <p className="mt-2 font-medium text-myColor-600">Manually verified profiles</p>
+              <p className="mt-3 min-h-[2.75rem] text-sm leading-snug text-myColor-500">{TRUST_STATS.taglineVerified}</p>
             </div>
           </div>
         </div>
@@ -355,7 +315,7 @@ export default function Home() {
                   Create marriage bio-data for <span className="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">FREE</span>
                 </h2>
                 <p className="mt-2 max-w-xl text-myColor-600 md:text-lg">
-                  Build a polished marriage biodata PDF from your verified profile—download and share in minutes.
+                  Build a polished marriage biodata PDF from your verified profile—download and share in minutes. The biodata tool and the rest of the matrimony platform are completely free to use.
                 </p>
               </div>
             </div>
@@ -455,7 +415,7 @@ export default function Home() {
               <div className="text-center md:text-left flex-1 bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-amber-100">
                 <h3 className="text-xl md:text-2xl font-bold text-myColor-900 mb-2">Connect & Meet</h3>
                 <p className="text-myColor-600 leading-relaxed">
-                  Send a connection request, match with the right profile, and unlock contact details to take the conversation forward.
+                  Send a connection request, match with the right profile, and connect with the family when both sides are ready. Contact and matching are included at no cost—Amgel Jodi is completely free, with no paid unlocks.
                 </p>
               </div>
             </div>
@@ -475,7 +435,7 @@ export default function Home() {
               Meet Our Community Members
             </h2>
             <p className="text-lg text-myColor-600 max-w-2xl mx-auto">
-              Get a glimpse of verified profiles from our growing community. Register to view detailed profiles and connect.
+              Get a glimpse of verified profiles from our growing community. Register for free to view full profiles and connect—there are no paid tiers on Amgel Jodi.
             </p>
           </div>
 
@@ -573,7 +533,9 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-1">Every Profile Verified</h3>
-                    <p className="text-myColor-400">No fake profiles. No time wasted. Only genuine people seeking genuine connections.</p>
+                    <p className="text-myColor-400">
+                      <span className="text-myColor-300">100% manually verified:</span> our team calls each applicant to confirm they belong to the GSB Konkani community and are genuinely open to looking for matches, then reviews the profile before it goes live. No fake profiles. No time wasted. Only genuine people seeking genuine connections.
+                    </p>
                   </div>
                 </div>
 
@@ -764,8 +726,7 @@ export default function Home() {
               <span className="text-myColor-200">Waiting to Meet You</span>
             </h2>
             <p className="text-xl text-white/70 mb-10 max-w-xl mx-auto">
-              Join the community where tradition meets technology.
-              Your beautiful story is just a click away.
+              Join the community where tradition meets technology. Profiles, verification, matching, and contact are all completely free—there is nothing to pay before you can get started.
             </p>
 
             <button
@@ -781,7 +742,7 @@ export default function Home() {
             </button>
 
             <p className="mt-6 text-white/50 text-sm">
-              Free to register. Takes less than 2 minutes.
+              Free to register and free to use throughout. Takes less than 2 minutes to get started.
             </p>
           </div>
         </div>
@@ -808,8 +769,8 @@ export default function Home() {
                 <span className="text-2xl font-display font-semibold">Amgel Jodi</span>
               </div>
               <p className="text-myColor-400 max-w-md leading-relaxed">
-                The dedicated GSB Konkani Matrimony platform trusted by GSB families across Mumbai,
-                Mangalore, and Udupi, with 500+ matched families since 2023 and 100% manually verified profiles.
+                The dedicated GSB Konkani matrimony platform trusted by families across Mumbai,
+                Mangalore, and Udupi: 500+ happy families since 2023 and 100% manually verified profiles—same numbers you see at the top of our homepage.
               </p>
               <div className="mt-6">
                 <GooglePlayBadge compact />
