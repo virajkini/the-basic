@@ -59,6 +59,13 @@ export default function PrivacyPolicy() {
               </ul>
             </section>
 
+            <section className="mb-10 rounded-2xl border border-myColor-100 bg-myColor-50/80 p-6 md:p-8">
+              <h2 className="text-2xl font-bold text-myColor-900 mb-4">What &quot;100% manually verified&quot; means in practice</h2>
+              <p className="leading-relaxed">
+                When we say every profile is manually verified, we mean a human reviewer on the Amgel Jodi team checks your submission—not an automated badge. We place a phone call to the number you provide to confirm you are who you claim to be, that you belong to the GSB Konkani community, and that you are genuinely open to looking for matches (not casual browsing or impersonation).
+              </p>
+            </section>
+
             <section className="mb-10">
               <h2 className="text-2xl font-bold text-myColor-900 mb-4">3. How We Use Your Information</h2>
               <p className="mb-4">We use the collected information to:</p>
