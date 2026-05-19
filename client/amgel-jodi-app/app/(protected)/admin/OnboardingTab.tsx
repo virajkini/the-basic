@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import imageCompression from 'browser-image-compression'
 import { authFetch } from '../../utils/authFetch'
@@ -28,6 +28,7 @@ interface AdminUserRow {
   profileCreatedAt: string | null
   profileUpdatedAt: string | null
   profileLastActive: string | null
+  unseenConnectionRequests: number
 }
 
 function formatAdminDate(iso: string | null | undefined): string {
@@ -174,6 +175,7 @@ export default function OnboardingTab() {
   const [users, setUsers] = useState<AdminUserRow[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [userSearch, setUserSearch] = useState('')
+  const [unseenSort, setUnseenSort] = useState<'desc' | 'asc' | null>(null)
   const [newPhone, setNewPhone] = useState('')
   const [creatingUser, setCreatingUser] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -231,6 +233,18 @@ export default function OnboardingTab() {
     loadUsers()
     // eslint-disable-next-line react-hooks/exhaustive-deps -- initial list only; use Refresh / Apply filter
   }, [])
+
+  const sortedUsers = useMemo(() => {
+    if (!unseenSort) return users
+    return [...users].sort((a, b) => {
+      const diff = (a.unseenConnectionRequests ?? 0) - (b.unseenConnectionRequests ?? 0)
+      return unseenSort === 'asc' ? diff : -diff
+    })
+  }, [users, unseenSort])
+
+  const cycleUnseenSort = () => {
+    setUnseenSort((prev) => (prev === null ? 'desc' : prev === 'desc' ? 'asc' : null))
+  }
 
   const createUserByPhone = async () => {
     const phone = newPhone.replace(/\s+/g, '').replace(/^\+/, '')
@@ -564,18 +578,31 @@ export default function OnboardingTab() {
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Created at</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Updated at</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Last active</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                    <button
+                      type="button"
+                      onClick={cycleUnseenSort}
+                      title="Pending requests since last active (or updated at). Click to sort: high → low → default."
+                      className="inline-flex items-center gap-1 hover:text-gray-800 focus:outline-none focus:text-myColor-600"
+                    >
+                      Unseen conn. requests
+                      <span className="text-[10px] normal-case tracking-normal text-gray-400">
+                        {unseenSort === 'desc' ? '↓' : unseenSort === 'asc' ? '↑' : '↕'}
+                      </span>
+                    </button>
+                  </th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {users.length === 0 ? (
+                {sortedUsers.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                       No users found
                     </td>
                   </tr>
                 ) : (
-                  users.map((u) => (
+                  sortedUsers.map((u) => (
                     <tr key={u.userId} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm">{u.phone}</td>
                       <td className="px-4 py-3 text-xs font-mono">{u.userId}</td>
@@ -589,6 +616,17 @@ export default function OnboardingTab() {
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
                         {formatAdminDate(u.profileLastActive ?? undefined)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-center">
+                        <span
+                          className={
+                            (u.unseenConnectionRequests ?? 0) > 0
+                              ? 'inline-flex min-w-[1.5rem] justify-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 font-medium'
+                              : 'text-gray-400'
+                          }
+                        >
+                          {u.unseenConnectionRequests ?? 0}
+                        </span>
                       </td>
                       <td className="px-4 py-3">
                         <button

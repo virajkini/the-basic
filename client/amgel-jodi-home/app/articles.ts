@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 
 const siteUrl = "https://amgeljodi.com";
 
+export type ArticleSection = {
+  heading: string;
+  paragraphs: string[];
+};
+
 export type Article = {
   slug: string;
   title: string;
@@ -12,6 +17,7 @@ export type Article = {
   updatedAt: string;
   keywords: string[];
   paragraphs: string[];
+  sections?: ArticleSection[];
 };
 
 export const articles: Article[] = [
@@ -90,25 +96,99 @@ export const articles: Article[] = [
   },
   {
     slug: "gsb-konkani-wedding-traditions",
-    title: "GSB Konkani Wedding Traditions That Still Feel Beautiful Today",
+    title: "GSB Konkani Wedding Rituals",
     description:
-      "From Vardika to Lagna, a quick guide to the wedding traditions GSB Konkani families still cherish across generations.",
+      "Understand the flow of a typical GSB Vardik, from Nandhi and Phool Muddi to Kanyadaan, Saptapadi, and Ghar Bhorche, so families can plan with clarity and confidence.",
     eyebrow: "Traditions",
     image:
       "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1600&q=80",
     publishedAt: "2026-03-25",
-    updatedAt: "2026-03-25",
+    updatedAt: "2026-05-16",
     keywords: [
       "GSB Konkani wedding",
-      "Vardika",
-      "Lagna",
-      "Amgele",
-      "Karkala",
-      "Mulki",
+      "Vardik",
+      "Phool Muddi",
+      "Kanyadaan",
+      "Saptapadi",
+      "Udupi",
+      "Mangalore",
     ],
     paragraphs: [
-      "GSB Konkani weddings stay memorable because they are rich in meaning without losing warmth. Families still value early rituals like Vardika, where intentions become visible and both sides begin to know each other better. By the time the Lagna arrives, the ceremony feels less like a performance and more like a community blessing. That emotional continuity is what makes these weddings stand out.",
-      "Whether the family roots are in Karkala, Mulki, Udupi, or Mumbai, the details often remain familiar: elders guiding the flow, food that carries memory, and customs that make Amgele and their families feel grounded. Traditions do evolve, but the heart of a GSB Konkani wedding remains the same. It celebrates not only two people, but also continuity, belonging, and respect."
+      "A GSB Konkani wedding, often called a Vardik, is more than a single ceremony. It is a sequence of rituals spread across days, each with a purpose rooted in prayer, family bonds, and community blessing. For couples and families preparing for Lagna, knowing the order of events helps with everything practical: outfits, timing, guest flow, and when to expect a break for food or rest.",
+      "Most noon weddings (Abhijin Lagnam) run across about one and a half days: an evening on Day 1 centred on Phool Muddi, and the main rituals on Day 2 ending with lunch. Evening weddings (Godhuli Lagnam) are often compressed into a single day. Details vary by family, priest, and region, from coastal Karnataka to Mumbai, but the broad structure below is what many Amchigelle households still follow.",
+      "Customs are living traditions. Some families hold every ritual; others adapt steps to venue constraints or modern schedules. Treat this guide as a helpful overview, not a rigid rulebook. Your bhat maam and elders remain the final word on what applies in your home."
+    ],
+    sections: [
+      {
+        heading: "Before the wedding: Nandhi",
+        paragraphs: [
+          "Roughly ten days before the wedding, both the bride’s and groom’s families usually perform Nandhi, a prayer to invoke divine and ancestral blessings so the celebrations proceed smoothly. The pooja honours the gods, ancestors, and the five elements.",
+          "A ceremonial plate called shashe poleru is prepared with rice and four coconuts. Married women in the family perform shashe aarthi for the bride (or groom), parents, and the dheddi or dheddo, the younger sibling or cousin who assists through many rituals. The wedding saree and main jewellery may also receive a small blessing on this day.",
+          "The shashe poleru is kept in the pooja room, and a lamp is lit daily until after the wedding. The bride often receives glass bangles at Nandhi and wears them through the festivities, a visible sign that the household is preparing for marriage."
+        ],
+      },
+      {
+        heading: "Day 1: Welcome and Phool Muddi",
+        paragraphs: [
+          "Day 1 typically begins in the afternoon with Prarthana at each home, a prayer for an auspicious wedding. The bride’s brother may visit the groom’s family with sweets and flowers to formally invite them to the venue.",
+          "When the groom’s party arrives, Yeduru Kansani is the warm welcome at the entrance. Women from both sides stand with thalis offering haldi-kumkum, flowers, beetle leaf and areca nut (veedo), rose water (paneer), and the shashe poleru from Nandhi. A sister holds the kalash-kannadi, a pot with a decorated coconut and a mirror on a chain, so guests may see their reflection, a gesture of goodwill and freshness after travel. Akshat (blessed rice) is exchanged, and the bride’s father may present the groom with a decorated coconut before leading him to the mantap.",
+          "Phool Muddi, which means flowers and ring, is the evening’s central ritual, historically close to what many communities now call an engagement. An important pattern in Konkani weddings: until Kanyadaan, the bride and groom rarely share the mantap at the same time. One enters while the other steps aside, each accompanied by a dheddi or dheddo.",
+          "The groom and his dheddo are honoured first with a ring from the bride’s parents, new clothes, and aarthi with akshat. The bride and her dheddi follow, receiving flowers instead of a ring. The bride then changes into the saree gifted by her mother-in-law. Dinner, family photos, and rest follow. Day 2 begins early."
+        ],
+      },
+      {
+        heading: "Day 2 morning: Udida Mahurat and Ghade Udda",
+        paragraphs: [
+          "Day 2 often starts around seven in the morning. Udida Mahurat marks the grinding of black gram (udidu) on a stone grinder, symbolically introducing the bride to a staple of Konkani kitchens. Idli breakfast from fresh udidu batter is considered auspicious on ritual days. The groom may take part as well, acknowledging the effort behind everyday food. Today, families often share one grinder at the venue and take turns.",
+          "Ghade Udda is specific to the bride: women help her draw water, traditionally from a well, and fill pots. Where wells are unavailable, the priest may designate a decorated vessel to represent the well. Five pots are filled; some families link these to timing during the ceremony. Afterward, the bride prepares for the main wedding saree while her mother may wear a navvari saree."
+        ],
+      },
+      {
+        heading: "Kashi Yatra and Mantap Pooja",
+        paragraphs: [
+          "In Kashi Yatra, the groom playfully pretends to renounce worldly life and leave for Kashi, carrying a bundle and stick while the dheddo holds an umbrella. The bride’s father stops him, asks him to return, and gifts a silver set (thali, plates, and related items) for daily worship, sometimes called the ruppe-sandook.",
+          "Before the bride joins the mantap, Mantap Pooja is performed with her mother. The bride, dressed in her main wedding saree with aadvarl (the white shoulder cloth) and family jewellery, prays at the mantap. Her mother ties the daremani, a black-bead and gold chain blessed by married women, around the bride’s neck. She then returns to the dressing room until Varmala."
+        ],
+      },
+      {
+        heading: "Varmala, Kanyadaan, and the sacred thread",
+        paragraphs: [
+          "When the groom returns to the mantap, the dheddo steps aside for the first time as the couple prepare to meet. The bride is escorted by her maternal uncles; in many weddings the final steps onto the stage are ceremonial, with uncles lifting her toward the centre.",
+          "An antarpatt (cloth screen) separates bride and groom while priests chant mangal shlokas. When the screen is lowered, they exchange garlands, often with the bride’s father helping her, and the wedding moves into its most solemn phase.",
+          "During Kanyadaan, the bride’s father places her hand in the groom’s, and her mother pours milk and water from a kalash that may hold flowers, mishri (sugar crystals), and gold coins. Traditionally one coin returns with the bride’s parents; many priests today suggest two so one remains with the bride.",
+          "The groom then ties the kasthali (mangalsutra), a chain of coral and gold, around the bride’s neck, marking their union in the eyes of family and tradition."
+        ],
+      },
+      {
+        heading: "Layi Homa, Saptapadi, and becoming man and wife",
+        paragraphs: [
+          "Layi Homa involves the bride’s mother bringing firewood for the havan. Maternal uncles and brothers line up by age; puffed rice (layi) passes from the youngest upward, and the couple offer it into the fire together, repeated five times. They circle the homa kund, usually two rounds led by the groom and two by the bride, while the groom holds the bride’s thumbs. The eldest uncle may place silver toe rings (sutungulu) on the bride. Uncles and brothers receive cloth gifts; a single shawl may pass shoulder to shoulder and stay with the youngest.",
+          "Saptapadi, the seven steps, is when the marriage is formally complete. Seven mounds of rice lie between them; holding right hands, the bride steps forward one mound at a time until she reaches the groom. They finish the homa together as husband and wife. The bride may then receive lagna kapad, a new saree and jewellery from her mother-in-law, and change before the next rituals."
+        ],
+      },
+      {
+        heading: "Honti, first meal, and the journey home",
+        paragraphs: [
+          "Honti Bhorche is the mother’s blessing with coconut, blouse piece, flowers, and haldi-kumkum. The mother-in-law may set the bride’s pallu and complete her bindi from a half-moon to a full circle, signs of married status. Var Ubbarche asks maternal uncle and aunt to lift groom and bride briefly for a few steps, a light-hearted ritual whose meaning varies by family.",
+          "The couple sit on a spread saree and feed each other banana, symbolising care in married life. Mishri from Kanyadaan may be tied to the bride’s pallu, representing shared prosperity. Lunch follows, sometimes with the couple feeding each other sweets. Parents often eat last after ensuring guests are served.",
+          "The wedding party may visit the bride’s home for kumkum aarthi and honti again, then proceed to the groom’s house. In earlier times a sister or young relative sometimes accompanied the bride for the first few days; today this is less common but still seen in some families."
+        ],
+      },
+      {
+        heading: "Ghar Bhorche: entering the new home",
+        paragraphs: [
+          "Ghar Bhorche covers the rituals when the bride enters her husband’s home. The couple kick a coconut at the threshold; the bride may also kick in a kalash of rice, welcoming abundance. Baagil Dhorche, or blocking the door, is a playful moment when the groom’s sisters demand gifts or promises before allowing entry; once a way to affirm family ties, it is now often light-hearted.",
+          "Naav Davarche is the naming ritual: the mother-in-law whispers several sacred names and the bride’s new household name into her ear. Families sometimes play Vokkul (finding a ring in milk or water) or Chandu (tossing a decorated ball), traditions shared with other Indian weddings and meant to ease nerves and build warmth.",
+          "Some households also perform Vaina Pooja after the main rituals, a separate ceremony with many vaina offerings distributed to elder women for blessings. Not every GSB family includes this; ask your priest early if it forms part of your plan."
+        ],
+      },
+      {
+        heading: "Planning your Vardik with calm",
+        paragraphs: [
+          "Knowing the sequence helps couples and parents coordinate outfits, makeup, photography, and meal breaks without surprise. Share this outline with your wedding planner and bhat maam, then confirm which rituals your families will observe and how long each block may take at your venue.",
+          "Whether your roots are in Udupi, Mangalore, Karkala, Mulki, or a city far from the coast, the heart of a GSB Konkani wedding is the same: prayer, family presence, and the quiet joy of two people stepping into a life built together. Amgel Jodi hopes this guide makes that journey a little easier to navigate."
+        ],
+      },
     ],
   },
   {

@@ -5,7 +5,13 @@ import { getAllProfiles, updateProfile, deleteProfile, readProfile, createProfil
 import { createUser, findUserById, listAllUsersWithProfileSummary } from '../services/userManager.js';
 import { deleteAllUserConnections } from '../services/connectionManager.js';
 import { deleteAllUserNotifications } from '../services/notificationManager.js';
-import { deleteAllUserFiles, generateMultiplePresignedUrls, getUserProfileImages, deleteFile } from '../services/fileManager.js';
+import {
+  deleteAllUserFiles,
+  generateMultiplePresignedUrls,
+  generatePageAssetPresignedUrls,
+  getUserProfileImages,
+  deleteFile,
+} from '../services/fileManager.js';
 import { parseCreateProfileBody, parseProfileUpdateBody } from '../validation/profilePayload.js';
 
 function adminAudit(actorId: string | undefined, action: string, targetUserId?: string, extra?: Record<string, unknown>) {
@@ -178,6 +184,51 @@ router.get('/users',
       console.error('Error listing users (admin):', error);
       res.status(500).json({
         error: 'Failed to list users',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
+/**
+ * GET /api/admin/page-assets/presign
+ * Presigned PUT URLs for public marketing assets under page-assets/ only.
+ * Localhost + admin only. Returns unsigned CDN URLs for use on amgel-jodi-home.
+ */
+router.get(
+  '/page-assets/presign',
+  requireLocalhost,
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { names } = req.query;
+      if (!names || typeof names !== 'string') {
+        return res.status(400).json({ error: 'names query parameter is required (comma-separated filenames)' });
+      }
+
+      const filenames = names
+        .split(',')
+        .map((n) => decodeURIComponent(n.trim()))
+        .filter(Boolean);
+
+      if (filenames.length === 0) {
+        return res.status(400).json({ error: 'At least one filename is required' });
+      }
+
+      const results = await generatePageAssetPresignedUrls(filenames);
+      adminAudit(req.authenticatedUserId, 'presign_page_assets', undefined, {
+        count: filenames.length,
+        names: filenames,
+      });
+      res.json({ success: true, urls: results, count: results.length });
+    } catch (error) {
+      console.error('Error generating page-asset presigned URLs (admin):', error);
+      if (error instanceof Error && error.message.includes('Invalid filename')) {
+        return res.status(400).json({ error: error.message });
+      }
+      res.status(500).json({
+        error: 'Failed to generate presigned URLs',
         details: error instanceof Error ? error.message : 'Unknown error',
       });
     }

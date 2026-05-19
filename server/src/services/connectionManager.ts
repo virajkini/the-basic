@@ -296,6 +296,39 @@ export async function getConnectionById(
 }
 
 /**
+ * Count pending incoming requests received after each user's activity cutoff.
+ * Uses the later of createdAt/updatedAt so re-sent requests count as new.
+ */
+export async function countUnseenIncomingRequestsSince(
+  userSince: Map<string, Date>
+): Promise<Map<string, number>> {
+  const userIds = [...userSince.keys()];
+  const counts = new Map<string, number>();
+  for (const id of userIds) counts.set(id, 0);
+  if (userIds.length === 0) return counts;
+
+  const db = await getDatabase();
+  const collection = db.collection<Connection>(COLLECTION_NAME);
+  const pending = await collection
+    .find({
+      toUserId: { $in: userIds },
+      status: ConnectionStatus.PENDING,
+    })
+    .toArray();
+
+  for (const c of pending) {
+    const since = userSince.get(c.toUserId);
+    if (!since) continue;
+    const receivedAt =
+      c.updatedAt.getTime() > c.createdAt.getTime() ? c.updatedAt : c.createdAt;
+    if (receivedAt > since) {
+      counts.set(c.toUserId, (counts.get(c.toUserId) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
+/**
  * Delete all connections for a user (used for account deletion)
  * @param userId - User ID
  * @returns Number of deleted connections

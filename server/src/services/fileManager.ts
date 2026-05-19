@@ -30,10 +30,66 @@ if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
 
 const s3Client = new S3Client(s3ClientConfig);
 
-// Helper function to generate CloudFront URL
+// Helper function to generate CloudFront URL (unsigned — for public page-assets)
 function getCloudFrontUrl(key: string): string {
   const encodedKey = encodeURIComponent(key).replace(/%2F/g, '/');
   return `https://${CLOUDFRONT_DOMAIN}/${encodedKey}`;
+}
+
+const PAGE_ASSETS_PREFIX = 'page-assets/';
+const PAGE_ASSET_FILENAME = /^[a-zA-Z0-9._-]+\.(jpe?g|png|webp)$/i;
+const PAGE_ASSET_MAX_BATCH = 10;
+
+function validatePageAssetFilename(filename: string): void {
+  if (!filename || filename.includes('/') || filename.includes('..')) {
+    throw new Error('Invalid filename');
+  }
+  if (!PAGE_ASSET_FILENAME.test(filename)) {
+    throw new Error(
+      `Invalid filename "${filename}". Use only letters, numbers, dots, dashes, underscores, and extension jpg/jpeg/png/webp`
+    );
+  }
+}
+
+/**
+ * Presigned PUT URLs for public page assets (page-assets/ only).
+ * CDN URLs are unsigned — suitable for marketing site static assets.
+ */
+export async function generatePageAssetPresignedUrls(
+  filenames: string[]
+): Promise<Array<{ url: string; key: string; cdnUrl: string }>> {
+  if (filenames.length === 0) {
+    throw new Error('At least one filename is required');
+  }
+  if (filenames.length > PAGE_ASSET_MAX_BATCH) {
+    throw new Error(`Cannot presign more than ${PAGE_ASSET_MAX_BATCH} files at once`);
+  }
+
+  const typeMap: Record<string, { contentType: string }> = {
+    jpg: { contentType: 'image/jpeg' },
+    jpeg: { contentType: 'image/jpeg' },
+    png: { contentType: 'image/png' },
+    webp: { contentType: 'image/webp' },
+  };
+
+  return Promise.all(
+    filenames.map(async (filename) => {
+      validatePageAssetFilename(filename);
+      const key = `${PAGE_ASSETS_PREFIX}${filename}`;
+      const ext = filename.split('.').pop()?.toLowerCase() || 'jpg';
+      const typeInfo = typeMap[ext] || typeMap.jpg;
+
+      const command = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        ContentType: typeInfo.contentType,
+        CacheControl: 'public, max-age=31536000, immutable',
+      });
+
+      const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+      return { url, key, cdnUrl: getCloudFrontUrl(key) };
+    })
+  );
 }
 
 /** Compressed WebP key derived from an original profile image key (matches image-blur-handler lambda). */
