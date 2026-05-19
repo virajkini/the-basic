@@ -1,6 +1,7 @@
 import { getDatabase } from '../db/mongodb.js';
 import { User } from '../models/user.js';
 import { Profile } from '../models/profile.js';
+import { countUnseenIncomingRequestsSince } from './connectionManager.js';
 
 export type AdminUserListRow = {
   userId: string;
@@ -13,6 +14,7 @@ export type AdminUserListRow = {
   profileCreatedAt: Date | null;
   profileUpdatedAt: Date | null;
   profileLastActive: Date | null;
+  unseenConnectionRequests: number;
 };
 
 function escapeRegex(s: string): string {
@@ -101,6 +103,14 @@ export async function listAllUsersWithProfileSummary(q?: string): Promise<AdminU
     : [];
   const profileById = new Map(profiles.map((p) => [p._id, p]));
 
+  const sinceByUser = new Map<string, Date>();
+  for (const u of users) {
+    const p = profileById.get(u._id);
+    const since = p?.lastActive ?? p?.updatedAt ?? u.createdAt;
+    sinceByUser.set(u._id, since);
+  }
+  const unseenCounts = await countUnseenIncomingRequestsSince(sinceByUser);
+
   return users.map((u) => {
     const p = profileById.get(u._id);
     const name = p
@@ -117,6 +127,7 @@ export async function listAllUsersWithProfileSummary(q?: string): Promise<AdminU
       profileCreatedAt: p?.createdAt ?? null,
       profileUpdatedAt: p?.updatedAt ?? null,
       profileLastActive: p?.lastActive ?? null,
+      unseenConnectionRequests: unseenCounts.get(u._id) ?? 0,
     };
   });
 }

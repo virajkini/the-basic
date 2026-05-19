@@ -65,6 +65,18 @@ export default function ArticleLayout({ article }: ArticleLayoutProps) {
                     {paragraph}
                   </p>
                 ))}
+                {article.sections?.map((section) => (
+                  <div key={section.heading} className="mt-10 border-t border-myColor-100 pt-10 first:mt-0 first:border-t-0 first:pt-0">
+                    <h2 className="mb-5 font-display text-2xl font-semibold tracking-tight text-myColor-900 md:text-3xl">
+                      {section.heading}
+                    </h2>
+                    {section.paragraphs.map((paragraph) => (
+                      <p key={paragraph} className="mb-6 text-base leading-8 text-myColor-700 md:text-lg">
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
+                ))}
               </article>
 
               <div className="mt-10 rounded-[1.5rem] border border-myColor-100 bg-myColor-50/75 px-5 py-5">
