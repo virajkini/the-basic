@@ -15,6 +15,8 @@ const SOCIAL_SHORTLIST_WEIGHT = 0.6;
 const SOCIAL_CONNECTION_WEIGHT = 0.4;
 const RECENCY_DECAY = 0.1;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const NEW_PROFILE_DAYS = 5;
+const NEW_PROFILE_SCORE_FLOOR = 0.5;
 
 let mongoClient;
 
@@ -52,6 +54,15 @@ function recencyScore(profile) {
 
 function roundScore(n) {
   return Math.round(n * 10000) / 10000;
+}
+
+function isNewProfile(profile, now) {
+  const raw = profile.createdAt;
+  if (!raw) return false;
+  const date = raw instanceof Date ? raw : new Date(raw);
+  if (Number.isNaN(date.getTime())) return false;
+  const days = (now.getTime() - date.getTime()) / MS_PER_DAY;
+  return days <= NEW_PROFILE_DAYS;
 }
 
 function extractUserIdFromS3Key(key) {
@@ -140,7 +151,10 @@ export async function computeBaseScores() {
   const connectionsCol = db.collection('connections');
 
   const [profiles, shortlistByUser, connectionByUser, photoByUser] = await Promise.all([
-    profilesCol.find({}).project({ _id: 1, lastActive: 1, updatedAt: 1 }).toArray(),
+    profilesCol
+      .find({})
+      .project({ _id: 1, lastActive: 1, updatedAt: 1, createdAt: 1 })
+      .toArray(),
     aggregateShortlistReceived(profilesCol),
     aggregateConnectionsReceived(connectionsCol),
     buildPhotoCountMap(s3),
@@ -164,6 +178,7 @@ export async function computeBaseScores() {
   const scoreComputedAt = new Date();
   const computedScores = [];
   const bulkOps = [];
+  let newProfilesBoosted = 0;
 
   for (const profile of profiles) {
     const id = String(profile._id);
@@ -174,9 +189,17 @@ export async function computeBaseScores() {
     const pPhoto = photoScore(photoCount);
     const pSocial = socialScore(shortlistCount, connectionCount, maxShortlist, maxConnection);
     const pRecency = recencyScore(profile);
-    const baseScore = roundScore(
+    let baseScore = roundScore(
       WEIGHT_PHOTO * pPhoto + WEIGHT_SOCIAL * pSocial + WEIGHT_RECENCY * pRecency
     );
+
+    if (isNewProfile(profile, scoreComputedAt)) {
+      const beforeBoost = baseScore;
+      baseScore = Math.max(baseScore, NEW_PROFILE_SCORE_FLOOR);
+      if (beforeBoost < NEW_PROFILE_SCORE_FLOOR) {
+        newProfilesBoosted += 1;
+      }
+    }
 
     computedScores.push(baseScore);
     bulkOps.push({
@@ -212,6 +235,7 @@ export async function computeBaseScores() {
     maxBaseScore: roundScore(max),
     averageBaseScore: roundScore(avg),
     scoreComputedAt: scoreComputedAt.toISOString(),
+    newProfilesBoosted,
     bulkWrite,
   };
 
@@ -220,6 +244,7 @@ export async function computeBaseScores() {
   console.log(`Min base_score: ${summary.minBaseScore}`);
   console.log(`Max base_score: ${summary.maxBaseScore}`);
   console.log(`Average base_score: ${summary.averageBaseScore}`);
+  console.log(`New profiles boosted: ${summary.newProfilesBoosted}`);
   console.log(`score_computed_at: ${summary.scoreComputedAt}`);
 
   return summary;
