@@ -65,6 +65,7 @@ export default function Header() {
           <nav className="hidden md:flex items-center gap-1">
             <Link
               href="/dashboard"
+              scroll={false}
               className={`px-4 py-2 rounded-lg transition-colors font-medium ${
                 isActive('/dashboard')
                   ? 'text-myColor-900 bg-myColor-50'
@@ -75,6 +76,7 @@ export default function Header() {
             </Link>
             <Link
               href="/connections"
+              scroll={false}
               className={`px-4 py-2 rounded-lg transition-colors font-medium ${
                 isActive('/connections')
                   ? 'text-myColor-900 bg-myColor-50'

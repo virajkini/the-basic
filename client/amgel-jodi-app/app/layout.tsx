@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Script from 'next/script'
 import { DM_Sans, Cormorant_Garamond } from 'next/font/google'
 import './globals.css'
 import { PostHogProvider } from './providers'
@@ -47,23 +46,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${dmSans.variable} ${cormorant.variable}`}>
-      <head>
-        <Script
-          id="google-tag-src"
-          strategy="afterInteractive"
-          src="https://www.googletagmanager.com/gtag/js?id=AW-18060357479"
-        />
-        <Script
-          id="google-tag-config"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', 'AW-18060357479');`,
-          }}
-        />
-      </head>
       <body className="font-sans antialiased">
         <PostHogProvider>{children}</PostHogProvider>
       </body>

@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { AuthProvider } from '../context/AuthContext'
 import Header from '../../components/Header'
 import BottomNav from '../../components/BottomNav'
+import ProtectedMain from '../../components/tabs/ProtectedMain'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,9 +50,9 @@ export default async function ProtectedLayout({
       <Header />
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto min-h-0">
+      <main className="flex-1 min-h-0 flex flex-col">
         <AuthProvider user={user.user}>
-          {children}
+          <ProtectedMain>{children}</ProtectedMain>
         </AuthProvider>
       </main>
 
