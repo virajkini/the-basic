@@ -56,6 +56,10 @@ export interface Profile {
   subscribed: boolean;
   /** Last time the user was active in the app (dashboard ping). Optional for legacy profiles. */
   lastActive?: Date;
+  /** Precomputed discover quality score (0–1), set by compute-base-score job. */
+  base_score?: number;
+  /** When base_score was last computed. */
+  score_computed_at?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
