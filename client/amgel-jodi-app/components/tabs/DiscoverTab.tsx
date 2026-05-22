@@ -73,7 +73,7 @@ export default function DiscoverTab() {
   const hasFetched = useRef(false)
 
   // Sort, Filter, and Layout state
-  const [sortBy, setSortBy] = useState<SortOption>('recent')
+  const [sortBy, setSortBy] = useState<SortOption>('relevant')
   const [filters, setFilters] = useState<FilterOptions>({})
   const [showSortSheet, setShowSortSheet] = useState(false)
   const [showFilterSheet, setShowFilterSheet] = useState(false)
@@ -394,7 +394,7 @@ export default function DiscoverTab() {
               <button
                 onClick={() => setShowSortSheet(true)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-full font-medium text-sm transition-all duration-200 ${
-                  sortBy !== 'recent'
+                  sortBy !== 'relevant'
                     ? 'bg-myColor-600 text-white shadow-lg shadow-myColor-500/20'
                     : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                 }`}

@@ -100,7 +100,15 @@ export async function updateProfile(
 }
 
 // Sort options for profile listing
-export type SortOption = 'recent' | 'updated' | 'active' | 'age_asc' | 'age_desc' | 'height_asc' | 'height_desc';
+export type SortOption =
+  | 'relevant'
+  | 'recent'
+  | 'updated'
+  | 'active'
+  | 'age_asc'
+  | 'age_desc'
+  | 'height_asc'
+  | 'height_desc';
 
 // Filter options for profile listing
 export interface FilterOptions {
@@ -128,7 +136,7 @@ export async function listProfiles(
   currentUserGender?: 'M' | 'F',
   limit: number = 20,
   skip: number = 0,
-  sortBy: SortOption = 'recent',
+  sortBy: SortOption = 'relevant',
   filters?: FilterOptions
 ): Promise<Profile[]> {
   const db = await getDatabase();
@@ -223,6 +231,7 @@ export async function listProfiles(
     case 'height_desc': // Tallest first
       sortOrder = { heightCm: -1 };
       break;
+    case 'relevant': // DB pre-sort; discover applies rankProfiles when sort=relevant
     case 'recent':
     default:
       sortOrder = { createdAt: -1 };

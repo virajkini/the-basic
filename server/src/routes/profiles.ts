@@ -13,7 +13,16 @@ import { rankProfiles } from '../lib/rankProfiles.js';
 const router = express.Router();
 
 // Valid sort options
-const validSortOptions: SortOption[] = ['recent', 'updated', 'active', 'age_asc', 'age_desc', 'height_asc', 'height_desc'];
+const validSortOptions: SortOption[] = [
+  'relevant',
+  'recent',
+  'updated',
+  'active',
+  'age_asc',
+  'age_desc',
+  'height_asc',
+  'height_desc',
+];
 
 /**
  * POST /api/profiles/last-active
@@ -79,7 +88,7 @@ router.get('/discover',
       const sortParam = req.query.sort as string;
       const sortBy: SortOption = validSortOptions.includes(sortParam as SortOption)
         ? sortParam as SortOption
-        : 'recent';
+        : 'relevant';
 
       const viewerProfile = await readProfile(currentUserId);
 
@@ -162,18 +171,21 @@ router.get('/discover',
         ? calculateAge(viewerProfile.dob)
         : viewerProfile.age;
 
-      const rankedProfiles = rankProfiles(profilesWithImages, {
-        gender: viewerProfile.gender,
-        age: viewerAge,
-        heightCm: viewerProfile.heightCm,
-      });
+      const responseProfiles =
+        sortBy === 'relevant'
+          ? rankProfiles(profilesWithImages, {
+              gender: viewerProfile.gender,
+              age: viewerAge,
+              heightCm: viewerProfile.heightCm,
+            })
+          : profilesWithImages;
 
       const { favoriteUserIds: _favIdsOmit, ...filtersForResponse } = filters;
 
       res.status(200).json({
         success: true,
-        profiles: rankedProfiles,
-        count: rankedProfiles.length,
+        profiles: responseProfiles,
+        count: responseProfiles.length,
         isVerified,
         skip,
         limit,
