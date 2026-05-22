@@ -8,6 +8,7 @@ import { getOtherUserProfileImages } from '../services/fileManager.js';
 import { generateAccessToken, getAccessTokenCookieOptions } from './auth.js';
 import { getConnectionBetweenUsers } from '../services/connectionManager.js';
 import { findUserById } from '../services/userManager.js';
+import { rankProfiles } from '../lib/rankProfiles.js';
 
 const router = express.Router();
 
@@ -148,19 +149,31 @@ router.get('/discover',
             age,
             nativePlace: profile.nativePlace,
             height: profile.height,
+            heightCm: profile.heightCm,
             designation: isWorking ? profile.designation : null,
             verified: profile.verified,
+            base_score: profile.base_score,
             images,
           };
         })
       )).filter(profile => profile !== null);
 
+      const viewerAge = viewerProfile.dob
+        ? calculateAge(viewerProfile.dob)
+        : viewerProfile.age;
+
+      const rankedProfiles = rankProfiles(profilesWithImages, {
+        gender: viewerProfile.gender,
+        age: viewerAge,
+        heightCm: viewerProfile.heightCm,
+      });
+
       const { favoriteUserIds: _favIdsOmit, ...filtersForResponse } = filters;
 
       res.status(200).json({
         success: true,
-        profiles: profilesWithImages,
-        count: profilesWithImages.length,
+        profiles: rankedProfiles,
+        count: rankedProfiles.length,
         isVerified,
         skip,
         limit,
