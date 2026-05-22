@@ -3,15 +3,14 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { isMainTabRoute } from '../lib/tabRoutes'
 
 export default function BottomNav() {
   const pathname = usePathname()
   const [isAndroidApp, setIsAndroidApp] = useState(false)
-  const [hideForProfileCreation, setHideForProfileCreation] = useState(false)
 
   const isActive = (path: string) => pathname === path
 
-  // Detect if running in Android WebView
   useEffect(() => {
     const isAndroid = typeof window !== 'undefined' && (
       (window as unknown as { isAndroidApp?: boolean }).isAndroidApp ||
@@ -20,25 +19,7 @@ export default function BottomNav() {
     setIsAndroidApp(isAndroid)
   }, [])
 
-  useEffect(() => {
-    if (pathname !== '/profile') {
-      setHideForProfileCreation(false)
-      return
-    }
-
-    const handleVisibility = (event: Event) => {
-      const customEvent = event as CustomEvent<{ hide?: boolean }>
-      setHideForProfileCreation(customEvent.detail?.hide === true)
-    }
-
-    window.addEventListener('amgeljodi:profile-nav-visibility', handleVisibility as EventListener)
-
-    return () => {
-      window.removeEventListener('amgeljodi:profile-nav-visibility', handleVisibility as EventListener)
-    }
-  }, [pathname])
-
-  if (pathname === '/profile' && hideForProfileCreation) {
+  if (!isMainTabRoute(pathname)) {
     return null
   }
 
@@ -48,6 +29,7 @@ export default function BottomNav() {
         {/* Discover Tab */}
         <Link
           href="/dashboard"
+          scroll={false}
           className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
             isActive('/dashboard')
               ? 'text-myColor-600'
@@ -76,6 +58,7 @@ export default function BottomNav() {
         {/* Connections Tab */}
         <Link
           href="/connections"
+          scroll={false}
           className={`flex flex-col items-center justify-center flex-1 h-full transition-colors ${
             isActive('/connections')
               ? 'text-myColor-600'
