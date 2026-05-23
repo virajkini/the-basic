@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { AuthProvider } from '../context/AuthContext'
+import { DiscoverSearchProvider } from '../../context/DiscoverSearchContext'
 import Header from '../../components/Header'
 import BottomNav from '../../components/BottomNav'
 import ProtectedMain from '../../components/tabs/ProtectedMain'
@@ -46,17 +47,18 @@ export default async function ProtectedLayout({
   }
 
   return (
-    <div className="h-dvh flex flex-col">
-      <Header />
+    <AuthProvider user={user.user}>
+      <DiscoverSearchProvider>
+        <div className="h-dvh flex flex-col">
+          <Header />
 
-      {/* Main Content */}
-      <main className="flex-1 min-h-0 flex flex-col">
-        <AuthProvider user={user.user}>
-          <ProtectedMain>{children}</ProtectedMain>
-        </AuthProvider>
-      </main>
+          <main className="flex-1 min-h-0 flex flex-col">
+            <ProtectedMain>{children}</ProtectedMain>
+          </main>
 
-      <BottomNav />
-    </div>
+          <BottomNav />
+        </div>
+      </DiscoverSearchProvider>
+    </AuthProvider>
   )
 }
