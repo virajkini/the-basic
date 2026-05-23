@@ -57,11 +57,17 @@ const whatsAppHref = (phone: string) => {
 }
 
 /** Verified own-profile shortcut → bio-data PDF flow (dashboard parity). */
-function OwnProfileBioDataStrip({ className = '' }: { className?: string }) {
+function OwnProfileBioDataStrip({
+  className = '',
+  onNavigate,
+}: {
+  className?: string
+  onNavigate: (e: MouseEvent<HTMLAnchorElement>) => void
+}) {
   return (
     <Link
       href="/profile-pdf"
-      onClick={() => posthog.capture('profile_full_view_bio_data_strip_clicked', { destination: '/profile-pdf' })}
+      onClick={onNavigate}
       className={[
         'group relative flex w-full items-center gap-3 px-4 py-3 overflow-hidden',
         'bg-gradient-to-r from-amber-50 via-white to-amber-50',
@@ -229,6 +235,16 @@ function ProfileDetailView({
     [handleClose, router]
   )
 
+  const handleBioDataClick = useCallback(
+    (e: MouseEvent<HTMLAnchorElement>) => {
+      e.preventDefault()
+      posthog.capture('profile_full_view_bio_data_strip_clicked', { destination: '/profile-pdf' })
+      handleClose()
+      window.setTimeout(() => router.push('/profile-pdf'), 220)
+    },
+    [handleClose, router]
+  )
+
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {
     if (e.target === e.currentTarget) handleClose()
   }, [handleClose])
@@ -240,7 +256,10 @@ function ProfileDetailView({
   // ===== MOBILE VIEW =====
   if (isMobile) {
     return (
-      <div className={`fixed inset-0 z-50 bg-white transition-transform duration-300 ${isVisible ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div
+        data-profile-detail-view
+        className={`fixed inset-0 z-50 bg-white transition-transform duration-300 ${isVisible ? 'translate-x-0' : 'translate-x-full'}`}
+      >
         {/* Floating Back Button */}
         <button
           onClick={handleClose}
@@ -287,7 +306,7 @@ function ProfileDetailView({
             variant="mobile"
           />
 
-          {isOwnProfile && profile?.verified && <OwnProfileBioDataStrip />}
+          {isOwnProfile && profile?.verified && <OwnProfileBioDataStrip onNavigate={handleBioDataClick} />}
 
           {/* Content Section */}
           <div className="bg-white pt-5">
@@ -574,6 +593,7 @@ function ProfileDetailView({
   // ===== DESKTOP VIEW =====
   return (
     <div
+      data-profile-detail-view
       className={`fixed inset-0 z-50 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`}
       onClick={handleBackdropClick}
     >
@@ -655,7 +675,7 @@ function ProfileDetailView({
               <div className="flex-1 overflow-y-auto p-6 space-y-5">
                 {isOwnProfile && profile.verified && (
                   <div className="-mx-6 -mt-6 mb-2">
-                    <OwnProfileBioDataStrip className="border-t-0" />
+                    <OwnProfileBioDataStrip className="border-t-0" onNavigate={handleBioDataClick} />
                   </div>
                 )}
                 {/* Quick Info Pills */}

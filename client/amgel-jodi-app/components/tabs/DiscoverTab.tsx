@@ -4,6 +4,10 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback, memo } from 
 import posthog from 'posthog-js'
 import Link from 'next/link'
 import { useAuth } from '../../app/context/AuthContext'
+import {
+  useDiscoverSearch,
+  type DiscoverProfile,
+} from '../../context/DiscoverSearchContext'
 import { authFetch } from '../../app/utils/authFetch'
 import { useDashboardShortlist } from '../../hooks/useDashboardShortlist'
 import { useLastActivePing } from '../../hooks/useLastActivePing'
@@ -38,20 +42,10 @@ interface Profile {
   favoriteUserIds?: string[]
 }
 
-interface DiscoverProfile {
-  _id: string
-  firstName: string
-  age: number
-  nativePlace: string
-  height: string
-  designation: string | null
-  verified: boolean
-  images: string[]
-}
-
-
 export default function DiscoverTab() {
   const { user } = useAuth()
+  const { setSearchableProfiles, registerOpenDiscoverProfile, setProfileDetailOpen } =
+    useDiscoverSearch()
   useLastActivePing(user?.userId)
   const {
     showFavoritesOnly,
@@ -144,6 +138,19 @@ export default function DiscoverTab() {
     })
   }, [])
 
+  useEffect(() => {
+    registerOpenDiscoverProfile(handleOpenDiscoverProfile)
+    return () => registerOpenDiscoverProfile(null)
+  }, [handleOpenDiscoverProfile, registerOpenDiscoverProfile])
+
+  useEffect(() => {
+    setSearchableProfiles(discoverProfiles)
+  }, [discoverProfiles, setSearchableProfiles])
+
+  useEffect(() => {
+    setProfileDetailOpen(!!selectedProfile)
+  }, [selectedProfile, setProfileDetailOpen])
+
   const handleOpenOwnProfilePreview = useCallback(async () => {
     setSelectedProfile(null)
     if (ownProfileImages.length === 0 && user?.userId) {
@@ -172,7 +179,6 @@ export default function DiscoverTab() {
       params.set('sort', sortBy)
       if (filters.ageMin) params.set('ageMin', filters.ageMin.toString())
       if (filters.ageMax) params.set('ageMax', filters.ageMax.toString())
-      if (filters.name) params.set('name', filters.name)
       appendShortlistDiscoverParams(params)
 
       const discoverRes = await authFetch(`${API_BASE}/profiles/discover?${params.toString()}`)
@@ -200,7 +206,6 @@ export default function DiscoverTab() {
       params.set('sort', sortBy)
       if (filters.ageMin) params.set('ageMin', filters.ageMin.toString())
       if (filters.ageMax) params.set('ageMax', filters.ageMax.toString())
-      if (filters.name) params.set('name', filters.name)
       appendShortlistDiscoverParams(params)
 
       // Own profile + discover in parallel. /files is not included here — GET /profiles/:id has no
@@ -321,7 +326,7 @@ export default function DiscoverTab() {
     )
   }
 
-  const activeFilterCount = (filters.name ? 1 : 0) + ((filters.ageMin || filters.ageMax) ? 1 : 0)
+  const activeFilterCount = (filters.ageMin || filters.ageMax) ? 1 : 0
 
   // Has profile - Show Discover Profiles
   return (
@@ -555,7 +560,6 @@ export default function DiscoverTab() {
             posthog.capture('discover_filter_applied', {
               age_min: newFilters.ageMin,
               age_max: newFilters.ageMax,
-              name_filter: !!newFilters.name,
             })
             setFilters(newFilters)
           }}
