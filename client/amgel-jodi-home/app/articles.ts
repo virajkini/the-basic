@@ -22,86 +22,12 @@ export type Article = {
 
 export const articles: Article[] = [
   {
-    slug: "why-to-marry-gsb-konkani",
-    title: "Why Marrying Within the GSB Konkani Community Still Feels Meaningful",
-    description:
-      "A short take on why GSB Konkani marriages still matter to Amchigelle and Amgele families balancing tradition, culture, and modern compatibility.",
-    eyebrow: "Community",
-    image:
-      "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=1600&q=80",
-    publishedAt: "2026-03-25",
-    updatedAt: "2026-03-25",
-    keywords: [
-      "GSB Konkani",
-      "Amchigelle",
-      "Amgele",
-      "Lagna",
-      "Udupi",
-      "Mangalore",
-      "Mumbai",
-    ],
-    paragraphs: [
-      "For many GSB Konkani families, marriage is not only about finding a partner. It is also about shared language, food, values, and a rhythm of life that feels instantly familiar. When Amchigelle and Amgele meet through a community-first platform, conversations often move faster because there is less explaining and more understanding. That matters whether a family is rooted in Udupi and Mangalore or now spread across Mumbai and Bangalore.",
-      "A community match does not mean old-fashioned thinking. It simply means your Lagna journey begins with a stronger cultural base. The small things matter: festivals celebrated the same way, grandparents who can connect easily, and traditions that feel natural instead of forced. For people who want compatibility with context, GSB Konkani matchmaking still feels practical, warm, and deeply personal."
-    ],
-  },
-  {
-    slug: "arranged-marriage-benefits-india",
-    title: "Why Starting Your Match Search Early Always Helps",
-    description:
-      "A clear, reassuring article on why it is better to begin looking for the right partner early, without panic or family pressure.",
-    eyebrow: "Guidance",
-    image:
-      "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?auto=format&fit=crop&w=1600&q=80",
-    publishedAt: "2026-03-25",
-    updatedAt: "2026-04-03",
-    keywords: [
-      "find a match early",
-      "marriage timing",
-      "partner search",
-      "family pressure",
-      "matchmaking advice",
-      "GSB Konkani",
-      "Mumbai",
-      "Bangalore",
-    ],
-    paragraphs: [
-      "Starting early does not mean rushing into marriage. It simply means giving yourself enough time to explore, understand people properly, and make a calm decision. Finding the right partner usually takes time because compatibility is not something you can judge in one conversation. The earlier you begin, the more space you give yourself to meet the right person without feeling forced.",
-      "Many people delay the process and then suddenly feel pressure from age, relatives, or family expectations. That is when panic starts, and panic rarely helps anyone choose well. A better approach is to begin early, stay open-minded, and treat the process as a journey. You do not need to say yes quickly. You just need to keep moving steadily.",
-      "It is also important to remember that everyone does find their match in time. Some people meet the right partner fast. Others take longer because they need more conversations, more clarity, or a better sense of what matters to them. That is normal. The goal is not to compete with anyone else's timeline. The goal is to find the person who feels right for your life.",
-      "So do not panic because of family pressure. Listen respectfully, but do not let urgency take over your decision-making. Start exploring early, learn from every conversation, and trust that things will fall into place. When the process is patient and sincere, the right match becomes much easier to recognize."
-    ],
-  },
-  {
-    slug: "life-after-marriage-fun",
-    title: "Life After Marriage Can Be Fun, Calm, and Surprisingly Simple",
-    description:
-      "A grounded look at how married life can stay joyful through routines, festivals, travel, and family moments in places like Kumta and Honnavara.",
-    eyebrow: "Lifestyle",
-    image:
-      "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=1600&q=80",
-    publishedAt: "2026-03-25",
-    updatedAt: "2026-03-25",
-    keywords: [
-      "life after marriage",
-      "GSB Konkani",
-      "Kumta",
-      "Honnavara",
-      "Mangalore",
-    ],
-    paragraphs: [
-      "There is a myth that marriage becomes routine too quickly. In reality, life after marriage often gets better when two people start building small rituals together. A simple breakfast plan, a weekend temple visit, an evening walk, or a short trip to Mangalore, Kumta, or Honnavara can create the kind of joy that lasts longer than grand gestures. The best couples do not chase drama. They build comfort and fun into ordinary days.",
-      "For GSB Konkani couples, culture adds its own warmth. Festivals, food, family visits, and shared memories from coastal towns create a feeling of belonging that strengthens the relationship. Married life does not need to be loud to be meaningful. It can be calm, playful, and full of partnership when both people show up with patience, humor, and a little everyday effort."
-    ],
-  },
-  {
     slug: "gsb-konkani-wedding-traditions",
     title: "GSB Konkani Wedding Rituals",
     description:
       "Understand the flow of a typical GSB Vardik, from Nandhi and Phool Muddi to Kanyadaan, Saptapadi, and Ghar Bhorche, so families can plan with clarity and confidence.",
     eyebrow: "Traditions",
-    image:
-      "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=1600&q=80",
+    image: "https://static.amgeljodi.com/page-assets/SHI_1928.jpg",
     publishedAt: "2026-03-25",
     updatedAt: "2026-05-16",
     keywords: [
@@ -192,6 +118,78 @@ export const articles: Article[] = [
     ],
   },
   {
+    slug: "why-to-marry-gsb-konkani",
+    title: "Why Marrying Within the GSB Konkani Community Still Feels Meaningful",
+    description:
+      "A short take on why GSB Konkani marriages still matter to Amchigelle and Amgele families balancing tradition, culture, and modern compatibility.",
+    eyebrow: "Community",
+    image:
+      "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=1600&q=80",
+    publishedAt: "2026-03-25",
+    updatedAt: "2026-03-25",
+    keywords: [
+      "GSB Konkani",
+      "Amchigelle",
+      "Amgele",
+      "Lagna",
+      "Udupi",
+      "Mangalore",
+      "Mumbai",
+    ],
+    paragraphs: [
+      "For many GSB Konkani families, marriage is not only about finding a partner. It is also about shared language, food, values, and a rhythm of life that feels instantly familiar. When Amchigelle and Amgele meet through a community-first platform, conversations often move faster because there is less explaining and more understanding. That matters whether a family is rooted in Udupi and Mangalore or now spread across Mumbai and Bangalore.",
+      "A community match does not mean old-fashioned thinking. It simply means your Lagna journey begins with a stronger cultural base. The small things matter: festivals celebrated the same way, grandparents who can connect easily, and traditions that feel natural instead of forced. For people who want compatibility with context, GSB Konkani matchmaking still feels practical, warm, and deeply personal."
+    ],
+  },
+  {
+    slug: "arranged-marriage-benefits-india",
+    title: "Why Starting Your Match Search Early Always Helps",
+    description:
+      "A clear, reassuring article on why it is better to begin looking for the right partner early, without panic or family pressure.",
+    eyebrow: "Guidance",
+    image: "https://static.amgeljodi.com/page-assets/1-11-.jpg",
+    publishedAt: "2026-03-25",
+    updatedAt: "2026-04-03",
+    keywords: [
+      "find a match early",
+      "marriage timing",
+      "partner search",
+      "family pressure",
+      "matchmaking advice",
+      "GSB Konkani",
+      "Mumbai",
+      "Bangalore",
+    ],
+    paragraphs: [
+      "Starting early does not mean rushing into marriage. It simply means giving yourself enough time to explore, understand people properly, and make a calm decision. Finding the right partner usually takes time because compatibility is not something you can judge in one conversation. The earlier you begin, the more space you give yourself to meet the right person without feeling forced.",
+      "Many people delay the process and then suddenly feel pressure from age, relatives, or family expectations. That is when panic starts, and panic rarely helps anyone choose well. A better approach is to begin early, stay open-minded, and treat the process as a journey. You do not need to say yes quickly. You just need to keep moving steadily.",
+      "It is also important to remember that everyone does find their match in time. Some people meet the right partner fast. Others take longer because they need more conversations, more clarity, or a better sense of what matters to them. That is normal. The goal is not to compete with anyone else's timeline. The goal is to find the person who feels right for your life.",
+      "So do not panic because of family pressure. Listen respectfully, but do not let urgency take over your decision-making. Start exploring early, learn from every conversation, and trust that things will fall into place. When the process is patient and sincere, the right match becomes much easier to recognize."
+    ],
+  },
+  {
+    slug: "life-after-marriage-fun",
+    title: "Life After Marriage Can Be Fun, Calm, and Surprisingly Simple",
+    description:
+      "A grounded look at how married life can stay joyful through routines, festivals, travel, and family moments in places like Kumta and Honnavara.",
+    eyebrow: "Lifestyle",
+    image:
+      "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=1600&q=80",
+    publishedAt: "2026-03-25",
+    updatedAt: "2026-03-25",
+    keywords: [
+      "life after marriage",
+      "GSB Konkani",
+      "Kumta",
+      "Honnavara",
+      "Mangalore",
+    ],
+    paragraphs: [
+      "There is a myth that marriage becomes routine too quickly. In reality, life after marriage often gets better when two people start building small rituals together. A simple breakfast plan, a weekend temple visit, an evening walk, or a short trip to Mangalore, Kumta, or Honnavara can create the kind of joy that lasts longer than grand gestures. The best couples do not chase drama. They build comfort and fun into ordinary days.",
+      "For GSB Konkani couples, culture adds its own warmth. Festivals, food, family visits, and shared memories from coastal towns create a feeling of belonging that strengthens the relationship. Married life does not need to be loud to be meaningful. It can be calm, playful, and full of partnership when both people show up with patience, humor, and a little everyday effort."
+    ],
+  },
+  {
     slug: "gsb-couple-goals-festival-style",
     title: "GSB Couple Goals, Festival Style",
     description:
@@ -243,8 +241,7 @@ export const articles: Article[] = [
     description:
       "A short reflection on why the GSB community remains connected across family networks, festivals, temples, and migration.",
     eyebrow: "Identity",
-    image:
-      "https://images.unsplash.com/photo-1516302752625-fcc3c50ae61f?auto=format&fit=crop&w=1600&q=80",
+    image: "https://static.amgeljodi.com/page-assets/SHI_0989.jpg",
     publishedAt: "2026-03-25",
     updatedAt: "2026-03-25",
     keywords: [
@@ -266,8 +263,7 @@ export const articles: Article[] = [
     description:
       "How marriage culture from Udupi and Mangalore continues to shape values, families, and modern matchmaking.",
     eyebrow: "Culture",
-    image:
-      "https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1600&q=80",
+    image: "https://static.amgeljodi.com/page-assets/img_7786.webp",
     publishedAt: "2026-03-25",
     updatedAt: "2026-03-25",
     keywords: [

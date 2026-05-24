@@ -13,6 +13,8 @@ import {
 
 // Remove trailing slash to prevent double slashes in URLs
 const HOME_URL = (process.env.NEXT_PUBLIC_HOME_URL || 'https://amgeljodi.com').replace(/\/$/, '')
+const HOME_HIDE_AUTH_QUERY = '?hideAuth=1'
+const homePageUrl = (path: string) => `${HOME_URL}${path}${HOME_HIDE_AUTH_QUERY}`
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.amgeljodi.app'
 
 export default function Header() {
@@ -163,7 +165,7 @@ export default function Header() {
                     </a>
                   )}
                   <a
-                    href={`${HOME_URL}/contact`}
+                    href={homePageUrl('/contact')}
                     onClick={() => setDesktopMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-myColor-50 transition-colors"
                   >
@@ -173,7 +175,7 @@ export default function Header() {
                     <span>Contact Us</span>
                   </a>
                   <a
-                    href={`${HOME_URL}/terms`}
+                    href={homePageUrl('/terms')}
                     onClick={() => setDesktopMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-myColor-50 transition-colors"
                   >
@@ -183,7 +185,7 @@ export default function Header() {
                     <span>Terms of Service</span>
                   </a>
                   <a
-                    href={`${HOME_URL}/privacy`}
+                    href={homePageUrl('/privacy')}
                     onClick={() => setDesktopMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-myColor-50 transition-colors"
                   >
@@ -276,7 +278,7 @@ export default function Header() {
                       </a>
                     )}
                     <a
-                      href={`${HOME_URL}/contact`}
+                      href={homePageUrl('/contact')}
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-myColor-50 transition-colors"
                     >
@@ -286,7 +288,7 @@ export default function Header() {
                       <span>Contact Us</span>
                     </a>
                     <a
-                      href={`${HOME_URL}/terms`}
+                      href={homePageUrl('/terms')}
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-myColor-50 transition-colors"
                     >
@@ -296,7 +298,7 @@ export default function Header() {
                       <span>Terms of Service</span>
                     </a>
                     <a
-                      href={`${HOME_URL}/privacy`}
+                      href={homePageUrl('/privacy')}
                       onClick={() => setMenuOpen(false)}
                       className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-myColor-50 transition-colors"
                     >

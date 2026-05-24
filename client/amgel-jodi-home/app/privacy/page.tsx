@@ -86,12 +86,14 @@ export default function PrivacyPolicy() {
               <p className="mb-4">We may share your information in the following circumstances:</p>
               <ul className="list-disc pl-6 mb-4 space-y-2">
                 <li><strong>With Other Members:</strong> Your profile information is visible to other registered members as part of our matchmaking service.</li>
-                <li><strong>With Service Providers:</strong> We may share data with trusted third parties who assist us in operating our platform.</li>
                 <li><strong>For Legal Compliance:</strong> When required by law or to protect our rights and safety.</li>
                 <li><strong>With Your Consent:</strong> When you explicitly agree to share information.</li>
               </ul>
+              <p className="mb-4 font-bold text-myColor-900">
+                Contact information (such as phone number and email) is shared with other members only when you connect with them—that is, only with your consent.
+              </p>
               <p>
-                We never sell your personal information to third parties for marketing purposes.
+                We do not share your data with third-party service providers. We never sell your personal information to third parties for marketing purposes.
               </p>
             </section>
 

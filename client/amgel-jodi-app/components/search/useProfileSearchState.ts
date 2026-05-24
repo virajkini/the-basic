@@ -54,13 +54,23 @@ export function useProfileSearchState(onMobileExpandChange?: (expanded: boolean)
     [onMobileExpandChange, releaseMobileSearchFocus]
   )
 
+  const dismissSearchKeyboard = useCallback(() => {
+    mobileInputRef.current?.blur()
+    desktopInputRef.current?.blur()
+    const active = document.activeElement
+    if (active instanceof HTMLElement && mobileContainerRef.current?.contains(active)) {
+      active.blur()
+    }
+  }, [])
+
   const handleSelect = useCallback(
     (profile: DiscoverProfile) => {
+      dismissSearchKeyboard()
       openDiscoverProfile(profile)
       setIsDropdownOpen(true)
       setActiveIndex(-1)
     },
-    [openDiscoverProfile]
+    [openDiscoverProfile, dismissSearchKeyboard]
   )
 
   const handleMobileExpand = useCallback(() => {
