@@ -10,6 +10,8 @@ const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.amgelj
 const PAGE_ASSETS_CDN =
   process.env.NEXT_PUBLIC_PAGE_ASSETS_CDN_BASE ?? 'https://static.amgeljodi.com/page-assets'
 
+const COMMUNITY_SECTION_IMAGE = `${PAGE_ASSETS_CDN}/SHI_0137.jpg`
+
 const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
@@ -170,11 +172,11 @@ export default function Home() {
         {/* Background image */}
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: 'url(https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=2000&q=80)' }}
+          style={{ backgroundImage: `url(${PAGE_ASSETS_CDN}/SHI_1928.jpg)` }}
         />
 
         {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-myColor-900/95 via-myColor-800/90 to-myColor-950/95" />
+        <div className="absolute inset-0 bg-gradient-to-br from-myColor-900/[0.89] via-myColor-800/[0.84] to-myColor-950/[0.89]" />
 
         {/* SVG Pattern overlay */}
         <div
@@ -567,29 +569,32 @@ export default function Home() {
 
             {/* Right - Visual */}
             <div className="relative hidden lg:block">
-              <div className="relative w-full aspect-square max-w-lg mx-auto">
+              <div className="relative mx-auto aspect-square w-full max-w-lg">
                 {/* Decorative rings */}
-                <div className="absolute inset-0 border-2 border-myColor-700/30 rounded-full animate-pulse" />
-                <div className="absolute inset-8 border-2 border-myColor-600/30 rounded-full animate-pulse delay-300" />
-                <div className="absolute inset-16 border-2 border-myColor-500/30 rounded-full animate-pulse delay-500" />
+                <div className="absolute inset-0 animate-pulse rounded-full border-2 border-myColor-700/30" />
+                <div className="absolute inset-8 animate-pulse rounded-full border-2 border-myColor-600/30 delay-300" />
+                <div className="absolute inset-16 animate-pulse rounded-full border-2 border-myColor-500/30 delay-500" />
 
-                {/* Center icon */}
+                {/* Center image */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-32 h-32 bg-gradient-to-br from-myColor-500 to-myColor-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-myColor-500/30">
-                    <svg className="w-16 h-16 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
+                  <div className="relative h-44 w-44 overflow-hidden rounded-2xl border border-myColor-500 shadow-2xl shadow-myColor-500/30 sm:h-48 sm:w-48">
+                    <div
+                      className="absolute inset-0 bg-cover bg-center"
+                      style={{ backgroundImage: `url(${COMMUNITY_SECTION_IMAGE})` }}
+                      role="img"
+                      aria-label="Couple holding hands during a traditional GSB Konkani wedding ceremony"
+                    />
                   </div>
                 </div>
 
                 {/* Floating elements */}
-                <div className="absolute top-8 right-8 w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center animate-float">
+                <div className="absolute right-8 top-8 flex h-16 w-16 animate-float items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm">
                   <span className="text-2xl">🪔</span>
                 </div>
-                <div className="absolute bottom-8 left-8 w-16 h-16 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center animate-float delay-500">
+                <div className="absolute bottom-8 left-8 flex h-16 w-16 animate-float items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm delay-500">
                   <span className="text-2xl">🌺</span>
                 </div>
-                <div className="absolute top-1/2 -left-4 w-14 h-14 bg-white/10 backdrop-blur-sm rounded-2xl flex items-center justify-center animate-float delay-1000">
+                <div className="absolute -left-4 top-1/2 flex h-14 w-14 animate-float items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm delay-1000">
                   <span className="text-xl">🤝</span>
                 </div>
               </div>
