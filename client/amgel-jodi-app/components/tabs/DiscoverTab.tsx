@@ -15,6 +15,7 @@ import ProfileDetailView from '../ProfileDetailView'
 import FavoriteToggle from '../FavoriteToggle'
 import SortSheet, { SortOption } from '../SortSheet'
 import FilterSheet, { FilterOptions } from '../FilterSheet'
+import RequestCallbackSection from '../RequestCallbackSection'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 const LAYOUT_STORAGE_KEY = 'dashboard-layout'
@@ -321,6 +322,9 @@ export default function DiscoverTab() {
               </div>
             </div>
           </div>
+
+          {/* Callback request section */}
+          <RequestCallbackSection />
         </div>
       </div>
     )
