@@ -12,6 +12,7 @@ import profilePdfRoutes from './routes/profilePdf.js';
 import connectionRoutes from './routes/connections.js';
 import notificationRoutes from './routes/notifications.js';
 import adminRoutes from './routes/admin.js';
+import kundaliRoutes from './routes/kundali.js';
 import { authenticateToken } from './middleware/auth.js';
 
 const app = express();
@@ -118,6 +119,9 @@ app.use('/api/notifications', notificationRoutes);
 
 // Admin routes (protected by authenticateToken and requireAdmin middleware)
 app.use('/api/admin', adminRoutes);
+
+// Kundali compatibility routes (protected — auth enforced globally below)
+app.use('/api/kundali', kundaliRoutes);
 
 // Apply authentication middleware to all other API routes (excluding /api/auth, /api/otp, /api/contact POST, and /health)
 app.use((req, res, next) => {

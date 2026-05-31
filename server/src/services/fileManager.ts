@@ -41,6 +41,7 @@ const PAGE_ASSET_FILENAME = /^[a-zA-Z0-9._-]+\.(jpe?g|png|webp)$/i;
 const PAGE_ASSET_MAX_BATCH = 10;
 
 function validatePageAssetFilename(filename: string): void {
+  
   if (!filename || filename.includes('/') || filename.includes('..')) {
     throw new Error('Invalid filename');
   }

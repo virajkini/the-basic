@@ -364,11 +364,13 @@ export function parseProfileUpdateBody(
   }
 
   if (placeOfBirth !== undefined) {
-    updateData.placeOfBirth = typeof placeOfBirth === 'string' && placeOfBirth.trim() ? placeOfBirth.trim() : undefined;
+    // Allow empty string so clearing the field actually unsets it in MongoDB
+    updateData.placeOfBirth = typeof placeOfBirth === 'string' ? placeOfBirth.trim() : undefined;
   }
 
   if (birthTiming !== undefined) {
-    updateData.birthTiming = typeof birthTiming === 'string' ? birthTiming || undefined : undefined;
+    // Allow empty string so clearing the field actually unsets it in MongoDB
+    updateData.birthTiming = typeof birthTiming === 'string' ? birthTiming : undefined;
   }
 
   if (gothra !== undefined) {

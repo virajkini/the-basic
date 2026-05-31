@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useRef } from 'react'
 import { usePathname } from 'next/navigation'
 import DiscoverTab from './DiscoverTab'
 import ConnectionsTab from './ConnectionsTab'
@@ -28,6 +28,11 @@ export default function TabShell() {
   const showConnections = pathname === '/connections'
   const showDiscover = !showConnections
 
+  // Don't mount ConnectionsTab until the user first navigates to it.
+  // Once mounted, keep it alive so cached data survives tab switches.
+  const hasVisitedConnections = useRef(false)
+  if (showConnections) hasVisitedConnections.current = true
+
   return (
     <div className="flex flex-1 min-h-0 flex-col">
       <div
@@ -40,9 +45,11 @@ export default function TabShell() {
         className={`flex flex-1 min-h-0 flex-col overflow-y-auto ${showConnections ? '' : 'hidden'}`}
         aria-hidden={!showConnections}
       >
-        <Suspense fallback={<ConnectionsTabFallback />}>
-          <ConnectionsTab />
-        </Suspense>
+        {hasVisitedConnections.current && (
+          <Suspense fallback={<ConnectionsTabFallback />}>
+            <ConnectionsTab />
+          </Suspense>
+        )}
       </div>
     </div>
   )

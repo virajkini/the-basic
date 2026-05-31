@@ -60,11 +60,35 @@ export default function ArticleLayout({ article }: ArticleLayoutProps) {
             </div>
             <div className="px-5 py-8 md:px-10 md:py-10">
               <article className="max-w-none">
-                {article.paragraphs.map((paragraph) => (
-                  <p key={paragraph} className="mb-6 text-base leading-8 text-myColor-700 md:text-lg">
-                    {paragraph}
-                  </p>
-                ))}
+                {article.video ? (
+                  <div className="flex flex-col gap-8 md:flex-row md:items-start md:gap-10">
+                    <div className="min-w-0 flex-1">
+                      {article.paragraphs.map((paragraph) => (
+                        <p key={paragraph} className="mb-6 text-base leading-8 text-myColor-700 md:text-lg">
+                          {paragraph}
+                        </p>
+                      ))}
+                    </div>
+                    <div className="mx-auto w-[220px] shrink-0 md:mx-0 md:w-[200px]">
+                      <div className="overflow-hidden rounded-[2rem] border-4 border-myColor-200 bg-black shadow-xl" style={{ aspectRatio: '9/19' }}>
+                        <video
+                          src={article.video}
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  article.paragraphs.map((paragraph) => (
+                    <p key={paragraph} className="mb-6 text-base leading-8 text-myColor-700 md:text-lg">
+                      {paragraph}
+                    </p>
+                  ))
+                )}
                 {article.sections?.map((section) => (
                   <div key={section.heading} className="mt-10 border-t border-myColor-100 pt-10 first:mt-0 first:border-t-0 first:pt-0">
                     <h2 className="mb-5 font-display text-2xl font-semibold tracking-tight text-myColor-900 md:text-3xl">

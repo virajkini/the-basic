@@ -1,7 +1,7 @@
 import ArticleLayout from "../components/ArticleLayout";
 import { createArticleMetadata, getArticleBySlug } from "../articles";
 
-const article = getArticleBySlug("gsb-couple-goals-festival-style")!;
+const article = getArticleBySlug("gsb-konkani-match-search")!;
 
 export const metadata = createArticleMetadata(article);
 
