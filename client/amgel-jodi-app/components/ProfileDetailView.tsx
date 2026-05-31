@@ -4,11 +4,13 @@ import { useEffect, useState, memo, useCallback, useRef, type MouseEvent } from 
 import posthog from 'posthog-js'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '../app/context/AuthContext'
 import { useProfileData } from '../hooks/useProfileData'
 import ProfileImageHeader from './ProfileImageHeader'
 import ConnectionButton from './ConnectionButton'
 import FavoriteToggle from './FavoriteToggle'
 import Shimmer from './Shimmer'
+import KundaliMatchPanel from './KundaliMatchPanel'
 import { foodPreferenceLabel } from '../lib/foodPreference'
 
 const MOBILE_BREAKPOINT = 768
@@ -22,6 +24,8 @@ interface ProfileDetailViewProps {
   isFavorite?: boolean
   onFavoriteToggle?: (targetUserId: string) => void
   favoriteDisabled?: boolean
+  /** First image of the logged-in user — used in Kundali match loader */
+  ownImage?: string
 }
 
 const formatLastUpdated = (dateString?: string) => {
@@ -100,6 +104,40 @@ function OwnProfileBioDataStrip({
   )
 }
 
+/** Entry strip that opens the Kundali compatibility panel */
+function KundaliEntryStrip({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={[
+        'group relative flex w-full items-center gap-3 px-4 py-3 overflow-hidden text-left',
+        'bg-gradient-to-r from-amber-50 via-white to-amber-50',
+        'border-b border-amber-200/90',
+        'hover:bg-amber-50/80 transition-colors',
+      ].join(' ')}
+    >
+      <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center shrink-0 ring-1 ring-amber-200/60">
+        <svg className="w-[18px] h-[18px] text-amber-800" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+      </div>
+      <div className="relative min-w-0 flex-1 text-left">
+        <div className="text-sm font-semibold text-amber-900">Jatak Compatibility</div>
+        <div className="text-xs text-amber-700/85 mt-0.5">Check your Dashakoot match score</div>
+      </div>
+      <svg
+        className="relative w-5 h-5 text-amber-700 shrink-0 group-hover:translate-x-0.5 transition-transform"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        aria-hidden
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </button>
+  )
+}
+
 function ContactPhoneActions({ phone, size = 'default' }: { phone: string; size?: 'default' | 'compact' }) {
   const [copied, setCopied] = useState(false)
   const btnClass =
@@ -158,16 +196,22 @@ function ProfileDetailView({
   isFavorite = false,
   onFavoriteToggle,
   favoriteDisabled = false,
+  ownImage,
 }: ProfileDetailViewProps) {
   const router = useRouter()
+  const { user } = useAuth()
   const { profile, loading, error, isConnected } = useProfileData(profileId)
   const [isMobile, setIsMobile] = useState(true)
   const [isVisible, setIsVisible] = useState(false)
   const [showKundali, setShowKundali] = useState(false)
+  const [showKundaliPanel, setShowKundaliPanel] = useState(false)
+  const [isKundaliVisible, setIsKundaliVisible] = useState(false)
 
   const historyPushedRef = useRef(false)
   const closingViaUIRef = useRef(false)
   const contactViewedRef = useRef(false)
+  const kundaliHistoryPushedRef = useRef(false)
+  const kundaliClosingViaUIRef = useRef(false)
 
   useEffect(() => {
     if (!contactViewedRef.current && isConnected && !isOwnProfile && profile?.phone) {
@@ -199,6 +243,18 @@ function ProfileDetailView({
     historyPushedRef.current = true
 
     const handlePopState = () => {
+      // Kundali panel was on top — handle its back first
+      if (kundaliHistoryPushedRef.current) {
+        kundaliHistoryPushedRef.current = false
+        if (kundaliClosingViaUIRef.current) {
+          kundaliClosingViaUIRef.current = false
+          return
+        }
+        setIsKundaliVisible(false)
+        setTimeout(() => setShowKundaliPanel(false), 300)
+        return
+      }
+      // Profile view back
       if (closingViaUIRef.current) {
         closingViaUIRef.current = false
         return
@@ -249,6 +305,22 @@ function ProfileDetailView({
     if (e.target === e.currentTarget) handleClose()
   }, [handleClose])
 
+  const openKundaliMobile = useCallback(() => {
+    setShowKundaliPanel(true)
+    requestAnimationFrame(() => setIsKundaliVisible(true))
+    history.pushState({ kundaliOpen: true, profileId }, '')
+    kundaliHistoryPushedRef.current = true
+  }, [profileId])
+
+  const closeKundaliMobile = useCallback(() => {
+    setIsKundaliVisible(false)
+    if (kundaliHistoryPushedRef.current) {
+      kundaliClosingViaUIRef.current = true
+      history.back()
+    }
+    setTimeout(() => setShowKundaliPanel(false), 300)
+  }, [])
+
   const hasKundaliInfo = profile?.placeOfBirth || profile?.birthTiming || profile?.gothra || profile?.nakshatra || profile?.kuldeva
   const isWorking = profile?.workingStatus === 'employed' || profile?.workingStatus === 'self-employed' || profile?.workingStatus === true
   const foodPrefDisplay = profile ? foodPreferenceLabel(profile.foodPreference ?? undefined) : null
@@ -256,6 +328,7 @@ function ProfileDetailView({
   // ===== MOBILE VIEW =====
   if (isMobile) {
     return (
+      <>
       <div
         data-profile-detail-view
         className={`fixed inset-0 z-50 bg-white transition-transform duration-300 ${isVisible ? 'translate-x-0' : 'translate-x-full'}`}
@@ -297,7 +370,7 @@ function ProfileDetailView({
         )}
 
         {/* Scrollable Content */}
-        <div className="h-full overflow-y-auto">
+        <div className="h-full overflow-y-auto relative">
           {/* Hero Image Section */}
           <ProfileImageHeader
             images={images}
@@ -307,6 +380,9 @@ function ProfileDetailView({
           />
 
           {isOwnProfile && profile?.verified && <OwnProfileBioDataStrip onNavigate={handleBioDataClick} />}
+          {!isOwnProfile && profile && user?.verified && (
+            <KundaliEntryStrip onClick={openKundaliMobile} />
+          )}
 
           {/* Content Section */}
           <div className="bg-white pt-5">
@@ -587,6 +663,22 @@ function ProfileDetailView({
           </div>
         )}
       </div>
+
+      {/* Kundali panel — slides in from right above the profile view */}
+      {showKundaliPanel && !isOwnProfile && profile && (
+        <div
+          className={`fixed inset-0 z-[60] bg-white transition-transform duration-300 ${isKundaliVisible ? 'translate-x-0' : 'translate-x-full'}`}
+        >
+          <KundaliMatchPanel
+            targetUserId={profileId}
+            targetFirstName={profile.firstName || 'them'}
+            targetImage={images[0]}
+            ownImage={ownImage}
+            onClose={closeKundaliMobile}
+          />
+        </div>
+      )}
+      </>
     )
   }
 
@@ -650,8 +742,16 @@ function ProfileDetailView({
           />
 
           {/* Details Section */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-b from-white to-myColor-50/30">
-            {error ? (
+          <div className="flex-1 flex flex-col overflow-hidden bg-gradient-to-b from-white to-myColor-50/30 relative">
+            {showKundaliPanel && !isOwnProfile && profile ? (
+              <KundaliMatchPanel
+                targetUserId={profileId}
+                targetFirstName={profile.firstName || 'them'}
+                targetImage={images[0]}
+                ownImage={ownImage}
+                onClose={() => setShowKundaliPanel(false)}
+              />
+            ) : error ? (
               <div className="flex-1 flex items-center justify-center p-8">
                 <div className="text-center">
                   <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
@@ -672,10 +772,15 @@ function ProfileDetailView({
                 <Shimmer className="h-32 w-full rounded-2xl" />
               </div>
             ) : profile ? (
-              <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              <div className="flex-1 overflow-y-auto p-6 space-y-5 relative">
                 {isOwnProfile && profile.verified && (
                   <div className="-mx-6 -mt-6 mb-2">
                     <OwnProfileBioDataStrip className="border-t-0" onNavigate={handleBioDataClick} />
+                  </div>
+                )}
+                {!isOwnProfile && user?.verified && (
+                  <div className="-mx-6 -mt-6 mb-2">
+                    <KundaliEntryStrip onClick={() => setShowKundaliPanel(true)} />
                   </div>
                 )}
                 {/* Quick Info Pills */}

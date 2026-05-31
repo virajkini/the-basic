@@ -154,7 +154,7 @@ export default function ImageUploadTab() {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/jpg,image/png,image/webp"
+          // accept="image/jpeg,image/jpg,image/png,image/webp/lottie"
           multiple
           className="hidden"
           onChange={(e) => {

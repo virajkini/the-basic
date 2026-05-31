@@ -15,6 +15,7 @@ import ProfileDetailView from '../ProfileDetailView'
 import FavoriteToggle from '../FavoriteToggle'
 import SortSheet, { SortOption } from '../SortSheet'
 import FilterSheet, { FilterOptions } from '../FilterSheet'
+import RequestCallbackSection from '../RequestCallbackSection'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 const LAYOUT_STORAGE_KEY = 'dashboard-layout'
@@ -208,20 +209,20 @@ export default function DiscoverTab() {
       if (filters.ageMax) params.set('ageMax', filters.ageMax.toString())
       appendShortlistDiscoverParams(params)
 
-      // Own profile + discover in parallel. /files is not included here — GET /profiles/:id has no
-      // image URLs; we lazy-load /files when the user opens "My profile" in the toolbar.
       const [profileRes, discoverRes] = await Promise.all([
         authFetch(`${API_BASE}/profiles/${user.userId}`),
         authFetch(`${API_BASE}/profiles/discover?${params.toString()}`),
       ])
 
       // Handle profile response
+      let verified = false
       if (profileRes.ok) {
         const profileData = await profileRes.json()
         if (profileData.success && profileData.profile) {
           const p = profileData.profile
           setProfile(p)
           syncFavoriteIdsFromProfile(p.favoriteUserIds)
+          verified = !!p.verified
         }
       }
 
@@ -231,6 +232,19 @@ export default function DiscoverTab() {
         if (discoverData.success && discoverData.profiles) {
           setDiscoverProfiles(discoverData.profiles)
         }
+      }
+
+      // Pre-fetch own images for verified users so "My Profile" opens instantly
+      if (verified) {
+        try {
+          const filesRes = await authFetch(`${API_BASE}/files`)
+          if (filesRes.ok) {
+            const d = await filesRes.json()
+            if (d.success && Array.isArray(d.images)) {
+              setOwnProfileImages(d.images)
+            }
+          }
+        } catch { /* non-critical */ }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data')
@@ -321,6 +335,9 @@ export default function DiscoverTab() {
               </div>
             </div>
           </div>
+
+          {/* Callback request section */}
+          <RequestCallbackSection />
         </div>
       </div>
     )
@@ -527,6 +544,7 @@ export default function DiscoverTab() {
             isFavorite={favoriteUserIds.includes(selectedProfile._id)}
             onFavoriteToggle={handleToggleFavorite}
             favoriteDisabled={favoriteSavingId === selectedProfile._id}
+            ownImage={ownProfileImages[0]}
           />
         )}
 

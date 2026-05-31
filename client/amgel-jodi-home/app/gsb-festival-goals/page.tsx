@@ -1,7 +1,7 @@
 import ArticleLayout from "../components/ArticleLayout";
 import { createArticleMetadata, getArticleBySlug } from "../articles";
 
-const article = getArticleBySlug("life-after-marriage-fun")!;
+const article = getArticleBySlug("gsb-festival-goals")!;
 
 export const metadata = createArticleMetadata(article);
 

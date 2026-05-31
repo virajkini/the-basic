@@ -13,6 +13,7 @@ export type Article = {
   description: string;
   eyebrow: string;
   image: string;
+  video?: string;
   publishedAt: string;
   updatedAt: string;
   keywords: string[];
@@ -118,7 +119,7 @@ export const articles: Article[] = [
     ],
   },
   {
-    slug: "why-to-marry-gsb-konkani",
+    slug: "gsb-marriage",
     title: "Why Marrying Within the GSB Konkani Community Still Feels Meaningful",
     description:
       "A short take on why GSB Konkani marriages still matter to Amchigelle and Amgele families balancing tradition, culture, and modern compatibility.",
@@ -142,7 +143,7 @@ export const articles: Article[] = [
     ],
   },
   {
-    slug: "arranged-marriage-benefits-india",
+    slug: "gsb-konkani-match-search",
     title: "Why Starting Your Match Search Early Always Helps",
     description:
       "A clear, reassuring article on why it is better to begin looking for the right partner early, without panic or family pressure.",
@@ -168,7 +169,7 @@ export const articles: Article[] = [
     ],
   },
   {
-    slug: "life-after-marriage-fun",
+    slug: "konkani-gsb-wedding-life",
     title: "Life After Marriage Can Be Fun, Calm, and Surprisingly Simple",
     description:
       "A grounded look at how married life can stay joyful through routines, festivals, travel, and family moments in places like Kumta and Honnavara.",
@@ -190,18 +191,21 @@ export const articles: Article[] = [
     ],
   },
   {
-    slug: "gsb-couple-goals-festival-style",
+    slug: "gsb-festival-goals",
     title: "GSB Couple Goals, Festival Style",
     description:
-      "How festivals help GSB couples build connection, family rhythm, and shared memories across homes in Udupi, Mumbai, and Bangalore.",
+      "How festivals like Ganesh Chaturthi, Shigmo, and Gokulashtami help GSB Konkani couples build connection, family rhythm, and shared memories.",
     eyebrow: "Festivals",
     image:
       "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1600&q=80",
     publishedAt: "2026-03-25",
-    updatedAt: "2026-03-25",
+    updatedAt: "2026-05-31",
     keywords: [
-      "GSB couple goals",
+      "GSB festivals",
       "Amchigelle",
+      "Ganesh Chaturthi GSB",
+      "Shigmo",
+      "Gokulashtami",
       "Udupi",
       "Mumbai",
       "Bangalore",
@@ -210,29 +214,98 @@ export const articles: Article[] = [
       "Some of the strongest couple memories are made during festivals. For GSB Konkani families, festive days create a natural way to share work, joy, and tradition. Cooking together, dressing for temple visits, welcoming relatives, and keeping little customs alive can turn ordinary celebration into something deeply bonding. This is true whether the couple lives near Udupi or has built a new life in Mumbai or Bangalore.",
       "Healthy couple goals are usually simple. Show up for each other, show respect to both families, and make room for fun. Amchigelle couples who celebrate together often build a stronger sense of partnership because festivals reveal how they handle planning, pressure, and togetherness. Shared traditions do not make love less modern. They often make it steadier and more joyful."
     ],
+    sections: [
+      {
+        heading: "Ganesh Chaturthi: The Heart of GSB Home Life",
+        paragraphs: [
+          "Ganesh Chaturthi is perhaps the most cherished festival for GSB families. Unlike public pandal celebrations, many Amchigelle households bring home a murti and observe a full ten-day pooja at home, with daily rituals, prayers, and prasadam. For a GSB couple, setting up the Ganapati together, managing the daily preparations, and welcoming relatives over ten days is one of the most revealing experiences of shared household life.",
+          "The festival ends with Anant Chaturdashi, the immersion day that carries a quiet emotional weight. Couples who have maintained the pooja together often say the farewell ritual deepens their sense of family and shared devotion more than any grand event. Cities like Mumbai, where the public celebration is enormous, bring their own energy, but many GSB families maintain the intimacy of home pooja regardless of where they live.",
+        ],
+      },
+      {
+        heading: "Shigmo: The Konkani Spring Festival",
+        paragraphs: [
+          "Shigmo is the GSB community's version of spring celebration, observed primarily in coastal Karnataka and Goa. Unlike the exuberant color-throwing of Holi in North India, Shigmo in the GSB tradition carries a more devotional tone. Traditional folk songs called Fugdi and Dhalo are sung by women in groups; the rhythms and lyrics passed down through generations give the festival its distinct community feel.",
+          "For newly married couples spending their first Shigmo together, the festival often becomes a moment of cultural transfer. If one partner grew up in Udupi and the other in Mumbai, Shigmo is where those two backgrounds meet. Learning the songs together, visiting temples, and participating in community gatherings creates the kind of shared memory that stays with a couple for decades.",
+        ],
+      },
+      {
+        heading: "Gokulashtami: Celebrating Krishna's Birth at Midnight",
+        paragraphs: [
+          "Krishna Janmashtami, known as Gokulashtami in the Konkani tradition, is observed with midnight prayers marking the birth of Lord Krishna. GSB homes typically decorate an elaborate swing (cradle) for Bal Krishna, and children and adults stay awake to welcome the moment of birth at midnight with prayers, bhajans, and the breaking of a dahi-handi.",
+          "The festival is special for its all-night energy and the family devotion it brings out. For GSB couples, Gokulashtami often involves cooking the baby Krishna's favourite foods, decorating the swing together, and keeping a vigil until midnight. These small acts of shared devotion build a household rhythm that extends well beyond the festival season.",
+        ],
+      },
+      {
+        heading: "Saraswati Puja and Vidyarambha",
+        paragraphs: [
+          "Saraswati Puja, observed during Navratri, holds special significance in the GSB community. Books, instruments, and tools of one's profession are placed before the goddess as offerings of gratitude and prayer for wisdom. Vidyarambha, the formal initiation of young children into learning, is typically performed during this time, with children guided to write their first letters by elders.",
+          "For couples with young families, this festival marks a meaningful milestone each year. The act of sitting with a child and guiding their first letters on Vidyarambha day is the kind of quiet family moment that GSB culture holds in high regard. It is a festival of patience, respect for knowledge, and continuity across generations.",
+        ],
+      },
+      {
+        heading: "Diwali and Naraka Chaturdashi",
+        paragraphs: [
+          "Diwali is celebrated across India, but the GSB community observes the day of Naraka Chaturdashi with a specific tradition: the Abhyanga Snan, an early morning ritual oil bath taken before sunrise, followed by sweets and new clothes. The story behind it, the defeat of the demon Narakasura by Lord Krishna, is recounted in many GSB homes on this morning.",
+          "In cities like Mumbai and Bangalore, where GSB families may celebrate alongside non-Konkani neighbours, Diwali becomes a moment to share community identity. Making GSB sweets like karanji, chakli, and ladoo together as a couple, and distributing them to neighbours and relatives, reflects the generosity that characterises the community's approach to celebration.",
+        ],
+      },
+      {
+        heading: "Other Festivals: Karthik Purnima, Ugadi, and More",
+        paragraphs: [
+          "The GSB festival calendar is rich with smaller observances that carry deep meaning. Karthik Purnima, observed after Diwali, involves lighting lamps near the tulsi plant in the evening and offering prayers for family wellbeing. It is a quiet, beautiful ritual that many couples carry into married life from their childhood homes.",
+          "Ugadi, the Konkani New Year, is marked by the Bevu-Bella tradition: a mixture of neem (bitter) and jaggery (sweet) eaten together to acknowledge that life holds both. For a couple, this is a natural annual reminder to accept both the hard and the joyful as part of a shared life. Makar Sankranti, Raksha Bandhan, and the harvest festivals of the coastal belt each add their own texture to what it means to live as a GSB Konkani family across the seasons.",
+        ],
+      },
+    ],
   },
   {
-    slug: "marriage-advice-20s-30s",
-    title: "Marriage Advice in Your 20s and 30s Without the Noise",
+    slug: "gsb-konkani-matrimony-free",
+    title: "Why Jatak and Kundali Matching is Done in GSB Konkani Marriages",
     description:
-      "Practical marriage advice for people in their 20s and 30s thinking seriously about compatibility, timing, and values.",
-    eyebrow: "Advice",
-    image:
-      "https://images.unsplash.com/photo-1511988617509-a57c8a288659?auto=format&fit=crop&w=1600&q=80",
-    publishedAt: "2026-03-25",
-    updatedAt: "2026-03-25",
+      "Understand why Dashakoot Jatak matching matters in GSB Konkani marriages, what the 8 kootas reveal, and how to check free compatibility on Amgel Jodi.",
+    eyebrow: "Traditions",
+    image: "https://static.amgeljodi.com/page-assets/types-of-kundali.webp",
+    video: "https://static.amgeljodi.com/page-assets/Jatak1.mov",
+    publishedAt: "2026-05-31",
+    updatedAt: "2026-05-31",
     keywords: [
-      "marriage advice",
-      "20s",
-      "30s",
-      "GSB Konkani",
-      "Mumbai",
-      "Bangalore",
-      "Chennai",
+      "Jatak compatibility",
+      "Kundali matching",
+      "Dashakoot",
+      "free kundali matching",
+      "GSB Konkani matrimony",
+      "horoscope matching",
+      "free jatak report",
     ],
     paragraphs: [
-      "Your 20s and 30s bring different questions about marriage. In your 20s, you may still be shaping career goals, lifestyle, and independence. In your 30s, clarity often improves, but expectations can become sharper too. The answer is not to rush or delay for the sake of trends. It is to know what matters most: values, emotional steadiness, mutual respect, and daily compatibility.",
-      "For GSB Konkani professionals living in Mumbai, Bangalore, or Chennai, the best marriage advice is practical. Ask clear questions early. Understand family expectations without surrendering your own judgment. Look for someone whose life direction fits yours, not just someone who looks good on paper. A good match rarely comes from perfection. It comes from honesty, timing, and shared intent."
+      "In GSB Konkani families, finding a compatible match is not only about age, profession, and family background. Many families also look at Jatak, the birth chart of each person, and check compatibility through a system called Dashakoot. This process has been part of the community's marriage tradition for generations, and it continues to hold relevance even for modern, educated families who may not follow every ritual strictly.",
+      "Dashakoot compatibility works by comparing the horoscopes of both individuals across eight specific dimensions, called kootas. Each koota examines a different aspect of compatibility, from temperament and instinct to long-term prosperity and genetic harmony. Together they give a picture of how two people are likely to align in shared life, not as a guarantee, but as a considered starting point.",
+      "On Amgel Jodi, verified users can check their free Dashakoot Jatak compatibility report with any profile. The report is generated instantly and shows the score across all eight kootas, so families and individuals can have an informed conversation grounded in tradition and clarity.",
+    ],
+    sections: [
+      {
+        heading: "What the 8 Kootas Reveal",
+        paragraphs: [
+          "The eight kootas in Dashakoot each examine something specific. Varna looks at spiritual development and values alignment. Vashya examines the balance of influence and mutual respect between partners. Tara, based on birth stars, indicates health and long-term wellbeing. Yoni reflects emotional and instinctual compatibility, often described as the chemistry between two people.",
+          "Graha Maitri examines the friendship between the ruling planets of each person, revealing how minds and temperaments align in daily life. Gana classifies each person as Deva (divine), Manushya (human), or Rakshasa (fierce), and a compatible pairing here indicates a natural ease of understanding. Bhakoot looks at moon signs and their relationship, touching on prosperity and family growth. Finally, Nadi, which carries the highest weight of 8 points, examines physiological and genetic compatibility.",
+          "The total score across all eight kootas is 36. Traditional guidelines suggest that a score of 18 or above is acceptable, 24 or above is good, and 28 or above is excellent. Amgel Jodi's free report shows your score across each koota individually, so the conversation can be as detailed or as simple as your family prefers.",
+        ],
+      },
+      {
+        heading: "How GSB Families Use Jatak Matching",
+        paragraphs: [
+          "In practice, most GSB Konkani families treat Jatak matching as one important input among many, not as an absolute verdict. A strong score on Dashakoot may increase confidence in a match, while a lower score might prompt families to consult an experienced jyotishi for a fuller reading before making a decision. Families from Udupi, Mangalore, and Mumbai vary in how much weight they give to this process, but most agree that it adds a layer of thoughtful consideration.",
+          "For the couple themselves, Jatak matching often opens a conversation. When both families are already interested in each other and the Dashakoot score is shared, it gives everyone a structured way to discuss compatibility beyond surface-level details. It acknowledges that a marriage involves not just two people, but two families, two sets of values, and a shared future.",
+        ],
+      },
+      {
+        heading: "Free Jatak Compatibility on Amgel Jodi",
+        paragraphs: [
+          "Amgel Jodi provides a free Dashakoot Jatak compatibility check for all verified profiles on the platform. Once you view a profile that interests you, you can access the full compatibility report directly from their profile page. The report is generated in real time using birth details and shows a breakdown across all eight kootas, along with a summary and overall tier.",
+          "This feature is built for GSB Konkani families who want the convenience of a modern platform alongside the depth of a traditional compatibility check. No separate consultations, no extra cost. The report is private, instant, and part of the profile exploration process so that by the time families decide to connect formally, they already have meaningful information to work with.",
+        ],
+      },
     ],
   },
   {
