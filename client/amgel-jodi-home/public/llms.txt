@@ -1,0 +1,27 @@
+# Amgel Jodi
+
+> GSB Konkani matrimony platform connecting families across India and the diaspora.
+
+Amgel Jodi is a fully free matrimony service for the GSB (Gaud Saraswat Brahmin) Konkani community. All profiles are manually verified. Core features — profile creation, browsing matches, and connecting with families — are completely free with no paid tiers.
+
+## Docs
+
+- [About](https://amgeljodi.com/about): Mission and team behind Amgel Jodi
+- [How It Works](https://amgeljodi.com/how-it-works): Step-by-step guide to finding a match
+- [Privacy Policy](https://amgeljodi.com/privacy): How user data is handled
+- [Terms of Service](https://amgeljodi.com/terms): Platform rules and guidelines
+- [Child Safety](https://amgeljodi.com/child-safety): Child safety standards and reporting
+- [Contact](https://amgeljodi.com/contact): Get in touch with the Amgel Jodi team
+
+## Articles
+
+Short reads on GSB Konkani marriage traditions, culture, and modern matchmaking.
+
+- [GSB Konkani Wedding Rituals](https://amgeljodi.com/gsb-konkani-wedding-traditions)
+- [Why Marrying Within the GSB Konkani Community Still Feels Meaningful](https://amgeljodi.com/gsb-marriage)
+- [Why Starting Your Match Search Early Always Helps](https://amgeljodi.com/gsb-konkani-match-search)
+- [Life After Marriage Can Be Fun, Calm, and Surprisingly Simple](https://amgeljodi.com/konkani-gsb-wedding-life)
+- [GSB Couple Goals, Festival Style](https://amgeljodi.com/gsb-festival-goals)
+- [Why Jatak and Kundali Matching is Done in GSB Konkani Marriages](https://amgeljodi.com/gsb-konkani-matrimony-free)
+- [Why the GSB Community Still Feels Strong Across Generations](https://amgeljodi.com/why-gsb-community-strong)
+- [What Udupi and Mangalore Marriage Culture Still Teaches Us](https://amgeljodi.com/udupi-mangalore-marriage-culture)
