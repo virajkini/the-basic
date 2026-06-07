@@ -146,7 +146,7 @@ export default function Home() {
 
   const phrases = [
     "Find Your Perfect Match",
-    "Where Traditions Meet Love",
+    "Completely Free",
     "Your Story Begins Here",
     "Konkani Hearts Unite",
   ]
@@ -375,7 +375,7 @@ export default function Home() {
               <div className="text-center md:text-left flex-1 bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-myColor-100">
                 <h3 className="text-xl md:text-2xl font-bold text-myColor-900 mb-2">Create Your Profile</h3>
                 <p className="text-myColor-600 leading-relaxed">
-                  Tell your story in just 2 minutes. Share what makes you unique and let your personality shine through.
+                  Enter your details and upload a few photos. Clear, honest, and done in under 2 minutes.
                 </p>
               </div>
             </div>
@@ -397,7 +397,7 @@ export default function Home() {
               <div className="text-center md:text-right flex-1 bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-green-100">
                 <h3 className="text-xl md:text-2xl font-bold text-myColor-900 mb-2">Discover Matches</h3>
                 <p className="text-myColor-600 leading-relaxed">
-                  Browse verified profiles from our GSB Konkani community. Find someone who shares your values and traditions.
+                  Browse verified profiles from our GSB Konkani community. Filter by location, profession, and height, and see the Kundali match score to find someone who genuinely fits.
                 </p>
               </div>
             </div>
@@ -417,7 +417,7 @@ export default function Home() {
               <div className="text-center md:text-left flex-1 bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-amber-100">
                 <h3 className="text-xl md:text-2xl font-bold text-myColor-900 mb-2">Connect & Meet</h3>
                 <p className="text-myColor-600 leading-relaxed">
-                  Send a connection request, match with the right profile, and connect with the family when both sides are ready. Contact and matching are included at no cost—Amgel Jodi is completely free, with no paid unlocks.
+                  Send a connection request. Once the other person accepts, both contacts are unlocked and you can connect directly. Contact and matching are included at no cost. Amgel Jodi is completely free, with no paid unlocks.
                 </p>
               </div>
             </div>
@@ -675,6 +675,7 @@ export default function Home() {
                 <Link
                   key={article.slug}
                   href={`/${article.slug}`}
+                  title={`Read article: ${article.title}`}
                   className="group overflow-hidden rounded-[1.75rem] border border-myColor-100 bg-white shadow-[0_18px_60px_-36px_rgba(33,20,48,0.28)] transition-transform duration-300 hover:-translate-y-1"
                 >
                   <div className="relative h-44 w-full overflow-hidden bg-myColor-100">

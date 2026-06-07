@@ -158,9 +158,10 @@ export function CreateFreeBiodataLanding() {
               <div className="mt-8">
                 <a
                   href={APP_ORIGIN}
+                  title="Explore the Amgel Jodi matrimony app"
                   className="inline-flex items-center gap-2 text-sm font-semibold text-myColor-700 hover:text-myColor-900"
                 >
-                  Explore the app
+                  Explore the Amgel Jodi matrimony app
                   <span aria-hidden>→</span>
                 </a>
               </div>
