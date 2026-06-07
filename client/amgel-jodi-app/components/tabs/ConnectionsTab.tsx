@@ -80,7 +80,7 @@ export default function ConnectionsTab() {
     if (tabQuery === 'matches' || tabQuery === 'interested' || tabQuery === 'awaiting') {
       return tabQuery
     }
-    return 'matches'
+    return 'interested'
   }, [tabQuery])
 
   const [connections, setConnections] = useState<Connection[]>([])
@@ -208,9 +208,9 @@ export default function ConnectionsTab() {
   }
 
   const tabs: { id: TabType; label: string }[] = [
-    { id: 'matches', label: CONNECTIONS_COPY.tabs.matches },
     { id: 'interested', label: CONNECTIONS_COPY.tabs.interested },
     { id: 'awaiting', label: CONNECTIONS_COPY.tabs.awaiting },
+    { id: 'matches', label: CONNECTIONS_COPY.tabs.matches },
   ]
 
   const formatTimeAgo = (dateString: string) => {

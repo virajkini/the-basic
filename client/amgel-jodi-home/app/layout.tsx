@@ -34,13 +34,16 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Amgel Jodi - GSB Konkani Matrimony | Find Your Perfect Match",
+    default: "GSB Matrimony - Free GSB Konkani Matrimony | Amgel Jodi",
     template: "%s | Amgel Jodi",
   },
   description:
-    "Amgel Jodi is the trusted matrimony platform for the GSB Konkani community. Find verified profiles, connect with compatible matches, and begin your beautiful love story. Join 500+ happy families today.",
+    "100% free GSB Matrimony platform for the Goud Saraswat Brahmin community. Browse verified GSB Konkani profiles, download biodatas, and find your match.",
   keywords: [
     "GSB matrimony",
+    "Goud Saraswat Brahmin matrimony",
+    "Gaud Saraswat Brahmin matrimony",
+    "GSB Konkani matrimony",
     "Konkani matrimony",
     "GSB Konkani marriage",
     "Saraswat Brahmin matrimony",
@@ -88,9 +91,9 @@ export const metadata: Metadata = {
     locale: "en_IN",
     url: siteUrl,
     siteName: "Amgel Jodi",
-    title: "Amgel Jodi - GSB Konkani Matrimony | Find Your Perfect Match",
+    title: "GSB Matrimony - Free GSB Konkani Matrimony | Amgel Jodi",
     description:
-      "The trusted matrimony platform for the GSB Konkani community. Find verified profiles, connect with compatible matches, and begin your beautiful love story.",
+      "100% free GSB Matrimony platform for the Goud Saraswat Brahmin community. Browse verified GSB Konkani profiles, download biodatas, and find your match.",
     images: [
       {
         url: "/og-image.jpg",
@@ -102,9 +105,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Amgel Jodi - GSB Konkani Matrimony",
+    title: "GSB Matrimony - Free GSB Konkani Matrimony | Amgel Jodi",
     description:
-      "Find your perfect match in the GSB Konkani community. Verified profiles, trusted platform.",
+      "100% free GSB Matrimony platform for the Goud Saraswat Brahmin community. Browse verified GSB Konkani profiles, download biodatas, and find your match.",
     images: ["/og-image.jpg"],
     creator: "@amgeljodi",
   },
