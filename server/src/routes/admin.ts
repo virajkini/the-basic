@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/admin.js';
-import { getAllProfiles, updateProfile, deleteProfile, readProfile, createProfile } from '../services/profileManager.js';
+import { getAllProfiles, updateProfile, deleteProfile, readProfile, createProfile, removePhotoKey } from '../services/profileManager.js';
 import { createUser, findUserById, listAllUsersWithProfileSummary } from '../services/userManager.js';
 import { deleteAllUserConnections } from '../services/connectionManager.js';
 import { deleteAllUserNotifications } from '../services/notificationManager.js';
@@ -278,7 +278,9 @@ router.get('/users/:userId/files/presign',
         }
       }
 
-      const results = await generateMultiplePresignedUrls(userId, countNum, fileTypes);
+      const profile = await readProfile(userId);
+      const existingCount = profile?.photoKeys?.length;
+      const results = await generateMultiplePresignedUrls(userId, countNum, fileTypes, existingCount);
       adminAudit(req.authenticatedUserId, 'presign_files', userId, { count: countNum });
       res.json({ success: true, urls: results, count: results.length });
     } catch (error) {
@@ -343,6 +345,7 @@ router.delete('/users/:userId/files',
         return res.status(404).json({ error: 'User not found' });
       }
       await deleteFile(key, userId);
+      await removePhotoKey(userId, key);
       adminAudit(req.authenticatedUserId, 'delete_file', userId);
       res.json({ success: true, message: 'File deleted successfully', key });
     } catch (error) {

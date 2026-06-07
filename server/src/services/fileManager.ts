@@ -7,8 +7,29 @@ const CLOUDFRONT_DOMAIN = process.env.CLOUDFRONT_DOMAIN || 'static.amgeljodi.com
 const CLOUDFRONT_KEY_PAIR_ID = 'K16SCVGULKTB9O';
 const CLOUDFRONT_PRIVATE_KEY = (process.env.CLOUD_FRONT_KEY || '').replace(/\\n/g, '\n');
 
-// Signed URL expiry time (30 minutes)
-const SIGNED_URL_EXPIRY_MS = 30 * 10 * 1000;
+// Signed URL expiry time
+const SIGNED_URL_EXPIRY_MS = 30 * 60 * 1000; // 30 minutes
+
+// In-memory cache for CloudFront signed URLs. Keyed by S3 object key.
+// Entries are reused until 60 s before expiry, then regenerated.
+const signedUrlCache = new Map<string, { url: string; expiresAt: number }>();
+
+function cachedSignedUrl(key: string): string {
+  const now = Date.now();
+  const cached = signedUrlCache.get(key);
+  if (cached && cached.expiresAt - now > 60_000) {
+    return cached.url;
+  }
+  const expiresAt = now + SIGNED_URL_EXPIRY_MS;
+  const url = getCloudFrontSignedUrl({
+    url: `https://${CLOUDFRONT_DOMAIN}/${key}`,
+    keyPairId: CLOUDFRONT_KEY_PAIR_ID,
+    privateKey: CLOUDFRONT_PRIVATE_KEY,
+    dateLessThan: new Date(expiresAt).toISOString(),
+  });
+  signedUrlCache.set(key, { url, expiresAt });
+  return url;
+}
 
 // Initialize S3 client
 const s3ClientConfig: {
@@ -124,6 +145,30 @@ function sortFilesPrimaryFirst<T extends { key: string }>(
 }
 
 /**
+ * Generate signed CloudFront URLs directly from stored original S3 keys.
+ * No S3 API calls — pure URL derivation. Used by the discover route to skip per-profile S3 ListObjectsV2.
+ * For verified viewers returns all compressed images; for unverified returns only the first blurred image.
+ */
+export function signedUrlsFromKeys(
+  originalKeys: string[],
+  userId: string,
+  viewerIsVerified: boolean
+): string[] {
+  if (originalKeys.length === 0) return [];
+
+  if (viewerIsVerified) {
+    return originalKeys.map((key) => {
+      const targetKey = compressedKeyFromOriginal(key, userId) ?? key;
+      return cachedSignedUrl(targetKey);
+    });
+  } else {
+    const blurredKey = blurredKeyFromOriginal(originalKeys[0], userId);
+    if (!blurredKey) return [];
+    return [`https://${CLOUDFRONT_DOMAIN}/${blurredKey}`];
+  }
+}
+
+/**
  * Get count of existing files in user's profile folder
  * @param userId - User ID
  * @returns Number of files in the folder
@@ -154,15 +199,16 @@ export async function getFileCount(userId: string): Promise<number> {
 export async function generateMultiplePresignedUrls(
   userId: string,
   count: number,
-  fileTypes?: string[]
+  fileTypes?: string[],
+  existingCount?: number
 ): Promise<Array<{ url: string; key: string }>> {
   try {
-    // Check existing file count
-    const existingCount = await getFileCount(userId);
-    
+    // Use provided count (from profile.photoKeys.length) or fall back to S3 list
+    const currentCount = existingCount !== undefined ? existingCount : await getFileCount(userId);
+
     // Validate that adding count won't exceed 5
-    if (existingCount + count > 5) {
-      const available = 5 - existingCount;
+    if (currentCount + count > 5) {
+      const available = 5 - currentCount;
       throw new Error(`Maximum 5 photos allowed. You have ${existingCount} photos. Only ${available} more can be uploaded.`);
     }
 
@@ -255,18 +301,9 @@ export async function getUserProfileImages(
       .map((item) => {
         if (!item.Key) return null;
 
-        // Generate signed CloudFront URL for original images
-        const cloudFrontUrl = `https://${CLOUDFRONT_DOMAIN}/${item.Key}`;
-        const signedUrl = getCloudFrontSignedUrl({
-          url: cloudFrontUrl,
-          keyPairId: CLOUDFRONT_KEY_PAIR_ID,
-          privateKey: CLOUDFRONT_PRIVATE_KEY,
-          dateLessThan: new Date(Date.now() + SIGNED_URL_EXPIRY_MS).toISOString(),
-        });
-
         return {
           key: item.Key,
-          url: signedUrl,
+          url: cachedSignedUrl(item.Key),
           size: item.Size,
           lastModified: item.LastModified,
         };
@@ -331,17 +368,9 @@ export async function getOtherUserProfileImages(
           .sort((a, b) => (a.Key || '').localeCompare(b.Key || ''));
 
         const mapped = originalItems.map((item) => {
-          const cloudFrontUrl = `https://${CLOUDFRONT_DOMAIN}/${item.Key}`;
-          const signedUrl = getCloudFrontSignedUrl({
-            url: cloudFrontUrl,
-            keyPairId: CLOUDFRONT_KEY_PAIR_ID,
-            privateKey: CLOUDFRONT_PRIVATE_KEY,
-            dateLessThan: new Date(Date.now() + SIGNED_URL_EXPIRY_MS).toISOString(),
-          });
-
           return {
             key: item.Key!,
-            url: signedUrl,
+            url: cachedSignedUrl(item.Key!),
             size: item.Size,
             lastModified: item.LastModified,
           };
@@ -352,17 +381,9 @@ export async function getOtherUserProfileImages(
       }
 
       const mapped = items.map((item) => {
-        const cloudFrontUrl = `https://${CLOUDFRONT_DOMAIN}/${item.Key}`;
-        const signedUrl = getCloudFrontSignedUrl({
-          url: cloudFrontUrl,
-          keyPairId: CLOUDFRONT_KEY_PAIR_ID,
-          privateKey: CLOUDFRONT_PRIVATE_KEY,
-          dateLessThan: new Date(Date.now() + SIGNED_URL_EXPIRY_MS).toISOString(),
-        });
-
         return {
           key: item.Key!,
-          url: signedUrl,
+          url: cachedSignedUrl(item.Key!),
           size: item.Size,
           lastModified: item.LastModified,
         };

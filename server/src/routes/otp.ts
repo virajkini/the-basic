@@ -9,7 +9,7 @@
 import express, { Request, Response } from 'express';
 import { sendOtp, verifyOtp, resendOtp } from '../services/msg91Service.js';
 import { otpRateLimiter, verifyRateLimiter } from '../middleware/otpRateLimit.js';
-import { IS_STAGE, STAGE_OTP_CODE } from '../config/appEnv.js';
+import { BYPASS_OTP, STAGE_OTP_CODE } from '../config/appEnv.js';
 
 const router = express.Router();
 
@@ -53,7 +53,7 @@ router.post('/send', otpRateLimiter, async (req: Request, res: Response) => {
     console.log(`[OTP] Sending OTP to phone: ${phone}`);
 
     // In stage, bypass the external OTP provider.
-    const requestId = IS_STAGE ? `stage-${phone}` : await sendOtp(phone);
+    const requestId = BYPASS_OTP ? `stage-${phone}` : await sendOtp(phone);
 
     // Store request ID for verification
     // Session expires in 10 minutes
@@ -67,7 +67,7 @@ router.post('/send', otpRateLimiter, async (req: Request, res: Response) => {
     res.json({
       success: true,
       message: 'OTP sent successfully',
-      ...(IS_STAGE ? { otp: STAGE_OTP_CODE } : {}),
+      ...(BYPASS_OTP ? { otp: STAGE_OTP_CODE } : {}),
     });
   } catch (error) {
     console.error('[OTP] Send error:', error);
@@ -132,7 +132,7 @@ router.post('/verify', verifyRateLimiter, async (req: Request, res: Response) =>
     console.log(`[OTP] Verifying OTP for phone: ${phone}`);
 
     // In stage, only the fixed OTP is accepted.
-    const isValid = IS_STAGE ? otp === STAGE_OTP_CODE : await verifyOtp(session.requestId, otp);
+    const isValid = BYPASS_OTP ? otp === STAGE_OTP_CODE : await verifyOtp(session.requestId, otp);
 
     if (!isValid) {
       return res.status(400).json({
@@ -180,7 +180,7 @@ router.post('/resend', otpRateLimiter, async (req: Request, res: Response) => {
     console.log(`[OTP] Resending OTP to phone: ${phone}`);
 
     // In stage, bypass the external OTP provider.
-    const requestId = IS_STAGE ? `stage-${phone}` : await resendOtp(phone);
+    const requestId = BYPASS_OTP ? `stage-${phone}` : await resendOtp(phone);
 
     // Update session with new request ID
     otpSessions.set(phone, {
@@ -193,7 +193,7 @@ router.post('/resend', otpRateLimiter, async (req: Request, res: Response) => {
     res.json({
       success: true,
       message: 'OTP resent successfully',
-      ...(IS_STAGE ? { otp: STAGE_OTP_CODE } : {}),
+      ...(BYPASS_OTP ? { otp: STAGE_OTP_CODE } : {}),
     });
   } catch (error) {
     console.error('[OTP] Resend error:', error);

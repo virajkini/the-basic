@@ -394,11 +394,21 @@ export default function OnboardingTab() {
       }
       setImageFiles([])
       if (fileInputRef.current) fileInputRef.current.value = ''
+
+      // Refresh image list from S3 and save all keys to profile.photoKeys
       const imgRes = await authFetch(`${API_BASE}/admin/users/${editorUserId}/files`)
       if (imgRes.ok) {
         const imgData = await imgRes.json()
         const files = (imgData.files || []) as Array<{ key: string; url: string }>
-        setExistingImages(files.map((f) => ({ key: f.key, url: f.url })))
+        const refreshed = files.map((f) => ({ key: f.key, url: f.url }))
+        setExistingImages(refreshed)
+
+        // Persist photoKeys to the profile document
+        await authFetch(`${API_BASE}/admin/users/${editorUserId}/profile`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ photoKeys: refreshed.map((f) => f.key) }),
+        })
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed')
