@@ -1,10 +1,10 @@
 import express from 'express';
-import { readProfile, createProfile, updateProfile, updateLastActive, listProfiles, maskString, SortOption, FilterOptions } from '../services/profileManager.js';
-import { Profile, calculateAge } from '../models/profile.js';
+import { readProfile, createProfile, updateProfile, updateLastActive, listProfiles, SortOption, FilterOptions } from '../services/profileManager.js';
+import { calculateAge } from '../models/profile.js';
 import { parseCreateProfileBody, parseProfileUpdateBody } from '../validation/profilePayload.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { verifyUserOwnership, verifyUserIdMatch } from '../middleware/verifyOwnership.js';
-import { getOtherUserProfileImages } from '../services/fileManager.js';
+import { getOtherUserProfileImages, signedUrlsFromKeys } from '../services/fileManager.js';
 import { generateAccessToken, getAccessTokenCookieOptions } from './auth.js';
 import { getConnectionBetweenUsers } from '../services/connectionManager.js';
 import { findUserById } from '../services/userManager.js';
@@ -90,9 +90,7 @@ router.get('/discover',
         ? sortParam as SortOption
         : 'relevant';
 
-      const viewerProfile = await readProfile(currentUserId);
-
-      // Parse filter options
+      // Parse filter options up front (needed to decide if we can parallelise)
       const filters: FilterOptions = {};
       const ageMin = parseInt(req.query.ageMin as string);
       const ageMax = parseInt(req.query.ageMax as string);
@@ -103,41 +101,49 @@ router.get('/discover',
 
       const favParam = String(req.query.favoritesOnly ?? '').toLowerCase();
       const favoritesOnly = favParam === '1' || favParam === 'true' || favParam === 'yes';
+
+      let viewerProfile, profiles;
+
       if (favoritesOnly) {
+        // Need viewer's favoriteUserIds before we can query, so sequential
+        viewerProfile = await readProfile(currentUserId);
+
+        if (!viewerProfile) {
+          return res.status(200).json({ success: true, profiles: [], count: 0, isVerified, skip, limit, sort: sortBy, filters: {} });
+        }
+
         filters.favoritesOnly = true;
-        filters.favoriteUserIds = viewerProfile?.favoriteUserIds ?? [];
+        filters.favoriteUserIds = viewerProfile.favoriteUserIds ?? [];
+
+        profiles = await listProfiles(currentUserId, currentGender ?? undefined, limit, skip, sortBy, filters);
+      } else {
+        // Common case: viewer profile and discover list are independent — run in parallel
+        [viewerProfile, profiles] = await Promise.all([
+          readProfile(currentUserId),
+          listProfiles(
+            currentUserId,
+            currentGender ?? undefined,
+            limit,
+            skip,
+            sortBy,
+            Object.keys(filters).length > 0 ? filters : undefined
+          ),
+        ]);
+
+        if (!viewerProfile) {
+          return res.status(200).json({ success: true, profiles: [], count: 0, isVerified, skip, limit, sort: sortBy, filters: {} });
+        }
       }
 
-      // Must complete own profile before discovery lists anyone else
-      if (!viewerProfile) {
-        const { favoriteUserIds: _favIdsOmit, ...filtersForResponse } = filters;
-        return res.status(200).json({
-          success: true,
-          profiles: [],
-          count: 0,
-          isVerified,
-          skip,
-          limit,
-          sort: sortBy,
-          filters: filtersForResponse,
-        });
-      }
-
-      const profiles = await listProfiles(
-        currentUserId,
-        currentGender ?? undefined,
-        limit,
-        skip,
-        sortBy,
-        Object.keys(filters).length > 0 ? filters : undefined
-      );
-
-      // Fetch images for all profiles in parallel
       const profilesWithImages = (await Promise.all(
         profiles.map(async (profile) => {
-          // Get images (blurred for unverified, compressed for verified)
-          const files = await getOtherUserProfileImages(profile._id, isVerified, profile.primaryPhotoKey);
-          const images = files.map(f => f.url);
+          let images: string[];
+          if (profile.photoKeys && profile.photoKeys.length > 0) {
+            images = signedUrlsFromKeys(profile.photoKeys, profile._id, isVerified);
+          } else {
+            const files = await getOtherUserProfileImages(profile._id, isVerified, profile.primaryPhotoKey);
+            images = files.map(f => f.url);
+          }
 
           // Skip profiles with no images
           if (images.length === 0) {

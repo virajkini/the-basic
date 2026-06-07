@@ -1,6 +1,6 @@
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
-import { readProfile } from '../services/profileManager.js';
+import { readProfile, removePhotoKey } from '../services/profileManager.js';
 import {
   generateMultiplePresignedUrls,
   getUserProfileImages,
@@ -69,7 +69,9 @@ router.get('/presign',
         }
       }
 
-      const results = await generateMultiplePresignedUrls(userId, countNum, fileTypes);
+      const profile = await readProfile(userId);
+      const existingCount = profile?.photoKeys?.length;
+      const results = await generateMultiplePresignedUrls(userId, countNum, fileTypes, existingCount);
 
       res.json({
         success: true,
@@ -202,6 +204,7 @@ router.delete('/:key',
       const key = decodeURIComponent(req.params.key);
 
       await deleteFile(key, userId);
+      await removePhotoKey(userId, key);
 
       res.json({
         success: true,

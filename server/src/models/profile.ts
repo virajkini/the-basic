@@ -51,6 +51,9 @@ export interface Profile {
   /** S3 key under profiles/{_id}/original/... — shown first in galleries; null/absent = lexicographic first */
   primaryPhotoKey?: string | null;
 
+  /** Ordered list of original S3 keys (profiles/{_id}/original/...); position 0 = primary. Source of truth for discover. */
+  photoKeys?: string[];
+
   // System fields
   verified: boolean;
   subscribed: boolean;

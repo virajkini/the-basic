@@ -685,6 +685,12 @@ export default function ProfilePage() {
       const resolvedPrimary = draftKey && finalKeys.has(draftKey) ? draftKey : null
       ;(profilePayload as Record<string, unknown>).primaryPhotoKey = resolvedPrimary
 
+      // Build ordered photoKeys (primary first) for server-side caching
+      const photoKeysOrdered = resolvedPrimary
+        ? [resolvedPrimary, ...Array.from(finalKeys).filter((k) => k !== resolvedPrimary)]
+        : Array.from(finalKeys)
+      ;(profilePayload as Record<string, unknown>).photoKeys = photoKeysOrdered
+
       setUploadProgress(80)
 
       const method = existingProfile ? 'PUT' : 'POST'

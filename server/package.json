@@ -10,7 +10,10 @@
     "init:db:stage": "APP_ENV=stage tsx scripts/init-db-indexes.ts",
     "seed:stage": "APP_ENV=stage tsx scripts/seed-stage-data.ts",
     "test:insert-data": "tsx scripts/insert-sample-data.ts",
-    "compute:base-score": "node lambda/compute-base-score/run-local.js"
+    "compute:base-score": "node lambda/compute-base-score/run-local.js",
+    "migrate:photo-keys": "tsx scripts/migratePhotoKeys.ts",
+    "migrate:photo-keys:stage": "APP_ENV=stage tsx scripts/migratePhotoKeys.ts",
+    "migrate:photo-keys:dry": "DRY_RUN=1 tsx scripts/migratePhotoKeys.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.490.0",

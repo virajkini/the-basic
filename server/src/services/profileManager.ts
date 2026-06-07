@@ -73,6 +73,27 @@ export async function updateLastActive(userId: string): Promise<Profile | null> 
 }
 
 /**
+ * Remove a single key from profile.photoKeys and clear primaryPhotoKey if it matches.
+ * Called after a file is deleted from S3 to keep the profile in sync.
+ */
+export async function removePhotoKey(userId: string, key: string): Promise<void> {
+  const db = await getDatabase();
+  const collection = db.collection<Profile>('profiles');
+  await collection.updateOne(
+    { _id: userId },
+    {
+      $pull: { photoKeys: key } as any,
+      $set: { updatedAt: new Date() },
+    }
+  );
+  // Also clear primaryPhotoKey if it pointed to the deleted file
+  await collection.updateOne(
+    { _id: userId, primaryPhotoKey: key },
+    { $set: { primaryPhotoKey: null, updatedAt: new Date() } }
+  );
+}
+
+/**
  * Update an existing profile
  * @param userId - User ID (same as profile _id)
  * @param updateData - Fields to update (excluding _id, createdAt)

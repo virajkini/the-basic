@@ -40,6 +40,31 @@ export function parsePrimaryPhotoKeyInput(
   return { ok: true, value: raw };
 }
 
+export function parsePhotoKeysInput(
+  raw: unknown,
+  userId: string
+): { ok: false; status: number; error: string } | { ok: true; value: string[] } {
+  if (!Array.isArray(raw)) {
+    return { ok: false, status: 400, error: 'photoKeys must be an array' };
+  }
+  if (raw.length > 5) {
+    return { ok: false, status: 400, error: 'photoKeys cannot exceed 5 items' };
+  }
+  const expectedPrefix = `profiles/${userId}/original/`;
+  const validated: string[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'string') {
+      return { ok: false, status: 400, error: 'photoKeys must contain strings' };
+    }
+    const rest = item.startsWith(expectedPrefix) ? item.slice(expectedPrefix.length) : '';
+    if (!rest || rest.includes('/') || rest.includes('..')) {
+      return { ok: false, status: 400, error: `Invalid key in photoKeys: ${item}` };
+    }
+    validated.push(item);
+  }
+  return { ok: true, value: validated };
+}
+
 export function parseFavoriteUserIdsInput(
   raw: unknown,
   ownUserId: string
@@ -105,6 +130,7 @@ export function parseCreateProfileBody(body: unknown): CreateFail | CreateOk {
     kuldeva,
     foodPreference,
     primaryPhotoKey: primaryPhotoKeyRaw,
+    photoKeys: photoKeysRaw,
   } = b;
 
   if (!creatingFor || !validCreatingFor.includes(creatingFor as CreatingFor)) {
@@ -194,8 +220,9 @@ export function parseCreateProfileBody(body: unknown): CreateFail | CreateOk {
     ...(foodPreferenceForCreate !== undefined ? { foodPreference: foodPreferenceForCreate } : {}),
   };
 
+  const uid = typeof b.userId === 'string' ? b.userId : '';
+
   if (primaryPhotoKeyRaw !== undefined) {
-    const uid = typeof b.userId === 'string' ? b.userId : '';
     if (!uid) {
       return { ok: false, status: 400, error: 'userId is required when setting primaryPhotoKey' };
     }
@@ -206,6 +233,17 @@ export function parseCreateProfileBody(body: unknown): CreateFail | CreateOk {
     if (pk.value !== undefined) {
       (profileData as { primaryPhotoKey?: string | null }).primaryPhotoKey = pk.value ?? null;
     }
+  }
+
+  if (photoKeysRaw !== undefined) {
+    if (!uid) {
+      return { ok: false, status: 400, error: 'userId is required when setting photoKeys' };
+    }
+    const pk = parsePhotoKeysInput(photoKeysRaw, uid);
+    if (!pk.ok) {
+      return { ok: false, status: pk.status, error: pk.error };
+    }
+    (profileData as { photoKeys?: string[] }).photoKeys = pk.value;
   }
 
   return { ok: true, data: profileData };
@@ -255,6 +293,7 @@ export function parseProfileUpdateBody(
     subscribed,
     favoriteUserIds,
     primaryPhotoKey: primaryPhotoKeyRaw,
+    photoKeys: photoKeysRaw,
   } = b;
 
   const updateData: Partial<Omit<Profile, '_id' | 'createdAt' | 'updatedAt'>> = {};
@@ -426,6 +465,14 @@ export function parseProfileUpdateBody(
     if (pk.value !== undefined) {
       updateData.primaryPhotoKey = pk.value;
     }
+  }
+
+  if (photoKeysRaw !== undefined) {
+    const pk = parsePhotoKeysInput(photoKeysRaw, existingProfile._id);
+    if (!pk.ok) {
+      return { ok: false, status: pk.status, error: pk.error };
+    }
+    updateData.photoKeys = pk.value;
   }
 
   if (Object.keys(updateData).length === 0) {

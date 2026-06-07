@@ -7,3 +7,4 @@ export const DEFAULT_DB_NAME = IS_STAGE ? 'amgeljodi_stage' : 'amgeljodi';
 export const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || DEFAULT_DB_NAME;
 
 export const STAGE_OTP_CODE = process.env.STAGE_OTP_CODE || '1111';
+export const BYPASS_OTP = IS_STAGE || process.env.BYPASS_OTP === 'true';
