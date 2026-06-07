@@ -125,7 +125,7 @@ export const articles: Article[] = [
       "A short take on why GSB Konkani marriages still matter to Amchigelle and Amgele families balancing tradition, culture, and modern compatibility.",
     eyebrow: "Community",
     image:
-      "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?auto=format&fit=crop&w=1600&q=80",
+      "https://static.amgeljodi.com/page-assets/oleg-illarionov-Oy2DiS1XXGc-unsplash.jpg",
     publishedAt: "2026-03-25",
     updatedAt: "2026-03-25",
     keywords: [
@@ -175,7 +175,7 @@ export const articles: Article[] = [
       "A grounded look at how married life can stay joyful through routines, festivals, travel, and family moments in places like Kumta and Honnavara.",
     eyebrow: "Lifestyle",
     image:
-      "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?auto=format&fit=crop&w=1600&q=80",
+      "https://static.amgeljodi.com/page-assets/melanie-rosillo-galvan-33o_WKC_c1A-unsplash.jpg",
     publishedAt: "2026-03-25",
     updatedAt: "2026-03-25",
     keywords: [
@@ -197,7 +197,7 @@ export const articles: Article[] = [
       "How festivals like Ganesh Chaturthi, Shigmo, and Gokulashtami help GSB Konkani couples build connection, family rhythm, and shared memories.",
     eyebrow: "Festivals",
     image:
-      "https://images.unsplash.com/photo-1513151233558-d860c5398176?auto=format&fit=crop&w=1600&q=80",
+      "https://static.amgeljodi.com/page-assets/nandu-menon-hGHldbCgYDA-unsplash.jpg",
     publishedAt: "2026-03-25",
     updatedAt: "2026-05-31",
     keywords: [
