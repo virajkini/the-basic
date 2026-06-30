@@ -9,6 +9,8 @@ import { generateAccessToken, getAccessTokenCookieOptions } from './auth.js';
 import { getConnectionBetweenUsers } from '../services/connectionManager.js';
 import { findUserById } from '../services/userManager.js';
 import { rankProfiles } from '../lib/rankProfiles.js';
+import { createNotification } from '../services/notificationManager.js';
+import { NotificationType } from '../models/notification.js';
 
 const router = express.Router();
 
@@ -494,6 +496,8 @@ router.put('/:userId',
         return res.status(404).json({ error: 'Profile not found' });
       }
 
+      const prevFavoriteIds: string[] = existingProfile.favoriteUserIds ?? [];
+
       const parsed = parseProfileUpdateBody(req.body, existingProfile, {
         allowVerifiedSubscribed: false,
       });
@@ -502,6 +506,16 @@ router.put('/:userId',
       }
 
     const updatedProfile = await updateProfile(userId, parsed.updateData);
+
+    // Fire SHORTLISTED notifications for newly added favorites (anonymous — no actorName)
+    if (parsed.updateData.favoriteUserIds) {
+      const newlyAdded = (parsed.updateData.favoriteUserIds as string[]).filter(
+        (id) => !prevFavoriteIds.includes(id)
+      );
+      for (const targetUserId of newlyAdded) {
+        void createNotification(targetUserId, NotificationType.SHORTLISTED, userId, userId);
+      }
+    }
 
     if (!updatedProfile) {
       return res.status(404).json({ error: 'Profile not found' });

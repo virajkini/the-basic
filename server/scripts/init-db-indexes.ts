@@ -177,6 +177,22 @@ async function createIndexes() {
       console.log('  ○ Index already exists: firstName');
     }
 
+    // Sparse index for FCM token deduplication — allows fast lookup when a new device
+    // registers and we need to clear the token off any other profile that holds it
+    try {
+      await profilesCollection.createIndex(
+        { fcmToken: 1 },
+        { sparse: true, name: 'fcm_token_lookup' }
+      );
+      console.log('  ✓ Created sparse index: fcmToken (push token deduplication)');
+    } catch (error: any) {
+      if (error.code === 85 || error.code === 86) {
+        console.log('  ○ Index already exists: fcmToken');
+      } else {
+        throw error;
+      }
+    }
+
     console.log('\nCreating indexes for connection_quotas collection...');
     const quotasCollection = db.collection('connection_quotas');
     await quotasCollection.createIndex(

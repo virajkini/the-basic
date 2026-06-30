@@ -57,6 +57,8 @@ export interface Profile {
   // System fields
   verified: boolean;
   subscribed: boolean;
+  /** FCM token for push notifications. One per user; replaced when device changes. */
+  fcmToken?: string;
   /** Last time the user was active in the app (dashboard ping). Optional for legacy profiles. */
   lastActive?: Date;
   /** Precomputed discover quality score (0–1), set by compute-base-score job. */

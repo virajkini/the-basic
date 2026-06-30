@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.google.services)
 }
 
 val localProperties = Properties().apply {
@@ -21,8 +22,8 @@ android {
         applicationId = "com.amgeljodi.app"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "1.0.3"
+        versionCode = 8
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -34,10 +35,9 @@ android {
         debug {
             isMinifyEnabled = false
             isDebuggable = true
-            buildConfigField("String", "BASE_URL", "\"https://stage-app.amgeljodi.com/dashboard\"")
-            buildConfigField("String", "DEBUG_URL", "\"https://stage-app.amgeljodi.com/dashboard\"")
-            buildConfigField("String", "API_BASE_URL", "\"https://stage.api.amgeljodi.com/api\"")
-            buildConfigField("String", "HOME_URL", "\"https://stage.amgeljodi.com\"")
+            buildConfigField("String", "BASE_URL", "\"https://app.amgeljodi.com/dashboard\"")
+            buildConfigField("String", "DEBUG_URL", "\"${localProperties.getProperty("dev.webAppUrl", "http://localhost:3002/dashboard")}\"")
+            buildConfigField("String", "API_BASE_URL", "\"${localProperties.getProperty("dev.apiUrl", "https://api.amgeljodi.com/api")}\"")
             buildConfigField("Boolean", "ALLOW_URL_TOGGLE", "true")
         }
         release {
@@ -50,7 +50,6 @@ android {
             buildConfigField("String", "BASE_URL", "\"https://app.amgeljodi.com/dashboard\"")
             buildConfigField("String", "DEBUG_URL", "\"https://app.amgeljodi.com/dashboard\"")
             buildConfigField("String", "API_BASE_URL", "\"https://api.amgeljodi.com/api\"")
-            buildConfigField("String", "HOME_URL", "\"https://www.amgeljodi.com\"")
             buildConfigField("Boolean", "ALLOW_URL_TOGGLE", "false")
         }
     }
@@ -131,4 +130,8 @@ dependencies {
 
     // PostHog Analytics
     implementation("com.posthog:posthog-android:3.+")
+
+    // Firebase
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging.ktx)
 }

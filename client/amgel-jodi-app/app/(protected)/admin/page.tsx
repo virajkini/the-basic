@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { authFetch } from '../../utils/authFetch'
 import OnboardingTab from './OnboardingTab'
 import ImageUploadTab from './ImageUploadTab'
+import NotificationSender from '../../../components/admin/NotificationSender'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
@@ -37,7 +38,7 @@ interface MessageCounts {
   closed: number
 }
 
-type Tab = 'profiles' | 'messages' | 'onboarding' | 'imageUpload'
+type Tab = 'profiles' | 'messages' | 'onboarding' | 'imageUpload' | 'notifications'
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<Tab>('profiles')
@@ -354,6 +355,16 @@ export default function AdminPage() {
           >
             Onboarding
           </button>
+          <button
+            onClick={() => setActiveTab('notifications')}
+            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
+              activeTab === 'notifications'
+                ? 'border-myColor-600 text-myColor-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Notifications
+          </button>
           {isLocalhost && (
             <button
               onClick={() => setActiveTab('imageUpload')}
@@ -445,6 +456,8 @@ export default function AdminPage() {
       {activeTab === 'onboarding' && <OnboardingTab />}
 
       {activeTab === 'imageUpload' && isLocalhost && <ImageUploadTab />}
+
+      {activeTab === 'notifications' && <NotificationSender />}
 
       {/* Messages Tab */}
       {activeTab === 'messages' && (

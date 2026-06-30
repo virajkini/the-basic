@@ -125,6 +125,16 @@ fun MainScreen(
         }
     }
 
+    // Notification permission launcher (Android 13+)
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        webViewBridge.sendToWeb(
+            "notificationPermissionResult",
+            mapOf("status" to if (granted) "granted" else "denied")
+        )
+    }
+
     // Handle bridge events
     LaunchedEffect(Unit) {
         webViewBridge.bridgeEvents.collect { event ->
@@ -172,6 +182,12 @@ fun MainScreen(
                                 ))
                             }
                         )
+                    }
+                }
+
+                is BridgeEvent.RequestNotificationPermission -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                     }
                 }
             }
@@ -302,6 +318,12 @@ private fun isPublicLandingUrl(url: String): Boolean {
         val host = uri.host?.removePrefix("www.") ?: return false
         val path = uri.encodedPath?.trimEnd('/').orEmpty()
 
-        host in setOf("amgeljodi.com", "stage.amgeljodi.com") && path.isEmpty()
+        // Production home site root (www.amgeljodi.com — logout redirects here)
+        if (host == "amgeljodi.com" && path.isEmpty()) return true
+
+        // Debug: localhost:3000 is the home marketing site — never a valid app page
+        if (host == "localhost" && uri.port == 3000) return true
+
+        false
     }.getOrDefault(false)
 }

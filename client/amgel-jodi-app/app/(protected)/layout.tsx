@@ -5,6 +5,8 @@ import { DiscoverSearchProvider } from '../../context/DiscoverSearchContext'
 import Header from '../../components/Header'
 import BottomNav from '../../components/BottomNav'
 import ProtectedMain from '../../components/tabs/ProtectedMain'
+import NotificationPermissionBanner from '../../components/NotificationPermissionBanner'
+import AppUpdateBanner from '../../components/AppUpdateBanner'
 
 export const dynamic = 'force-dynamic'
 
@@ -51,6 +53,8 @@ export default async function ProtectedLayout({
       <DiscoverSearchProvider>
         <div className="h-dvh flex flex-col">
           <Header />
+          <AppUpdateBanner />
+          <NotificationPermissionBanner />
 
           <main className="flex-1 min-h-0 flex flex-col">
             <ProtectedMain>{children}</ProtectedMain>

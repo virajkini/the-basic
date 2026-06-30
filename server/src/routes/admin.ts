@@ -4,7 +4,9 @@ import { requireAdmin } from '../middleware/admin.js';
 import { getAllProfiles, updateProfile, deleteProfile, readProfile, createProfile, removePhotoKey } from '../services/profileManager.js';
 import { createUser, findUserById, listAllUsersWithProfileSummary } from '../services/userManager.js';
 import { deleteAllUserConnections } from '../services/connectionManager.js';
-import { deleteAllUserNotifications } from '../services/notificationManager.js';
+import { deleteAllUserNotifications, createCustomNotification } from '../services/notificationManager.js';
+import { sendMulticastNotification } from '../services/fcmService.js';
+import { getDatabase } from '../db/mongodb.js';
 import {
   deleteAllUserFiles,
   generateMultiplePresignedUrls,
@@ -74,6 +76,7 @@ router.get('/profiles',
             name: name,
             isVerified: profile.verified ?? false,
             isSubscribed: profile.subscribed ?? false,
+            hasFcmToken: !!profile.fcmToken,
             createdAt: profile.createdAt,
           };
         })
@@ -556,6 +559,100 @@ router.delete('/users/:userId',
       res.status(500).json({
         error: 'Failed to delete account',
         details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/notifications/send
+ * Send a custom notification to selected users (admin only)
+ * Body: { userIds: string[], title: string, body: string }
+ */
+router.post('/notifications/send',
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { userIds, title, body, imageUrl } = req.body;
+
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return res.status(400).json({ error: 'userIds must be a non-empty array' });
+      }
+      if (!title || typeof title !== 'string') {
+        return res.status(400).json({ error: 'title is required' });
+      }
+      if (!body || typeof body !== 'string') {
+        return res.status(400).json({ error: 'body is required' });
+      }
+
+      const actorUserId = req.authenticatedUserId!;
+      const results = await Promise.allSettled(
+        userIds.map((userId: string) => createCustomNotification(userId, actorUserId, title, body, imageUrl))
+      );
+
+      const sent = results.filter((r) => r.status === 'fulfilled').length;
+      const failed = results.filter((r) => r.status === 'rejected').length;
+
+      adminAudit(actorUserId, 'send_custom_notification', undefined, {
+        userCount: userIds.length,
+        sent,
+        failed,
+        title,
+      });
+
+      res.status(200).json({ success: true, sent, failed });
+    } catch (error) {
+      console.error('Error sending custom notifications:', error);
+      res.status(500).json({
+        error: 'Failed to send notifications',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+);
+
+/**
+ * POST /api/admin/notifications/broadcast
+ * Send a custom notification to all users with a registered FCM token (admin only)
+ * Body: { title: string, body: string }
+ */
+router.post('/notifications/broadcast',
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { title, body, imageUrl } = req.body;
+
+      if (!title || typeof title !== 'string') {
+        return res.status(400).json({ error: 'title is required' });
+      }
+      if (!body || typeof body !== 'string') {
+        return res.status(400).json({ error: 'body is required' });
+      }
+
+      const db = await getDatabase();
+      const profiles = await db
+        .collection<{ _id: string; fcmToken: string }>('profiles')
+        .find({ fcmToken: { $exists: true, $nin: [null, ''] } } as any)
+        .project({ _id: 1, fcmToken: 1 })
+        .toArray();
+
+      const tokens = profiles.map((p) => p.fcmToken).filter(Boolean) as string[];
+      const sent = await sendMulticastNotification(tokens, title, body, { channelId: 'custom', type: 'CUSTOM' }, imageUrl);
+
+      adminAudit(req.authenticatedUserId, 'broadcast_notification', undefined, {
+        totalWithTokens: tokens.length,
+        fcmSent: sent,
+        title,
+      });
+
+      res.status(200).json({ success: true, totalWithTokens: tokens.length, fcmSent: sent });
+    } catch (error) {
+      console.error('Error broadcasting notification:', error);
+      res.status(500).json({
+        error: 'Failed to broadcast notification',
+        details: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   }

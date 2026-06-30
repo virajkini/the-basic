@@ -9,7 +9,6 @@ import {
   getConnectionBetweenUsers,
 } from '../services/connectionManager.js';
 import { createNotification } from '../services/notificationManager.js';
-import { sendToUser } from '../services/sseManager.js';
 import { readProfile } from '../services/profileManager.js';
 import { canSendRequest, consumeCredit, getQuotaStatus } from '../services/quotaManager.js';
 import { ConnectionStatus } from '../models/connection.js';
@@ -93,23 +92,14 @@ router.post('/',
       const senderProfile = await readProfile(fromUserId);
       const senderName = senderProfile?.firstName || undefined;
 
-      // Create notification for recipient
-      const notification = await createNotification(
+      // Create notification for recipient (SSE + FCM fired inside createNotification)
+      await createNotification(
         toUserId,
         NotificationType.REQUEST_RECEIVED,
         connection._id!.toString(),
         fromUserId,
         senderName
       );
-
-      // Send real-time SSE event to recipient
-      sendToUser(toUserId, {
-        type: 'NEW_NOTIFICATION',
-        data: {
-          notificationId: notification._id!.toString(),
-          type: notification.type,
-        },
-      });
 
       res.status(201).json({
         success: true,
@@ -179,23 +169,14 @@ router.patch('/:id',
       const responderProfile = await readProfile(userId);
       const responderName = responderProfile?.firstName || undefined;
 
-      // Create notification for the sender (fromUserId)
-      const notification = await createNotification(
+      // Create notification for the sender (SSE + FCM fired inside createNotification)
+      await createNotification(
         connection.fromUserId,
         notificationType,
         connection._id!.toString(),
         userId,
         responderName
       );
-
-      // Send real-time SSE event to sender
-      sendToUser(connection.fromUserId, {
-        type: 'NEW_NOTIFICATION',
-        data: {
-          notificationId: notification._id!.toString(),
-          type: notification.type,
-        },
-      });
 
       res.status(200).json({
         success: true,

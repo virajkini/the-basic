@@ -15,6 +15,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -644,7 +645,7 @@ private fun HeroCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(500.dp)
+                .aspectRatio(0.75f)
                 .background(
                     brush = Brush.linearGradient(
                         colors = listOf(Color(0xFFFFFCFF), Color(0xFFF9EEFF), Color(0xFFFFF0F7))
@@ -667,7 +668,7 @@ private fun HeroCard(
             Image(
                 painter = painterResource(id = R.drawable.hero_landing_art),
                 contentDescription = "Amgel Jodi hero artwork",
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()

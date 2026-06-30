@@ -1,4 +1,29 @@
 {
-  "_comment": "This file is not needed. Firebase is not configured.",
-  "_instructions": "Delete this file. If you want to add Firebase later, download google-services.json from Firebase Console."
+  "project_info": {
+    "project_number": "125628505543",
+    "project_id": "amgel-jodi",
+    "storage_bucket": "amgel-jodi.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:125628505543:android:bf93235f249d24eaf98de2",
+        "android_client_info": {
+          "package_name": "com.amgeljodi.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDU4OAUIkuxiZZCWzHmafAd3Ow4xsf6WIs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
 }

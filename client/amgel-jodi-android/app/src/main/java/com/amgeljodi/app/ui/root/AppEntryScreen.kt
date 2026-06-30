@@ -7,21 +7,31 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.amgeljodi.app.bridge.WebViewBridge
 import com.amgeljodi.app.ui.auth.LandingScreen
@@ -39,6 +49,7 @@ fun AppEntryScreen(
     viewModel: AppEntryViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val useDebugUrl by viewModel.useDebugUrl.collectAsState(initial = false)
     val webUrl = deepLinkUrl ?: uiState.postLoginUrl
     val loginSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -77,14 +88,25 @@ fun AppEntryScreen(
                     onLinkClick = { slug ->
                         when (slug) {
                             "login" -> viewModel.openLogin()
-                            "about" -> viewModel.openPublicLink("${Constants.Urls.HOME}/about")
-                            "contact" -> viewModel.openPublicLink("${Constants.Urls.HOME}/contact")
-                            "privacy" -> viewModel.openPublicLink("${Constants.Urls.HOME}/privacy")
-                            "terms" -> viewModel.openPublicLink("${Constants.Urls.HOME}/terms")
-                            "child-safety" -> viewModel.openPublicLink("${Constants.Urls.HOME}/child-safety")
+                            "about" -> viewModel.openPublicLink("https://www.amgeljodi.com/about")
+                            "contact" -> viewModel.openPublicLink("https://www.amgeljodi.com/contact")
+                            "privacy" -> viewModel.openPublicLink("https://www.amgeljodi.com/privacy")
+                            "terms" -> viewModel.openPublicLink("https://www.amgeljodi.com/terms")
+                            "child-safety" -> viewModel.openPublicLink("https://www.amgeljodi.com/child-safety")
                         }
                     }
                 )
+
+                if (Constants.Urls.ALLOW_TOGGLE) {
+                    DebugUrlToggle(
+                        useDebug = useDebugUrl,
+                        onToggle = { viewModel.setDebugUrl(!useDebugUrl) },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .statusBarsPadding()
+                            .padding(top = 8.dp, end = 12.dp)
+                    )
+                }
 
                 if (route == AppRoute.PhoneEntry || route == AppRoute.OtpEntry) {
                     ModalBottomSheet(
@@ -152,6 +174,31 @@ fun AppEntryScreen(
                 color = MaterialTheme.colorScheme.primary
             )
         }
+    }
+}
+
+@Composable
+private fun DebugUrlToggle(
+    useDebug: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val bgColor = if (useDebug) Color(0xFFFF6B35) else Color(0xFF6B7280)
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(bgColor.copy(alpha = 0.15f))
+            .border(1.dp, bgColor.copy(alpha = 0.4f), RoundedCornerShape(20.dp))
+            .clickable(onClick = onToggle)
+            .padding(horizontal = 10.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = if (useDebug) "⚡ Local" else "🌐 Prod",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = bgColor
+        )
     }
 }
 

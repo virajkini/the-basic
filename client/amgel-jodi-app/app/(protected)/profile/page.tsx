@@ -54,17 +54,6 @@ interface ExistingImage {
   url: string
 }
 
-declare global {
-  interface Window {
-    isAmgelJodiApp?: boolean
-    isAndroidApp?: boolean
-    __AMGEL_NATIVE_CONTEXT?: {
-      platform?: string
-      fontScale?: number
-    }
-  }
-}
-
 interface Profile {
   _id: string
   creatingFor: CreatingFor

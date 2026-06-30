@@ -14,6 +14,7 @@
         tools:ignore="ScopedStorage" />
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Camera feature (optional - app works without camera) -->
     <uses-feature
@@ -88,6 +89,20 @@
                     android:host="open" />
             </intent-filter>
         </activity>
+
+        <!-- FCM Push Notification Service -->
+        <service
+            android:name=".service.AmgelJodiFCMService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- Default FCM notification channel -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="connections" />
 
         <!-- File Provider for camera captures -->
         <provider

@@ -14,6 +14,9 @@ import notificationRoutes from './routes/notifications.js';
 import adminRoutes from './routes/admin.js';
 import kundaliRoutes from './routes/kundali.js';
 import { authenticateToken } from './middleware/auth.js';
+import { initializeFCM } from './services/fcmService.js';
+
+initializeFCM();
 
 const app = express();
 const PORT = process.env.PORT || 3001;

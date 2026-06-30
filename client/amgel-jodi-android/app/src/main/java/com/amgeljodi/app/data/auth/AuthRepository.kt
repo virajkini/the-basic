@@ -152,20 +152,32 @@ class AuthRepository @Inject constructor(
 
     private suspend fun syncCookies(token: String) {
         withContext(Dispatchers.Main) {
-            val cookie = buildCookie(token)
             val cookieManager = CookieManager.getInstance()
             cookieManager.setAcceptCookie(true)
-            cookieManager.setCookie(Constants.Urls.API, cookie)
-            cookieManager.setCookie(Constants.Urls.PRODUCTION, cookie)
-            cookieManager.setCookie(Constants.Urls.HOME, cookie)
-            cookieManager.setCookie("https://amgeljodi.com", cookie)
-            cookieManager.setCookie("https://stage.amgeljodi.com", cookie)
+
+            // Production: Domain=.amgeljodi.com covers all subdomains (app, api, www)
+            cookieManager.setCookie("https://app.amgeljodi.com", buildCookie(token))
+
+            // Local dev (debug builds only — ALLOW_TOGGLE is false in release)
+            if (Constants.Urls.ALLOW_TOGGLE && Constants.Urls.DEBUG.startsWith("http://localhost")) {
+                val local = buildLocalCookie(token)
+                cookieManager.setCookie(Constants.Urls.DEBUG, local)
+                // Only set API cookie if it's also pointing at localhost
+                if (Constants.Urls.API.startsWith("http://localhost")) {
+                    cookieManager.setCookie(Constants.Urls.API, local)
+                }
+            }
+
             cookieManager.flush()
         }
     }
 
     private fun buildCookie(token: String): String {
         return "${Constants.Auth.ACCESS_TOKEN_COOKIE}=$token; Path=/; Domain=.amgeljodi.com; Secure; HttpOnly; SameSite=Lax"
+    }
+
+    private fun buildLocalCookie(token: String): String {
+        return "${Constants.Auth.ACCESS_TOKEN_COOKIE}=$token; Path=/"
     }
 
     private fun cookieHeader(token: String): String = "${Constants.Auth.ACCESS_TOKEN_COOKIE}=$token"
