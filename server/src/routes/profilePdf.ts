@@ -79,6 +79,11 @@ router.post('/', authenticateToken, async (req, res) => {
     const familyDetails =
       typeof rawFamily === 'string' ? rawFamily.trim().slice(0, FAMILY_DETAILS_MAX) : '';
 
+    const rawFields = req.body?.includedFields;
+    const includedFields: string[] | undefined = Array.isArray(rawFields)
+      ? (rawFields as unknown[]).filter((f): f is string => typeof f === 'string').slice(0, 30)
+      : undefined;
+
     const profile = await readProfile(userId);
     if (!profile) {
       return res.status(404).json({ error: 'profile_missing' });
@@ -106,6 +111,7 @@ router.post('/', authenticateToken, async (req, res) => {
       familyDetails,
       logoBuffer,
       contactPhone,
+      includedFields,
     });
 
     const item = await uploadProfilePdf(userId, profile.firstName, pdfBuffer);

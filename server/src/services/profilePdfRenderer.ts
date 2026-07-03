@@ -29,10 +29,25 @@ interface RenderOptions {
   logoBuffer?: Buffer;
   /** Login mobile number (from JWT) for the Contact section. */
   contactPhone?: string;
+  /**
+   * Whitelist of field keys to include. When undefined/empty all fields are
+   * rendered (existing behaviour). Recognised keys:
+   * dob, gender, height, nativePlace, foodPreference, education, aboutMe,
+   * phone, workingStatus, company, designation, workLocation, salaryRange,
+   * placeOfBirth, birthTiming, gothra, nakshatra, kuldeva
+   */
+  includedFields?: string[];
 }
 
+const PERSONAL_KEYS = ['dob', 'gender', 'height', 'nativePlace', 'foodPreference', 'education', 'aboutMe'];
+const PROFESSIONAL_KEYS = ['workingStatus', 'company', 'designation', 'workLocation', 'salaryRange'];
+const JATAK_KEYS = ['placeOfBirth', 'birthTiming', 'gothra', 'nakshatra', 'kuldeva'];
+
 export async function renderProfilePdf(opts: RenderOptions): Promise<Buffer> {
-  const { profile, photos, familyDetails, logoBuffer, contactPhone } = opts;
+  const { profile, photos, familyDetails, logoBuffer, contactPhone, includedFields } = opts;
+
+  const included = includedFields && includedFields.length > 0 ? new Set(includedFields) : null;
+  const inc = (key: string) => !included || included.has(key);
 
   const doc = new PDFDocument({
     size: 'A4',
@@ -61,10 +76,18 @@ export async function renderProfilePdf(opts: RenderOptions): Promise<Buffer> {
   drawCover(doc, profile, photos[0]);
 
   doc.addPage();
-  drawSection(doc, 'Personal Details', () => drawPersonalDetails(doc, profile));
-  drawSection(doc, 'Contact Details', () => drawContactDetails(doc, contactPhone));
-  drawSection(doc, 'Professional Details', () => drawProfessionalDetails(doc, profile));
-  drawSection(doc, 'Astrological Details (Jatak)', () => drawAstrologicalDetails(doc, profile));
+  if (!included || PERSONAL_KEYS.some(k => included.has(k))) {
+    drawSection(doc, 'Personal Details', () => drawPersonalDetails(doc, profile, inc));
+  }
+  if (inc('phone')) {
+    drawSection(doc, 'Contact Details', () => drawContactDetails(doc, contactPhone));
+  }
+  if (!included || PROFESSIONAL_KEYS.some(k => included.has(k))) {
+    drawSection(doc, 'Professional Details', () => drawProfessionalDetails(doc, profile, inc));
+  }
+  if (!included || JATAK_KEYS.some(k => included.has(k))) {
+    drawSection(doc, 'Astrological Details (Jatak)', () => drawAstrologicalDetails(doc, profile, inc));
+  }
 
   const trimmedFamily = (familyDetails || '').trim();
   if (trimmedFamily) {
@@ -212,21 +235,21 @@ function safeMoveDown(doc: PDFDoc, lines: number) {
   }
 }
 
-function drawPersonalDetails(doc: PDFDoc, profile: Profile) {
-  const ageStr = profile.dob ? `${calculateAge(profile.dob)} years` : EMPTY;
-  const dobStr = profile.dob ? formatDob(profile.dob) : EMPTY;
+function drawPersonalDetails(doc: PDFDoc, profile: Profile, inc: (k: string) => boolean) {
+  const rows: Array<[string, string]> = [];
+  if (inc('dob')) {
+    rows.push(['Date of Birth', profile.dob ? formatDob(profile.dob) : EMPTY]);
+    rows.push(['Age', profile.dob ? `${calculateAge(profile.dob)} years` : EMPTY]);
+  }
+  if (inc('gender')) rows.push(['Gender', formatGender(profile.gender)]);
+  if (inc('height')) rows.push(['Height', profile.height || EMPTY]);
+  if (inc('nativePlace')) rows.push(['Native Place', profile.nativePlace || EMPTY]);
+  if (inc('foodPreference')) rows.push(['Food Preference', formatFood(profile.foodPreference)]);
+  if (inc('education')) rows.push(['Education', profile.education || EMPTY]);
 
-  drawKeyValueRows(doc, [
-    ['Date of Birth', dobStr],
-    ['Age', ageStr],
-    ['Gender', formatGender(profile.gender)],
-    ['Height', profile.height || EMPTY],
-    ['Native Place', profile.nativePlace || EMPTY],
-    ['Food Preference', formatFood(profile.foodPreference)],
-    ['Education', profile.education || EMPTY],
-  ]);
+  if (rows.length > 0) drawKeyValueRows(doc, rows);
 
-  if (profile.aboutMe && profile.aboutMe.trim()) {
+  if (inc('aboutMe') && profile.aboutMe && profile.aboutMe.trim()) {
     ensureSpace(doc, 48);
     drawParagraphBlock(doc, 'About', profile.aboutMe.trim());
   }
@@ -237,24 +260,24 @@ function drawContactDetails(doc: PDFDoc, rawPhone?: string) {
   drawKeyValueRows(doc, [['Mobile', phone || EMPTY]]);
 }
 
-function drawProfessionalDetails(doc: PDFDoc, profile: Profile) {
-  drawKeyValueRows(doc, [
-    ['Working Status', formatWorkingStatus(profile.workingStatus)],
-    ['Company', profile.company || EMPTY],
-    ['Designation', profile.designation || EMPTY],
-    ['Work Location', profile.workLocation || EMPTY],
-    ['Salary Range', profile.salaryRange ? `${profile.salaryRange} per annum` : EMPTY],
-  ]);
+function drawProfessionalDetails(doc: PDFDoc, profile: Profile, inc: (k: string) => boolean) {
+  const rows: Array<[string, string]> = [];
+  if (inc('workingStatus')) rows.push(['Working Status', formatWorkingStatus(profile.workingStatus)]);
+  if (inc('company')) rows.push(['Company', profile.company || EMPTY]);
+  if (inc('designation')) rows.push(['Designation', profile.designation || EMPTY]);
+  if (inc('workLocation')) rows.push(['Work Location', profile.workLocation || EMPTY]);
+  if (inc('salaryRange')) rows.push(['Salary Range', profile.salaryRange ? `${profile.salaryRange} per annum` : EMPTY]);
+  if (rows.length > 0) drawKeyValueRows(doc, rows);
 }
 
-function drawAstrologicalDetails(doc: PDFDoc, profile: Profile) {
-  drawKeyValueRows(doc, [
-    ['Place of Birth', profile.placeOfBirth || EMPTY],
-    ['Time of Birth', profile.birthTiming || EMPTY],
-    ['Gothra', profile.gothra || EMPTY],
-    ['Nakshatra', profile.nakshatra || EMPTY],
-    ['Kuldeva', profile.kuldeva || EMPTY],
-  ]);
+function drawAstrologicalDetails(doc: PDFDoc, profile: Profile, inc: (k: string) => boolean) {
+  const rows: Array<[string, string]> = [];
+  if (inc('placeOfBirth')) rows.push(['Place of Birth', profile.placeOfBirth || EMPTY]);
+  if (inc('birthTiming')) rows.push(['Time of Birth', profile.birthTiming || EMPTY]);
+  if (inc('gothra')) rows.push(['Gothra', profile.gothra || EMPTY]);
+  if (inc('nakshatra')) rows.push(['Nakshatra', profile.nakshatra || EMPTY]);
+  if (inc('kuldeva')) rows.push(['Kuldeva', profile.kuldeva || EMPTY]);
+  if (rows.length > 0) drawKeyValueRows(doc, rows);
 }
 
 function drawFamilyDetails(doc: PDFDoc, text: string) {
