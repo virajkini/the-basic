@@ -1,5 +1,5 @@
 # Build stage
-FROM node:20.17.0-alpine AS builder
+FROM node:20.19.0-alpine AS builder
 
 WORKDIR /app
 
@@ -14,7 +14,7 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:20.17.0-alpine
+FROM node:20.19.0-alpine
 
 # Install CA certificates for MongoDB Atlas TLS connection
 RUN apk add --no-cache ca-certificates
