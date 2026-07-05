@@ -60,7 +60,7 @@ const router = express.Router();
 router.get('/profiles',
   authenticateToken,
   requireAdmin,
-  async (req, res) => {
+  async (_req, res) => {
     try {
       const profiles = await getAllProfiles();
 
@@ -72,8 +72,10 @@ router.get('/profiles',
           
           return {
             userId: profile._id,
-            phone: user?.phone || 'N/A',
+            phone: user?.phone || null,
+            email: user?.email || null,
             name: name,
+            gender: profile.gender || null,
             isVerified: profile.verified ?? false,
             isSubscribed: profile.subscribed ?? false,
             hasFcmToken: !!profile.fcmToken,
