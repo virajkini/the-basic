@@ -202,7 +202,7 @@ export default function Home() {
             <h1 className="animate-fade-in-up">
               <span className="block font-display text-6xl font-semibold tracking-tight text-myColor-50 sm:text-7xl md:text-8xl">
                 Amgel{' '}
-                <span className="inline-block bg-gradient-to-r from-myColor-300 via-myColor-400 to-myColor-300 bg-clip-text pr-[0.14em] italic text-transparent">
+                <span className="inline-block bg-gradient-to-r from-myColor-300 via-myColor-400 to-myColor-300 bg-clip-text -ml-[0.15em] pl-[0.25em] pr-[0.18em] pb-[0.2em] -mb-[0.2em] italic text-transparent">
                   Jodi
                 </span>
               </span>
