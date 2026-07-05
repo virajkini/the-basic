@@ -5,7 +5,9 @@ import android.util.Log
 import android.webkit.CookieManager
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
+import androidx.credentials.exceptions.NoCredentialException
 import com.amgeljodi.app.BuildConfig
 import com.amgeljodi.app.util.Constants
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
@@ -128,9 +130,13 @@ class AuthRepository @Inject constructor(
         val idToken = try {
             val result = credentialManager.getCredential(context, request)
             GoogleIdTokenCredential.createFrom(result.credential.data).idToken
+        } catch (e: GetCredentialCancellationException) {
+            return AuthActionResult.Error("Google Sign-In was cancelled. Tap the button to try again, or use phone number login.")
+        } catch (e: NoCredentialException) {
+            return AuthActionResult.Error("No Google account found or sign-in is restricted. Check Settings > Accounts on your device.")
         } catch (e: GetCredentialException) {
             Log.e(TAG, "Google credential failed", e)
-            return AuthActionResult.Error("Google Sign-In was cancelled or failed. Please try again.")
+            return AuthActionResult.Error("Google Sign-In failed. Please try again.")
         } catch (e: Exception) {
             Log.e(TAG, "Google sign-in unexpected error", e)
             return AuthActionResult.Error("Google Sign-In failed. Please try again.")

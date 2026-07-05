@@ -80,7 +80,7 @@ export async function renderProfilePdf(opts: RenderOptions): Promise<Buffer> {
     drawSection(doc, 'Personal Details', () => drawPersonalDetails(doc, profile, inc));
   }
   if (inc('phone')) {
-    drawSection(doc, 'Contact Details', () => drawContactDetails(doc, contactPhone));
+    drawSection(doc, 'Contact Details', () => drawContactDetails(doc, contactPhone), 30);
   }
   if (!included || PROFESSIONAL_KEYS.some(k => included.has(k))) {
     drawSection(doc, 'Professional Details', () => drawProfessionalDetails(doc, profile, inc));
@@ -96,7 +96,10 @@ export async function renderProfilePdf(opts: RenderOptions): Promise<Buffer> {
 
   const galleryPhotos = photos.slice(1, 5);
   if (galleryPhotos.length > 0) {
-    drawSection(doc, 'Photographs', () => drawPhotoGallery(doc, galleryPhotos));
+    // Keep the heading with the first photo row (cell height + gap)
+    const innerWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+    const galleryCellH = ((innerWidth - 16) / 2) * 1.25;
+    drawSection(doc, 'Photographs', () => drawPhotoGallery(doc, galleryPhotos), galleryCellH + 28);
   }
 
   snapCursorToSafeArea(doc);
@@ -118,29 +121,23 @@ function drawCover(doc: PDFDoc, profile: Profile, primaryPhoto?: Buffer) {
 
   drawDoubleBorder(doc, 32, 32, width - 64, height - 64);
 
-  const ornamentY = 96;
+  const ornamentY = 104;
   drawOrnament(doc, width / 2, ornamentY, 18);
-
-  doc
-    .fillColor(COLOR.muted)
-    .font(FONT_ITALIC)
-    .fontSize(11)
-    .text('with reverence', 0, ornamentY + 26, { align: 'center', width });
 
   doc
     .fillColor(COLOR.maroon)
     .font(FONT_BOLD)
     .fontSize(34)
-    .text('Bio-Data', 0, ornamentY + 52, { align: 'center', width });
+    .text('Bio-Data', 0, ornamentY + 40, { align: 'center', width });
 
-  drawGoldRule(doc, width / 2 - 80, ornamentY + 102, 160);
+  drawGoldRule(doc, width / 2 - 80, ornamentY + 90, 160);
 
   const fullName = formatName(profile);
   doc
     .fillColor(COLOR.charcoal)
     .font(FONT_BODY)
     .fontSize(22)
-    .text(fullName, 0, ornamentY + 122, { align: 'center', width });
+    .text(fullName, 0, ornamentY + 110, { align: 'center', width });
 
   const ageStr = profile.dob ? `${calculateAge(profile.dob)} years` : null;
   const subtitleParts = [
@@ -153,7 +150,7 @@ function drawCover(doc: PDFDoc, profile: Profile, primaryPhoto?: Buffer) {
       .fillColor(COLOR.muted)
       .font(FONT_ITALIC)
       .fontSize(13)
-      .text(subtitleParts.join('   \u2022   '), 0, ornamentY + 156, {
+      .text(subtitleParts.join('   \u2022   '), 0, ornamentY + 144, {
         align: 'center',
         width,
       });
@@ -163,24 +160,25 @@ function drawCover(doc: PDFDoc, profile: Profile, primaryPhoto?: Buffer) {
     const photoW = 220;
     const photoH = 280;
     const photoX = (width - photoW) / 2;
-    const photoY = ornamentY + 200;
+    const photoY = ornamentY + 190;
 
     drawPhotoFrame(doc, photoX, photoY, photoW, photoH, primaryPhoto);
   }
 
-  drawOrnament(doc, width / 2, height - 120, 14);
-  doc
-    .fillColor(COLOR.muted)
-    .font(FONT_ITALIC)
-    .fontSize(10)
-    .text(`Generated on ${formatDate(new Date())}`, 0, height - 88, {
-      align: 'center',
-      width,
-    });
+  drawOrnament(doc, width / 2, height - 110, 14);
 }
 
-function drawSection(doc: PDFDoc, title: string, body: () => void) {
-  ensureSpace(doc, 64);
+/** Approximate height of a section heading (title line + rule + gap). */
+const SECTION_HEADING_HEIGHT = 40;
+
+/**
+ * Draw a section heading followed by its body. `keepWithHeight` is the minimum
+ * body height that must fit on the same page as the heading — if it doesn't,
+ * the whole section starts on a fresh page. This prevents orphaned headings
+ * (title at the bottom of one page, content on the next).
+ */
+function drawSection(doc: PDFDoc, title: string, body: () => void, keepWithHeight = 80) {
+  ensureSpace(doc, SECTION_HEADING_HEIGHT + keepWithHeight);
 
   const startX = doc.page.margins.left;
   const innerWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
@@ -197,6 +195,8 @@ function drawSection(doc: PDFDoc, title: string, body: () => void) {
   const ruleY = doc.y + 4;
   doc.save();
   doc.lineWidth(1.2).strokeColor(COLOR.gold).moveTo(startX, ruleY).lineTo(startX + innerWidth, ruleY).stroke();
+  doc.circle(startX, ruleY, 1.8).fill(COLOR.gold);
+  doc.circle(startX + innerWidth, ruleY, 1.8).fill(COLOR.gold);
   doc.restore();
 
   safeMoveDown(doc, 0.55);
@@ -355,7 +355,10 @@ function drawParagraphBlock(doc: PDFDoc, label: string | null, text: string) {
     width: innerWidth,
     lineGap,
   });
-  ensureSpace(doc, Math.min(textHeight + 24, 520));
+  // Keep only the first few lines with the label; long text flows across
+  // pages naturally. Forcing the whole block onto one page creates large
+  // gaps when it doesn't fit.
+  ensureSpace(doc, Math.min(textHeight + 12, 72));
 
   doc
     .fillColor(COLOR.ink)
@@ -566,14 +569,6 @@ function formatDob(dob: string): string {
   return d.toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'long',
-    year: 'numeric',
-  });
-}
-
-function formatDate(d: Date): string {
-  return d.toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
     year: 'numeric',
   });
 }
