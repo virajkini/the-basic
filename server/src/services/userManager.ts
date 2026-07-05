@@ -94,6 +94,13 @@ export async function findUserByEmail(email: string): Promise<User | null> {
   return collection.findOne({ email: email.toLowerCase() });
 }
 
+export async function deleteUser(userId: string): Promise<boolean> {
+  const db = await getDatabase();
+  const collection = db.collection<User>('users');
+  const result = await collection.deleteOne({ _id: userId as any });
+  return result.deletedCount === 1;
+}
+
 export async function linkPhoneToUser(userId: string, phone: string): Promise<boolean> {
   const db = await getDatabase();
   const collection = db.collection<User>('users');

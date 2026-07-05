@@ -7,7 +7,7 @@ import { verifyUserOwnership, verifyUserIdMatch } from '../middleware/verifyOwne
 import { getOtherUserProfileImages, signedUrlsFromKeys } from '../services/fileManager.js';
 import { generateAccessToken, getAccessTokenCookieOptions } from './auth.js';
 import { getConnectionBetweenUsers } from '../services/connectionManager.js';
-import { findUserById, linkPhoneToUser, linkEmailToUser } from '../services/userManager.js';
+import { findUserById, findUserByPhone, findUserByEmail, linkPhoneToUser, linkEmailToUser, deleteUser } from '../services/userManager.js';
 import { rankProfiles } from '../lib/rankProfiles.js';
 import { createNotification } from '../services/notificationManager.js';
 import { NotificationType } from '../models/notification.js';
@@ -17,12 +17,16 @@ const router = express.Router();
 const PHONE_REGEX = /^\d{7,15}$/;
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+type LinkResult =
+  | { ok: true; linkedPhone?: string; linkedEmail?: string }
+  | { ok: false; error: string }
+
 async function applyAccountLinking(
   userId: string,
   authProvider: 'phone' | 'google',
   body: Record<string, unknown>
-): Promise<{ linkedPhone?: string; linkedEmail?: string }> {
-  const result: { linkedPhone?: string; linkedEmail?: string } = {};
+): Promise<LinkResult> {
+  const linked: { linkedPhone?: string; linkedEmail?: string } = {};
 
   if (authProvider === 'google') {
     const dialCode = typeof body.phoneDialCode === 'string' ? body.phoneDialCode.replace(/\D/g, '') : '';
@@ -30,10 +34,18 @@ async function applyAccountLinking(
     if (dialCode && number) {
       const fullPhone = `${dialCode}${number}`;
       if (PHONE_REGEX.test(fullPhone)) {
+        const existing = await findUserByPhone(fullPhone);
+        if (existing && existing._id !== userId) {
+          const existingProfile = await readProfile(existing._id);
+          if (existingProfile) {
+            return { ok: false, error: 'This phone number is already registered with another account.' };
+          }
+          await deleteUser(existing._id);
+        }
         try {
-          const linked = await linkPhoneToUser(userId, fullPhone);
-          if (linked) result.linkedPhone = fullPhone;
-        } catch { /* duplicate — phone belongs to another account */ }
+          const ok = await linkPhoneToUser(userId, fullPhone);
+          if (ok) linked.linkedPhone = fullPhone;
+        } catch { /* race: another request beat us — treat as conflict with no profile, safe to ignore */ }
       }
     }
   }
@@ -41,14 +53,22 @@ async function applyAccountLinking(
   if (authProvider === 'phone') {
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     if (email && EMAIL_REGEX.test(email)) {
+      const existing = await findUserByEmail(email);
+      if (existing && existing._id !== userId) {
+        const existingProfile = await readProfile(existing._id);
+        if (existingProfile) {
+          return { ok: false, error: 'This email is already registered with another account.' };
+        }
+        await deleteUser(existing._id);
+      }
       try {
-        const linked = await linkEmailToUser(userId, email);
-        if (linked) result.linkedEmail = email;
-      } catch { /* duplicate — email belongs to another account */ }
+        const ok = await linkEmailToUser(userId, email);
+        if (ok) linked.linkedEmail = email;
+      } catch { /* race: same as above */ }
     }
   }
 
-  return result;
+  return { ok: true, ...linked };
 }
 
 // Valid sort options
@@ -457,16 +477,17 @@ router.post('/',
         return res.status(parsed.status).json({ error: parsed.error });
       }
 
+      const authProvider = req.authenticatedUserAuthProvider ?? 'phone';
+      const linkResult = await applyAccountLinking(userId, authProvider, req.body as Record<string, unknown>);
+      if (!linkResult.ok) {
+        return res.status(409).json({ error: linkResult.error });
+      }
+
       const profile = await createProfile(userId, parsed.data);
 
-      const authProvider = req.authenticatedUserAuthProvider ?? 'phone';
-      const { linkedPhone, linkedEmail } = await applyAccountLinking(
-        userId, authProvider, req.body as Record<string, unknown>
-      );
-
       const newAccessToken = generateAccessToken({
-        phone: linkedPhone ?? req.authenticatedUserPhone,
-        email: linkedEmail ?? req.authenticatedUserEmail,
+        phone: linkResult.linkedPhone ?? req.authenticatedUserPhone,
+        email: linkResult.linkedEmail ?? req.authenticatedUserEmail,
         authProvider,
         userId: req.authenticatedUserId!,
         verified: profile.verified ?? false,
@@ -543,6 +564,12 @@ router.put('/:userId',
 
       const prevFavoriteIds: string[] = existingProfile.favoriteUserIds ?? [];
 
+      const authProvider = req.authenticatedUserAuthProvider ?? 'phone';
+      const linkResult = await applyAccountLinking(userId, authProvider, req.body as Record<string, unknown>);
+      if (!linkResult.ok) {
+        return res.status(409).json({ error: linkResult.error });
+      }
+
       const parsed = parseProfileUpdateBody(req.body, existingProfile, {
         allowVerifiedSubscribed: false,
       });
@@ -566,14 +593,10 @@ router.put('/:userId',
       return res.status(404).json({ error: 'Profile not found' });
     }
 
-    const authProvider = req.authenticatedUserAuthProvider ?? 'phone';
-    const { linkedPhone, linkedEmail } = await applyAccountLinking(
-      userId, authProvider, req.body as Record<string, unknown>
-    );
-    if (linkedPhone || linkedEmail) {
+    if (linkResult.linkedPhone || linkResult.linkedEmail) {
       const newToken = generateAccessToken({
-        phone: linkedPhone ?? req.authenticatedUserPhone,
-        email: linkedEmail ?? req.authenticatedUserEmail,
+        phone: linkResult.linkedPhone ?? req.authenticatedUserPhone,
+        email: linkResult.linkedEmail ?? req.authenticatedUserEmail,
         authProvider,
         userId: req.authenticatedUserId!,
         verified: updatedProfile.verified ?? false,
