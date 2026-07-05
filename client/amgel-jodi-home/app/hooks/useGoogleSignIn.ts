@@ -48,6 +48,7 @@ export function useGoogleSignIn({ onSuccess, onError, setLoading }: UseGoogleSig
         _gisInitialized = true
         ;(window as any).google.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
+          use_fedcm_for_prompt: true,
           callback: async ({ credential }: { credential: string }) => {
             try {
               const res = await fetch(`${API_BASE}/auth/google`, {
@@ -72,9 +73,25 @@ export function useGoogleSignIn({ onSuccess, onError, setLoading }: UseGoogleSig
         })
       }
 
-      // Fallback: clear loading if the prompt is dismissed without completing sign-in
       const loadingTimeout = setTimeout(() => setLoading(false), 30_000)
-      ;(window as any).google.accounts.id.prompt(() => clearTimeout(loadingTimeout))
+      ;(window as any).google.accounts.id.prompt((notification: any) => {
+        clearTimeout(loadingTimeout)
+
+        if (notification.isDismissedMoment()) {
+          const reason = notification.getDismissedReason?.() ?? ''
+          if (reason === 'credential_returned') return // success — callback handles setLoading
+          setLoading(false)
+          if (reason === 'user_cancel') {
+            onError('Google sign-in was cancelled. Tap the button again to retry.')
+          } else {
+            onError('Google sign-in could not be shown. Please use phone number login or try again later.')
+          }
+        } else if (notification.isNotDisplayed()) {
+          // Browser blocked the prompt — happens when user previously denied FedCM/One Tap
+          setLoading(false)
+          onError('Google sign-in is blocked by your browser. Please use phone number login, or re-enable it in your browser\'s site settings.')
+        }
+      })
     } catch {
       onError('Could not load Google Sign-In. Please try again.')
       setLoading(false)
