@@ -7,10 +7,49 @@ import { verifyUserOwnership, verifyUserIdMatch } from '../middleware/verifyOwne
 import { getOtherUserProfileImages, signedUrlsFromKeys } from '../services/fileManager.js';
 import { generateAccessToken, getAccessTokenCookieOptions } from './auth.js';
 import { getConnectionBetweenUsers } from '../services/connectionManager.js';
-import { findUserById } from '../services/userManager.js';
+import { findUserById, linkPhoneToUser, linkEmailToUser } from '../services/userManager.js';
 import { rankProfiles } from '../lib/rankProfiles.js';
+import { createNotification } from '../services/notificationManager.js';
+import { NotificationType } from '../models/notification.js';
 
 const router = express.Router();
+
+const PHONE_REGEX = /^\d{7,15}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+async function applyAccountLinking(
+  userId: string,
+  authProvider: 'phone' | 'google',
+  body: Record<string, unknown>
+): Promise<{ linkedPhone?: string; linkedEmail?: string }> {
+  const result: { linkedPhone?: string; linkedEmail?: string } = {};
+
+  if (authProvider === 'google') {
+    const dialCode = typeof body.phoneDialCode === 'string' ? body.phoneDialCode.replace(/\D/g, '') : '';
+    const number = typeof body.phoneNumber === 'string' ? body.phoneNumber.replace(/\D/g, '') : '';
+    if (dialCode && number) {
+      const fullPhone = `${dialCode}${number}`;
+      if (PHONE_REGEX.test(fullPhone)) {
+        try {
+          const linked = await linkPhoneToUser(userId, fullPhone);
+          if (linked) result.linkedPhone = fullPhone;
+        } catch { /* duplicate — phone belongs to another account */ }
+      }
+    }
+  }
+
+  if (authProvider === 'phone') {
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    if (email && EMAIL_REGEX.test(email)) {
+      try {
+        const linked = await linkEmailToUser(userId, email);
+        if (linked) result.linkedEmail = email;
+      } catch { /* duplicate — email belongs to another account */ }
+    }
+  }
+
+  return result;
+}
 
 // Valid sort options
 const validSortOptions: SortOption[] = [
@@ -333,7 +372,9 @@ router.get('/:userId',
       if (tokenVerified !== dbVerified || tokenSubscribed !== dbSubscribed || tokenGender !== dbGender) {
         // Generate new access token with updated values
         const newAccessToken = generateAccessToken({
-          phone: req.authenticatedUserPhone!,
+          phone: req.authenticatedUserPhone,
+          email: req.authenticatedUserEmail,
+          authProvider: req.authenticatedUserAuthProvider ?? 'phone',
           userId: req.authenticatedUserId!,
           verified: dbVerified,
           subscribed: dbSubscribed,
@@ -418,9 +459,15 @@ router.post('/',
 
       const profile = await createProfile(userId, parsed.data);
 
-      // Generate new access token with gender included
+      const authProvider = req.authenticatedUserAuthProvider ?? 'phone';
+      const { linkedPhone, linkedEmail } = await applyAccountLinking(
+        userId, authProvider, req.body as Record<string, unknown>
+      );
+
       const newAccessToken = generateAccessToken({
-        phone: req.authenticatedUserPhone!,
+        phone: linkedPhone ?? req.authenticatedUserPhone,
+        email: linkedEmail ?? req.authenticatedUserEmail,
+        authProvider,
         userId: req.authenticatedUserId!,
         verified: profile.verified ?? false,
         subscribed: profile.subscribed ?? false,
@@ -494,6 +541,8 @@ router.put('/:userId',
         return res.status(404).json({ error: 'Profile not found' });
       }
 
+      const prevFavoriteIds: string[] = existingProfile.favoriteUserIds ?? [];
+
       const parsed = parseProfileUpdateBody(req.body, existingProfile, {
         allowVerifiedSubscribed: false,
       });
@@ -503,8 +552,35 @@ router.put('/:userId',
 
     const updatedProfile = await updateProfile(userId, parsed.updateData);
 
+    // Fire SHORTLISTED notifications for newly added favorites (anonymous — no actorName)
+    if (parsed.updateData.favoriteUserIds) {
+      const newlyAdded = (parsed.updateData.favoriteUserIds as string[]).filter(
+        (id) => !prevFavoriteIds.includes(id)
+      );
+      for (const targetUserId of newlyAdded) {
+        void createNotification(targetUserId, NotificationType.SHORTLISTED, userId, userId);
+      }
+    }
+
     if (!updatedProfile) {
       return res.status(404).json({ error: 'Profile not found' });
+    }
+
+    const authProvider = req.authenticatedUserAuthProvider ?? 'phone';
+    const { linkedPhone, linkedEmail } = await applyAccountLinking(
+      userId, authProvider, req.body as Record<string, unknown>
+    );
+    if (linkedPhone || linkedEmail) {
+      const newToken = generateAccessToken({
+        phone: linkedPhone ?? req.authenticatedUserPhone,
+        email: linkedEmail ?? req.authenticatedUserEmail,
+        authProvider,
+        userId: req.authenticatedUserId!,
+        verified: updatedProfile.verified ?? false,
+        subscribed: updatedProfile.subscribed ?? false,
+        gender: updatedProfile.gender ?? null,
+      });
+      res.cookie('accessToken', newToken, getAccessTokenCookieOptions());
     }
 
     res.status(200).json({

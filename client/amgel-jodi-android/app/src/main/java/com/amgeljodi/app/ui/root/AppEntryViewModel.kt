@@ -1,32 +1,42 @@
 package com.amgeljodi.app.ui.root
 
+import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.amgeljodi.app.data.auth.AuthActionResult
 import com.amgeljodi.app.data.auth.AuthBootstrapResult
 import com.amgeljodi.app.data.auth.AuthRepository
 import com.amgeljodi.app.data.preferences.AppPreferences
+import com.amgeljodi.app.data.repository.FcmTokenRepository
 import com.amgeljodi.app.util.Constants
+import com.google.firebase.messaging.FirebaseMessaging
 import com.posthog.PostHog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 import javax.inject.Inject
 
 @HiltViewModel
 class AppEntryViewModel @Inject constructor(
     private val appPreferences: AppPreferences,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val fcmTokenRepository: FcmTokenRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AppEntryUiState())
     val uiState: StateFlow<AppEntryUiState> = _uiState.asStateFlow()
+
+    val useDebugUrl: Flow<Boolean> = appPreferences.useDebugUrl
 
     private var resendJob: Job? = null
 
@@ -62,6 +72,7 @@ class AppEntryViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(route = AppRoute.WebView, postLoginUrl = targetUrl, webViewMode = WebViewMode.Authenticated)
                     }
+                    tryRegisterFcmToken()
                 }
 
                 is AuthBootstrapResult.LoggedOut -> {
@@ -75,6 +86,7 @@ class AppEntryViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(route = AppRoute.WebView, postLoginUrl = targetUrl, webViewMode = WebViewMode.Authenticated)
                     }
+                    tryRegisterFcmToken()
                 }
 
                 is AuthBootstrapResult.Error -> {
@@ -91,6 +103,14 @@ class AppEntryViewModel @Inject constructor(
                     }
                 }
             }
+        }
+    }
+
+    fun setDebugUrl(enabled: Boolean) {
+        viewModelScope.launch {
+            appPreferences.setUseDebugUrl(enabled)
+            val targetUrl = if (enabled && Constants.Urls.ALLOW_TOGGLE) Constants.Urls.DEBUG else Constants.Urls.PRODUCTION
+            _uiState.update { it.copy(postLoginUrl = targetUrl) }
         }
     }
 
@@ -249,6 +269,7 @@ class AppEntryViewModel @Inject constructor(
                             infoMessage = null
                         )
                     }
+                    tryRegisterFcmToken()
                 }
 
                 is AuthActionResult.Error -> {
@@ -259,6 +280,32 @@ class AppEntryViewModel @Inject constructor(
                             "error_message" to result.message
                         )
                     )
+                    _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
+                }
+            }
+        }
+    }
+
+    fun signInWithGoogle(context: Context) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            when (val result = authRepository.signInWithGoogle(context)) {
+                is AuthActionResult.Success -> {
+                    PostHog.capture(event = "login_completed", properties = mapOf("method" to "google"))
+                    authRepository.syncStoredSessionToWebView()
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            route = AppRoute.WebView,
+                            webViewMode = WebViewMode.Authenticated,
+                            errorMessage = null,
+                            infoMessage = null
+                        )
+                    }
+                    tryRegisterFcmToken()
+                }
+                is AuthActionResult.Error -> {
+                    PostHog.capture(event = "login_failed", properties = mapOf("method" to "google", "error_message" to result.message))
                     _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
                 }
             }
@@ -317,6 +364,26 @@ class AppEntryViewModel @Inject constructor(
         }
     }
 
+    private fun tryRegisterFcmToken() {
+        viewModelScope.launch {
+            try {
+                val token = suspendCoroutine<String?> { cont ->
+                    FirebaseMessaging.getInstance().token
+                        .addOnSuccessListener { cont.resume(it) }
+                        .addOnFailureListener { cont.resume(null) }
+                }
+                if (token != null) {
+                    val success = fcmTokenRepository.registerToken(token)
+                    if (success) {
+                        PostHog.capture(event = "fcm_token_registered")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "FCM token registration failed", e)
+            }
+        }
+    }
+
     private fun startResendTimer() {
         resendJob?.cancel()
         resendJob = viewModelScope.launch {
@@ -335,6 +402,8 @@ class AppEntryViewModel @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "AppEntryViewModel"
+
         val supportedCountries = listOf(
             CountryOption(code = "IN", name = "India", dialCode = "91", flag = "\uD83C\uDDEE\uD83C\uDDF3"),
             CountryOption(code = "US", name = "United States", dialCode = "1", flag = "\uD83C\uDDFA\uD83C\uDDF8"),

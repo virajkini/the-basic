@@ -7,6 +7,7 @@ import {
   markAllAsRead,
 } from '../services/notificationManager.js';
 import { addClient, removeClient } from '../services/sseManager.js';
+import { getDatabase } from '../db/mongodb.js';
 
 const router = express.Router();
 
@@ -41,6 +42,8 @@ router.get('/',
           refId: notif.refId,
           actorUserId: notif.actorUserId,
           actorName: notif.actorName,
+          title: notif.title,
+          body: notif.body,
           read: notif.read,
           createdAt: notif.createdAt,
         })),
@@ -117,6 +120,8 @@ router.patch('/:id/read',
           refId: notification.refId,
           actorUserId: notification.actorUserId,
           actorName: notification.actorName,
+          title: notification.title,
+          body: notification.body,
           read: notification.read,
           createdAt: notification.createdAt,
         },
@@ -157,6 +162,73 @@ router.patch('/read-all',
         error: 'Failed to mark all notifications as read',
         details: error instanceof Error ? error.message : 'Unknown error',
       });
+    }
+  }
+);
+
+/**
+ * POST /api/notifications/fcm-token
+ * Register or update the FCM push token for the authenticated user
+ * Body: { token: string }
+ */
+router.post('/fcm-token',
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const userId = req.authenticatedUserId;
+      if (!userId) {
+        return res.status(401).json({ error: 'User ID not found in token' });
+      }
+
+      const { token } = req.body;
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ error: 'token is required' });
+      }
+
+      const db = await getDatabase();
+
+      // Remove this token from any other profile first (device changed hands / re-login)
+      await db.collection('profiles').updateMany(
+        { fcmToken: token, _id: { $ne: userId } } as any,
+        { $unset: { fcmToken: '' } }
+      );
+
+      await db.collection('profiles').updateOne(
+        { _id: userId } as any,
+        { $set: { fcmToken: token, updatedAt: new Date() } }
+      );
+
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error('Error registering FCM token:', error);
+      res.status(500).json({ error: 'Failed to register FCM token' });
+    }
+  }
+);
+
+/**
+ * GET /api/notifications/fcm-token-status
+ * Returns whether the authenticated user has a registered FCM token
+ */
+router.get('/fcm-token-status',
+  authenticateToken,
+  async (req, res) => {
+    try {
+      const userId = req.authenticatedUserId;
+      if (!userId) {
+        return res.status(401).json({ error: 'User ID not found in token' });
+      }
+
+      const db = await getDatabase();
+      const profile = await db.collection('profiles').findOne(
+        { _id: userId } as any,
+        { projection: { fcmToken: 1 } }
+      );
+
+      res.status(200).json({ success: true, hasToken: !!(profile as any)?.fcmToken });
+    } catch (error) {
+      console.error('Error checking FCM token status:', error);
+      res.status(500).json({ error: 'Failed to check FCM token status' });
     }
   }
 );

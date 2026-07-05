@@ -130,7 +130,17 @@ export default function Header() {
                   : 'text-myColor-700 hover:text-myColor-900 hover:bg-myColor-50'
               }`}
             >
-              My Profile
+              Edit Profile
+            </Link>
+            <Link
+              href="/profile-pdf"
+              className={`px-4 py-2 rounded-lg transition-colors font-medium ${
+                isActive('/profile-pdf')
+                  ? 'text-myColor-900 bg-myColor-50'
+                  : 'text-myColor-700 hover:text-myColor-900 hover:bg-myColor-50'
+              }`}
+            >
+              Bio-Data
             </Link>
 
             {/* Desktop More Menu */}
@@ -258,6 +268,16 @@ export default function Header() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                       </svg>
                       <span>Edit Profile</span>
+                    </Link>
+                    <Link
+                      href="/profile-pdf"
+                      onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-myColor-50 transition-colors"
+                    >
+                      <svg className="w-5 h-5 text-myColor-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <span>Create Bio-Data</span>
                     </Link>
                     <div className="border-t border-gray-100 my-1" />
                     {!isAndroidApp && (

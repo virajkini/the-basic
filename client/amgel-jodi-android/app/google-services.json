@@ -1,4 +1,47 @@
 {
-  "_comment": "This file is not needed. Firebase is not configured.",
-  "_instructions": "Delete this file. If you want to add Firebase later, download google-services.json from Firebase Console."
+  "project_info": {
+    "project_number": "125628505543",
+    "project_id": "amgel-jodi",
+    "storage_bucket": "amgel-jodi.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:125628505543:android:bf93235f249d24eaf98de2",
+        "android_client_info": {
+          "package_name": "com.amgeljodi.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "125628505543-66u4q8u0814eq1k1rh5vaj7fpiuronp5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.amgeljodi.app",
+            "certificate_hash": "7c57926bce0d087968df540d54ca0f32db774263"
+          }
+        },
+        {
+          "client_id": "125628505543-246ovq7i54uft180if48pdqip7iej6mv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDU4OAUIkuxiZZCWzHmafAd3Ow4xsf6WIs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "125628505543-246ovq7i54uft180if48pdqip7iej6mv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
 }

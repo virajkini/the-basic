@@ -1,18 +1,39 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId, Db } from 'mongodb';
 import { getDatabase } from '../db/mongodb.js';
 import { Notification, NotificationType } from '../models/notification.js';
+import { sendPushNotification } from './fcmService.js';
+import { sendToUser } from './sseManager.js';
 
 const COLLECTION_NAME = 'notifications';
 
-/**
- * Create a new notification
- * @param userId - User receiving the notification
- * @param type - Type of notification
- * @param refId - Reference ID (e.g., connectionId)
- * @param actorUserId - User who triggered the notification
- * @param actorName - Name of the user who triggered the notification (for display)
- * @returns Created notification object
- */
+function getPushText(type: NotificationType, actorName?: string): { title: string; body: string } {
+  const name = actorName || 'Someone';
+  switch (type) {
+    case NotificationType.SHORTLISTED:
+      return {
+        title: '❤️ You caught someone\'s attention!',
+        body: 'Someone has shortlisted your profile. Open the app to discover more matches.',
+      };
+    case NotificationType.REQUEST_RECEIVED:
+      return {
+        title: '❤️ New interest received',
+        body: `${name} wants to connect with you. Open the app and review their profile now.`,
+      };
+    case NotificationType.REQUEST_ACCEPTED:
+      return {
+        title: '🎉 It\'s a match!',
+        body: `Your request has been accepted by ${name}. You can now view their contact details.`,
+      };
+    case NotificationType.REQUEST_REJECTED:
+      return {
+        title: `Your request wasn't accepted by ${name}`,
+        body: 'Don\'t worry—there are many more compatible profiles waiting for you.',
+      };
+    default:
+      return { title: 'Amgel Jodi', body: 'You have a new notification' };
+  }
+}
+
 export async function createNotification(
   userId: string,
   type: NotificationType,
@@ -34,7 +55,105 @@ export async function createNotification(
   };
 
   const result = await collection.insertOne(notification);
-  return { ...notification, _id: result.insertedId };
+  const created = { ...notification, _id: result.insertedId };
+
+  sendToUser(userId, {
+    type: 'NEW_NOTIFICATION',
+    data: { notificationId: created._id.toString(), type },
+  });
+
+  // Fire FCM push if user has a registered token
+  void sendPushForNotification(db, userId, type, actorName, created._id.toString(), refId);
+
+  return created;
+}
+
+export async function createCustomNotification(
+  userId: string,
+  actorUserId: string,
+  title: string,
+  body: string,
+  imageUrl?: string
+): Promise<Notification> {
+  const db = await getDatabase();
+  const collection = db.collection<Notification>(COLLECTION_NAME);
+
+  const notification: Notification = {
+    userId,
+    type: NotificationType.CUSTOM,
+    actorUserId,
+    title,
+    body,
+    read: false,
+    createdAt: new Date(),
+  };
+
+  const result = await collection.insertOne(notification);
+  const created = { ...notification, _id: result.insertedId };
+
+  sendToUser(userId, {
+    type: 'NEW_NOTIFICATION',
+    data: { notificationId: created._id.toString(), type: NotificationType.CUSTOM },
+  });
+
+  void sendPushForCustomNotification(db, userId, title, body, created._id.toString(), imageUrl);
+
+  return created;
+}
+
+async function sendPushForNotification(
+  db: Db,
+  userId: string,
+  type: NotificationType,
+  actorName: string | undefined,
+  notificationId: string,
+  refId: string | undefined
+): Promise<void> {
+  try {
+    const profile = await db.collection<{ fcmToken?: string }>('profiles').findOne(
+      { _id: userId } as any,
+      { projection: { fcmToken: 1 } }
+    );
+    if (!profile?.fcmToken) return;
+
+    const { title, body } = getPushText(type, actorName);
+
+    await sendPushNotification(profile.fcmToken, title, body, {
+      notificationId,
+      type,
+      channelId: 'connections',
+      deepLink: 'https://app.amgeljodi.com/dashboard',
+    });
+  } catch (error) {
+    console.error('[FCM] sendPushForNotification error:', error);
+  }
+}
+
+async function sendPushForCustomNotification(
+  db: Db,
+  userId: string,
+  title: string,
+  body: string,
+  notificationId: string,
+  imageUrl?: string
+): Promise<void> {
+  try {
+    const profile = await db.collection<{ fcmToken?: string }>('profiles').findOne(
+      { _id: userId } as any,
+      { projection: { fcmToken: 1 } }
+    );
+    if (!profile?.fcmToken) return;
+
+    await sendPushNotification(
+      profile.fcmToken,
+      title,
+      body,
+      { notificationId, type: NotificationType.CUSTOM, channelId: 'custom' },
+      imageUrl
+    );
+  } catch (error) {
+    console.error('[FCM] sendPushForCustomNotification error:', error);
+  }
 }
 
 /**

@@ -4,7 +4,9 @@ import { createContext, useContext, useEffect, ReactNode } from 'react'
 import posthog from 'posthog-js'
 
 interface User {
-  phone: string
+  phone?: string
+  email?: string
+  authProvider: 'phone' | 'google'
   userId: string
   verified: boolean
   subscribed: boolean
@@ -27,6 +29,8 @@ export function AuthProvider({
     if (user?.userId) {
       posthog.identify(user.userId, {
         phone: user.phone,
+        email: user.email,
+        auth_provider: user.authProvider,
         verified: user.verified,
         subscribed: user.subscribed,
       })

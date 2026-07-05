@@ -16,10 +16,11 @@ if (!MONGODB_URI) {
 async function safeCreateIndex(
   collection: Collection,
   keys: Record<string, 1 | -1>,
-  name: string
+  name: string,
+  options: Record<string, unknown> = {}
 ): Promise<boolean> {
   try {
-    await collection.createIndex(keys, { name });
+    await collection.createIndex(keys, { name, ...options });
     return true;
   } catch (error: any) {
     // Index already exists (possibly with different name) - that's fine
@@ -29,6 +30,7 @@ async function safeCreateIndex(
     throw error;
   }
 }
+
 
 async function createIndexes() {
   const client = new MongoClient(MONGODB_URI!);
@@ -60,64 +62,62 @@ async function createIndexes() {
 
     console.log('\nCreating indexes for users collection...');
     const usersCollection = db.collection('users');
-    await usersCollection.createIndex(
-      { phone: 1 },
-      { unique: true, name: 'unique_user_phone' }
-    );
-    console.log('  ✓ Created unique index: phone');
-    await usersCollection.createIndex(
-      { createdAt: -1 },
-      { name: 'users_created_at' }
-    );
-    console.log('  ✓ Created index: createdAt');
+    if (await safeCreateIndex(usersCollection, { phone: 1 }, 'unique_user_phone', { unique: true, sparse: true })) {
+      console.log('  ✓ Created sparse unique index: phone');
+    } else {
+      console.log('  ○ Index already exists: phone');
+    }
+    if (await safeCreateIndex(usersCollection, { createdAt: -1 }, 'users_created_at')) {
+      console.log('  ✓ Created index: createdAt');
+    } else {
+      console.log('  ○ Index already exists: createdAt');
+    }
+    // Sparse + unique: Google users have email, phone users don't — sparse skips null/missing docs
+    if (await safeCreateIndex(usersCollection, { email: 1 }, 'unique_user_email', { unique: true, sparse: true })) {
+      console.log('  ✓ Created sparse unique index: email');
+    } else {
+      console.log('  ○ Index already exists: email');
+    }
 
     // Create connections collection indexes
     console.log('\nCreating indexes for connections collection...');
     const connectionsCollection = db.collection('connections');
 
-    // Unique index to prevent duplicate requests between same users
-    await connectionsCollection.createIndex(
-      { fromUserId: 1, toUserId: 1 },
-      { unique: true, name: 'unique_connection_pair' }
-    );
-    console.log('  ✓ Created unique index: fromUserId + toUserId');
-
-    // Index for fetching received requests
-    await connectionsCollection.createIndex(
-      { toUserId: 1, status: 1, updatedAt: -1 },
-      { name: 'received_requests' }
-    );
-    console.log('  ✓ Created index: toUserId + status + updatedAt (received requests)');
-
-    // Index for fetching sent requests
-    await connectionsCollection.createIndex(
-      { fromUserId: 1, status: 1, updatedAt: -1 },
-      { name: 'sent_requests' }
-    );
-    console.log('  ✓ Created index: fromUserId + status + updatedAt (sent requests)');
+    if (await safeCreateIndex(connectionsCollection, { fromUserId: 1, toUserId: 1 }, 'unique_connection_pair')) {
+      console.log('  ✓ Created unique index: fromUserId + toUserId');
+    } else {
+      console.log('  ○ Index already exists: fromUserId + toUserId');
+    }
+    if (await safeCreateIndex(connectionsCollection, { toUserId: 1, status: 1, updatedAt: -1 }, 'received_requests')) {
+      console.log('  ✓ Created index: toUserId + status + updatedAt (received requests)');
+    } else {
+      console.log('  ○ Index already exists: received_requests');
+    }
+    if (await safeCreateIndex(connectionsCollection, { fromUserId: 1, status: 1, updatedAt: -1 }, 'sent_requests')) {
+      console.log('  ✓ Created index: fromUserId + status + updatedAt (sent requests)');
+    } else {
+      console.log('  ○ Index already exists: sent_requests');
+    }
 
     // Create notifications collection indexes
     console.log('\nCreating indexes for notifications collection...');
     const notificationsCollection = db.collection('notifications');
 
-    // Index for fetching user's notifications
-    await notificationsCollection.createIndex(
-      { userId: 1, createdAt: -1 },
-      { name: 'user_notifications' }
-    );
-    console.log('  ✓ Created index: userId + createdAt (user notifications)');
-
-    // Index for counting unread notifications
-    await notificationsCollection.createIndex(
-      { userId: 1, read: 1 },
-      { name: 'unread_notifications' }
-    );
-    console.log('  ✓ Created index: userId + read (unread count)');
-    await notificationsCollection.createIndex(
-      { refId: 1, type: 1 },
-      { name: 'notification_ref_lookup' }
-    );
-    console.log('  ✓ Created index: refId + type');
+    if (await safeCreateIndex(notificationsCollection, { userId: 1, createdAt: -1 }, 'user_notifications')) {
+      console.log('  ✓ Created index: userId + createdAt (user notifications)');
+    } else {
+      console.log('  ○ Index already exists: user_notifications');
+    }
+    if (await safeCreateIndex(notificationsCollection, { userId: 1, read: 1 }, 'unread_notifications')) {
+      console.log('  ✓ Created index: userId + read (unread count)');
+    } else {
+      console.log('  ○ Index already exists: unread_notifications');
+    }
+    if (await safeCreateIndex(notificationsCollection, { refId: 1, type: 1 }, 'notification_ref_lookup')) {
+      console.log('  ✓ Created index: refId + type');
+    } else {
+      console.log('  ○ Index already exists: notification_ref_lookup');
+    }
 
     // Create profiles collection indexes
     console.log('\nCreating indexes for profiles collection...');
@@ -175,6 +175,14 @@ async function createIndexes() {
       console.log('  ✓ Created index: firstName (name search)');
     } else {
       console.log('  ○ Index already exists: firstName');
+    }
+
+    // Sparse index for FCM token deduplication — allows fast lookup when a new device
+    // registers and we need to clear the token off any other profile that holds it
+    if (await safeCreateIndex(profilesCollection, { fcmToken: 1 }, 'fcm_token_lookup', { sparse: true })) {
+      console.log('  ✓ Created sparse index: fcmToken (push token deduplication)');
+    } else {
+      console.log('  ○ Index already exists: fcmToken');
     }
 
     console.log('\nCreating indexes for connection_quotas collection...');

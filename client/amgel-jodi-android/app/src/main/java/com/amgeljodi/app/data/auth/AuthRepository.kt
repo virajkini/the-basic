@@ -1,8 +1,15 @@
 package com.amgeljodi.app.data.auth
 
+import android.content.Context
 import android.util.Log
 import android.webkit.CookieManager
+import androidx.credentials.CredentialManager
+import androidx.credentials.GetCredentialRequest
+import androidx.credentials.exceptions.GetCredentialException
+import com.amgeljodi.app.BuildConfig
 import com.amgeljodi.app.util.Constants
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import kotlinx.coroutines.Dispatchers
@@ -107,6 +114,54 @@ class AuthRepository @Inject constructor(
         }
     }
 
+    suspend fun signInWithGoogle(context: Context): AuthActionResult {
+        if (BuildConfig.GOOGLE_WEB_CLIENT_ID.isBlank()) {
+            return AuthActionResult.Error("Google Sign-In is not configured.")
+        }
+
+        val credentialManager = CredentialManager.create(context)
+        val signInOption = GetSignInWithGoogleOption.Builder(BuildConfig.GOOGLE_WEB_CLIENT_ID).build()
+        val request = GetCredentialRequest.Builder()
+            .addCredentialOption(signInOption)
+            .build()
+
+        val idToken = try {
+            val result = credentialManager.getCredential(context, request)
+            GoogleIdTokenCredential.createFrom(result.credential.data).idToken
+        } catch (e: GetCredentialException) {
+            Log.e(TAG, "Google credential failed", e)
+            return AuthActionResult.Error("Google Sign-In was cancelled or failed. Please try again.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Google sign-in unexpected error", e)
+            return AuthActionResult.Error("Google Sign-In failed. Please try again.")
+        }
+
+        return withContext(Dispatchers.IO) {
+            try {
+                client.newCall(
+                    Request.Builder()
+                        .url("${Constants.Urls.API}/auth/google")
+                        .post(jsonBody(mapOf("idToken" to idToken)))
+                        .header("Content-Type", "application/json")
+                        .header("Accept", "application/json")
+                        .build()
+                ).execute().use { res ->
+                    val body = res.body?.string().orEmpty()
+                    if (!res.isSuccessful) {
+                        return@withContext AuthActionResult.Error(extractErrorMessage(body))
+                    }
+                    val token = extractAccessToken(res.headers.values("Set-Cookie"))
+                        ?: return@withContext AuthActionResult.Error("Session could not be saved. Please try again.")
+                    persistSession(token)
+                    AuthActionResult.Success
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Google auth API call failed", e)
+                AuthActionResult.Error("Couldn't complete login. Please try again.")
+            }
+        }
+    }
+
     suspend fun clearSession() {
         secureSessionStore.clear()
         withContext(Dispatchers.Main) {
@@ -152,20 +207,32 @@ class AuthRepository @Inject constructor(
 
     private suspend fun syncCookies(token: String) {
         withContext(Dispatchers.Main) {
-            val cookie = buildCookie(token)
             val cookieManager = CookieManager.getInstance()
             cookieManager.setAcceptCookie(true)
-            cookieManager.setCookie(Constants.Urls.API, cookie)
-            cookieManager.setCookie(Constants.Urls.PRODUCTION, cookie)
-            cookieManager.setCookie(Constants.Urls.HOME, cookie)
-            cookieManager.setCookie("https://amgeljodi.com", cookie)
-            cookieManager.setCookie("https://stage.amgeljodi.com", cookie)
+
+            // Production: Domain=.amgeljodi.com covers all subdomains (app, api, www)
+            cookieManager.setCookie("https://app.amgeljodi.com", buildCookie(token))
+
+            // Local dev (debug builds only — ALLOW_TOGGLE is false in release)
+            if (Constants.Urls.ALLOW_TOGGLE && Constants.Urls.DEBUG.startsWith("http://localhost")) {
+                val local = buildLocalCookie(token)
+                cookieManager.setCookie(Constants.Urls.DEBUG, local)
+                // Only set API cookie if it's also pointing at localhost
+                if (Constants.Urls.API.startsWith("http://localhost")) {
+                    cookieManager.setCookie(Constants.Urls.API, local)
+                }
+            }
+
             cookieManager.flush()
         }
     }
 
     private fun buildCookie(token: String): String {
         return "${Constants.Auth.ACCESS_TOKEN_COOKIE}=$token; Path=/; Domain=.amgeljodi.com; Secure; HttpOnly; SameSite=Lax"
+    }
+
+    private fun buildLocalCookie(token: String): String {
+        return "${Constants.Auth.ACCESS_TOKEN_COOKIE}=$token; Path=/"
     }
 
     private fun cookieHeader(token: String): String = "${Constants.Auth.ACCESS_TOKEN_COOKIE}=$token"

@@ -18,6 +18,8 @@ interface DropdownProps {
   error?: boolean
   disabled?: boolean
   searchable?: boolean
+  /** Overrides what's shown in the trigger button (list still shows option.label) */
+  triggerLabel?: string
 }
 
 export default function Dropdown({
@@ -30,6 +32,7 @@ export default function Dropdown({
   error = false,
   disabled = false,
   searchable = false,
+  triggerLabel,
 }: DropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -232,7 +235,7 @@ export default function Dropdown({
         } ${disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer'}`}
       >
         <span className={selectedOption ? 'text-myColor-900' : 'text-myColor-300'}>
-          {selectedOption ? selectedOption.label : placeholder}
+          {selectedOption ? (triggerLabel ?? selectedOption.label) : placeholder}
         </span>
         <svg
           className="w-5 h-5 text-myColor-400"

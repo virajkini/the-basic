@@ -7,13 +7,16 @@ import { authFetch } from '../../utils/authFetch'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
-type NotificationType = 'REQUEST_RECEIVED' | 'REQUEST_ACCEPTED' | 'REQUEST_REJECTED'
+type NotificationType = 'REQUEST_RECEIVED' | 'REQUEST_ACCEPTED' | 'REQUEST_REJECTED' | 'SHORTLISTED' | 'CUSTOM'
 
 interface Notification {
   _id: string
   type: NotificationType
-  refId: string
+  refId?: string
   actorUserId: string
+  actorName?: string
+  title?: string
+  body?: string
   read: boolean
   createdAt: string
 }
@@ -49,9 +52,10 @@ export default function NotificationsPage() {
     }
   }, [])
 
-  // Initial fetch
+  // Initial fetch + mark all as read
   useEffect(() => {
     fetchNotifications()
+    authFetch(`${API_BASE}/notifications/read-all`, { method: 'PATCH' }).catch(() => {})
   }, [fetchNotifications])
 
   // Infinite scroll
@@ -99,22 +103,33 @@ export default function NotificationsPage() {
   }
 
   // Get notification message
-  const getNotificationMessage = (type: NotificationType): { title: string; description: string } => {
-    switch (type) {
+  const getNotificationMessage = (notification: Notification): { title: string; description: string } => {
+    const name = notification.actorName || 'Someone'
+    switch (notification.type) {
+      case 'SHORTLISTED':
+        return {
+          title: '❤️ You caught someone\'s attention!',
+          description: 'Someone has shortlisted your profile. Open the app to discover more matches.',
+        }
       case 'REQUEST_RECEIVED':
         return {
-          title: 'New Connection Request',
-          description: 'Someone sent you a connection request',
+          title: '❤️ New interest received',
+          description: `${name} wants to connect with you. Open the app and review their profile now.`,
         }
       case 'REQUEST_ACCEPTED':
         return {
-          title: 'Request Accepted',
-          description: 'Your connection request was accepted',
+          title: '🎉 It\'s a match!',
+          description: `Your request has been accepted by ${name}. You can now view their contact details.`,
         }
       case 'REQUEST_REJECTED':
         return {
-          title: 'Request Declined',
-          description: 'Your connection request was declined',
+          title: `Request not accepted by ${name}`,
+          description: 'Don\'t worry—there are many more compatible profiles waiting for you.',
+        }
+      case 'CUSTOM':
+        return {
+          title: notification.title || 'Amgel Jodi',
+          description: notification.body || '',
         }
       default:
         return {
@@ -127,6 +142,14 @@ export default function NotificationsPage() {
   // Get notification icon
   const getNotificationIcon = (type: NotificationType): JSX.Element => {
     switch (type) {
+      case 'SHORTLISTED':
+        return (
+          <div className="w-12 h-12 rounded-full bg-pink-100 flex items-center justify-center">
+            <svg className="w-6 h-6 text-pink-600" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+            </svg>
+          </div>
+        )
       case 'REQUEST_RECEIVED':
         return (
           <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
@@ -148,6 +171,22 @@ export default function NotificationsPage() {
           <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
             <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+        )
+      case 'CUSTOM':
+        return (
+          <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+            <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            </svg>
+          </div>
+        )
+      default:
+        return (
+          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+            <svg className="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
           </div>
         )
@@ -176,10 +215,11 @@ export default function NotificationsPage() {
 
   // Get link for notification
   const getNotificationLink = (notification: Notification): string => {
-    if (notification.type === 'REQUEST_RECEIVED') {
-      return '/connections'
+    switch (notification.type) {
+      case 'REQUEST_RECEIVED': return '/connections?tab=interested'
+      case 'REQUEST_ACCEPTED': return '/connections?tab=matches'
+      default: return '/dashboard'
     }
-    return '/connections'
   }
 
   const unreadCount = notifications.filter((n) => !n.read).length
@@ -250,7 +290,7 @@ export default function NotificationsPage() {
         ) : (
           <div className="space-y-3">
             {notifications.map((notification) => {
-              const message = getNotificationMessage(notification.type)
+              const message = getNotificationMessage(notification)
               return (
                 <Link
                   key={notification._id}
@@ -258,11 +298,7 @@ export default function NotificationsPage() {
                   onClick={() => {
                     posthog.capture('notification_clicked', {
                       notification_type: notification.type,
-                      was_unread: !notification.read,
                     })
-                    if (!notification.read) {
-                      markAsRead(notification._id)
-                    }
                   }}
                   className={`block bg-white rounded-xl p-4 shadow-sm border transition-all hover:shadow-md ${
                     !notification.read

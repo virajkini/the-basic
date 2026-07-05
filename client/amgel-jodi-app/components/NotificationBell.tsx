@@ -7,14 +7,16 @@ import { authFetch } from '../app/utils/authFetch'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
-type NotificationType = 'REQUEST_RECEIVED' | 'REQUEST_ACCEPTED' | 'REQUEST_REJECTED'
+type NotificationType = 'REQUEST_RECEIVED' | 'REQUEST_ACCEPTED' | 'REQUEST_REJECTED' | 'SHORTLISTED' | 'CUSTOM'
 
 interface Notification {
   _id: string
   type: NotificationType
-  refId: string
+  refId?: string
   actorUserId: string
   actorName?: string
+  title?: string
+  body?: string
   read: boolean
   createdAt: string
 }
@@ -93,12 +95,16 @@ export default function NotificationBell() {
     fetchUnreadCount(true) // broadcast to all instances (desktop + mobile)
   }, [])
 
-  // Fetch notifications when dropdown opens for the first time
+  // Fetch notifications and mark all as read when dropdown opens
   useEffect(() => {
-    if (isOpen && !hasLoadedNotifications) {
+    if (!isOpen) return
+    if (!hasLoadedNotifications) {
       fetchNotifications()
     }
-  }, [isOpen, hasLoadedNotifications])
+    if (unreadCount > 0) {
+      markAllAsRead()
+    }
+  }, [isOpen])
 
   // SSE connection for real-time updates (single global connection)
   useEffect(() => {
@@ -176,21 +182,6 @@ export default function NotificationBell() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Mark notification as read
-  const markAsRead = async (notificationId: string) => {
-    try {
-      await authFetch(`${API_BASE}/notifications/${notificationId}/read`, {
-        method: 'PATCH',
-      })
-      setNotifications((prev) =>
-        prev.map((n) => (n._id === notificationId ? { ...n, read: true } : n))
-      )
-      setUnreadCount((prev) => Math.max(0, prev - 1))
-    } catch (error) {
-      console.error('Error marking notification as read:', error)
-    }
-  }
-
   // Mark all as read
   const markAllAsRead = async () => {
     try {
@@ -205,22 +196,35 @@ export default function NotificationBell() {
   }
 
   // Get notification message
-  const getNotificationMessage = (type: NotificationType): string => {
-    switch (type) {
+  const getNotificationMessage = (notification: Notification): { title: string; body: string } => {
+    const name = notification.actorName || 'Someone'
+    switch (notification.type) {
+      case 'SHORTLISTED':
+        return { title: '❤️ You caught someone\'s attention!', body: 'Someone has shortlisted your profile.' }
       case 'REQUEST_RECEIVED':
-        return 'sent you a connection request'
+        return { title: '❤️ New interest received', body: `${name} wants to connect with you.` }
       case 'REQUEST_ACCEPTED':
-        return 'accepted your connection request'
+        return { title: '🎉 It\'s a match!', body: `Your request has been accepted by ${name}.` }
       case 'REQUEST_REJECTED':
-        return 'declined your connection request'
+        return { title: `Request not accepted by ${name}`, body: 'Don\'t worry—there are many more compatible profiles.' }
+      case 'CUSTOM':
+        return { title: notification.title || 'Amgel Jodi', body: notification.body || '' }
       default:
-        return 'sent you a notification'
+        return { title: 'Amgel Jodi', body: 'You have a new notification' }
     }
   }
 
   // Get notification icon
   const getNotificationIcon = (type: NotificationType): JSX.Element => {
     switch (type) {
+      case 'SHORTLISTED':
+        return (
+          <div className="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center">
+            <svg className="w-4 h-4 text-pink-600" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+            </svg>
+          </div>
+        )
       case 'REQUEST_RECEIVED':
         return (
           <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
@@ -245,6 +249,22 @@ export default function NotificationBell() {
             </svg>
           </div>
         )
+      case 'CUSTOM':
+        return (
+          <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+            <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+            </svg>
+          </div>
+        )
+      default:
+        return (
+          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+            <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </div>
+        )
     }
   }
 
@@ -262,28 +282,21 @@ export default function NotificationBell() {
   }
 
   // Get redirect URL for notification type
-  const getNotificationRedirectUrl = (type: NotificationType): string | null => {
+  const getNotificationRedirectUrl = (type: NotificationType): string => {
     switch (type) {
       case 'REQUEST_RECEIVED':
         return '/connections?tab=interested'
       case 'REQUEST_ACCEPTED':
         return '/connections?tab=matches'
       default:
-        return null // No redirect for rejected or other types
+        return '/dashboard'
     }
   }
 
   // Handle notification click
   const handleNotificationClick = (notification: Notification) => {
-    if (!notification.read) {
-      markAsRead(notification._id)
-    }
     setIsOpen(false)
-
-    const redirectUrl = getNotificationRedirectUrl(notification.type)
-    if (redirectUrl) {
-      router.push(redirectUrl)
-    }
+    router.push(getNotificationRedirectUrl(notification.type))
   }
 
   return (
@@ -316,14 +329,6 @@ export default function NotificationBell() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <h3 className="font-semibold text-gray-900">Notifications</h3>
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllAsRead}
-                className="text-xs text-myColor-600 hover:text-myColor-700 font-medium"
-              >
-                Mark all as read
-              </button>
-            )}
           </div>
 
           {/* Notifications List */}
@@ -359,10 +364,15 @@ export default function NotificationBell() {
                   >
                     {getNotificationIcon(notification.type)}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-900">
-                        <span className="font-medium">{notification.actorName || 'Someone'}</span>{' '}
-                        {getNotificationMessage(notification.type)}
-                      </p>
+                      {(() => {
+                        const msg = getNotificationMessage(notification)
+                        return (
+                          <p className="text-sm text-gray-900">
+                            <span className="font-medium">{msg.title}</span>
+                            {msg.body && <span className="text-gray-600"> — {msg.body}</span>}
+                          </p>
+                        )
+                      })()}
                       <p className="text-xs text-gray-500 mt-0.5">
                         {formatTimeAgo(notification.createdAt)}
                       </p>

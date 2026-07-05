@@ -1,7 +1,9 @@
 package com.amgeljodi.app.bridge
 
+import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -9,6 +11,7 @@ import android.os.VibratorManager
 import android.provider.Settings
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import androidx.core.content.ContextCompat
 import com.amgeljodi.app.util.Constants
 import com.google.gson.Gson
 import com.posthog.PostHog
@@ -200,6 +203,47 @@ class WebViewBridge @Inject constructor(
     }
 
     /**
+     * Get current notification permission status (synchronous)
+     * Returns: "granted", "denied", or "not_determined"
+     */
+    @JavascriptInterface
+    fun getNotificationPermissionStatus(): String {
+        return when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> {
+                if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                    "granted"
+                } else {
+                    "denied"
+                }
+            }
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.N -> {
+                val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                if (manager.areNotificationsEnabled()) "granted" else "denied"
+            }
+            else -> "granted"
+        }
+    }
+
+    /**
+     * Request notification permission (Android 13+).
+     * Result sent via onNativeMessage("notificationPermissionResult", { status: "granted"|"denied" })
+     */
+    @JavascriptInterface
+    fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                sendToWeb("notificationPermissionResult", mapOf("status" to "granted"))
+                return
+            }
+            scope.launch {
+                _bridgeEvents.emit(BridgeEvent.RequestNotificationPermission)
+            }
+        } else {
+            sendToWeb("notificationPermissionResult", mapOf("status" to "granted"))
+        }
+    }
+
+    /**
      * Log message from web (for debugging)
      */
     @JavascriptInterface
@@ -216,4 +260,5 @@ sealed class BridgeEvent {
     data object TakePhoto : BridgeEvent()
     data object CheckBiometric : BridgeEvent()
     data object AuthenticateBiometric : BridgeEvent()
+    data object RequestNotificationPermission : BridgeEvent()
 }

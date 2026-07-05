@@ -99,9 +99,6 @@ export function parseFavoriteUserIdsInput(
 type CreateFail = { ok: false; status: number; error: string };
 type CreateOk = { ok: true; data: Omit<Profile, '_id' | 'createdAt' | 'updatedAt'> };
 
-/**
- * Validate body for profile creation (same rules as POST /api/profiles).
- */
 export function parseCreateProfileBody(body: unknown): CreateFail | CreateOk {
   if (!body || typeof body !== 'object') {
     return { ok: false, status: 400, error: 'Invalid request body' };

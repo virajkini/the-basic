@@ -12,7 +12,6 @@ object Constants {
         val PRODUCTION = BuildConfig.BASE_URL
         val DEBUG = BuildConfig.DEBUG_URL
         val API = BuildConfig.API_BASE_URL
-        val HOME = BuildConfig.HOME_URL
         val ALLOW_TOGGLE = BuildConfig.ALLOW_URL_TOGGLE
 
         // Deep link paths
@@ -41,6 +40,8 @@ object Constants {
         const val USE_DEBUG_URL = "use_debug_url"
         const val BIOMETRIC_ENABLED = "biometric_enabled"
         const val LAST_VISITED_URL = "last_visited_url"
+        const val FCM_TOKEN = "fcm_token"
+        const val NOTIFICATION_PERMISSION_ASKED = "notification_permission_asked"
     }
 
     object Auth {

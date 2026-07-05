@@ -11,7 +11,9 @@ declare global {
   namespace Express {
     interface Request {
       user?: {
-        phone: string;
+        phone?: string;
+        email?: string;
+        authProvider: 'phone' | 'google';
         userId: string;
         verified: boolean;
         subscribed: boolean;
@@ -21,6 +23,8 @@ declare global {
       };
       authenticatedUserId?: string;
       authenticatedUserPhone?: string;
+      authenticatedUserEmail?: string;
+      authenticatedUserAuthProvider?: 'phone' | 'google';
       authenticatedUserVerified?: boolean;
       authenticatedUserSubscribed?: boolean;
       authenticatedUserGender?: 'M' | 'F' | null;
@@ -55,7 +59,9 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
 
     // Verify the token
     const decoded = jwt.verify(accessToken, JWT_SECRET) as {
-      phone: string;
+      phone?: string;
+      email?: string;
+      authProvider?: 'phone' | 'google';
       userId: string;
       verified?: boolean;
       subscribed?: boolean;
@@ -73,10 +79,15 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     const now = Math.floor(Date.now() / 1000);
     const timeLeft = decoded.exp - now;
 
+    // Backfill authProvider for tokens issued before this field existed
+    const authProvider = decoded.authProvider ?? 'phone';
+
     if (timeLeft < REFRESH_THRESHOLD) {
       const newToken = jwt.sign(
         {
           phone: decoded.phone,
+          email: decoded.email,
+          authProvider,
           userId: decoded.userId,
           verified: decoded.verified ?? false,
           subscribed: decoded.subscribed ?? false,
@@ -93,6 +104,8 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     // Attach user info to request (userId comes from token, no DB lookup needed)
     req.user = {
       phone: decoded.phone,
+      email: decoded.email,
+      authProvider,
       userId: decoded.userId,
       verified: decoded.verified ?? false,
       subscribed: decoded.subscribed ?? false,
@@ -101,9 +114,10 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
       exp: decoded.exp,
     };
 
-    // Attach userId, phone, verified, subscribed, gender directly to request for easy access
     req.authenticatedUserId = decoded.userId;
     req.authenticatedUserPhone = decoded.phone;
+    req.authenticatedUserEmail = decoded.email;
+    req.authenticatedUserAuthProvider = authProvider;
     req.authenticatedUserVerified = decoded.verified ?? false;
     req.authenticatedUserSubscribed = decoded.subscribed ?? false;
     req.authenticatedUserGender = decoded.gender ?? null;

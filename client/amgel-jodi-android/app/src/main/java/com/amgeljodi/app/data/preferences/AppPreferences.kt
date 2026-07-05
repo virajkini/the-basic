@@ -22,6 +22,8 @@ class AppPreferences @Inject constructor(
         private val USE_DEBUG_URL = booleanPreferencesKey(Constants.Preferences.USE_DEBUG_URL)
         private val BIOMETRIC_ENABLED = booleanPreferencesKey(Constants.Preferences.BIOMETRIC_ENABLED)
         private val LAST_VISITED_URL = stringPreferencesKey(Constants.Preferences.LAST_VISITED_URL)
+        private val FCM_TOKEN = stringPreferencesKey(Constants.Preferences.FCM_TOKEN)
+        private val NOTIFICATION_PERMISSION_ASKED = booleanPreferencesKey(Constants.Preferences.NOTIFICATION_PERMISSION_ASKED)
     }
 
     // Debug URL toggle
@@ -54,6 +56,28 @@ class AppPreferences @Inject constructor(
     suspend fun setLastVisitedUrl(url: String) {
         dataStore.edit { prefs ->
             prefs[LAST_VISITED_URL] = url
+        }
+    }
+
+    // FCM token
+    val fcmToken: Flow<String?> = dataStore.data.map { prefs ->
+        prefs[FCM_TOKEN]
+    }
+
+    suspend fun setFcmToken(token: String) {
+        dataStore.edit { prefs ->
+            prefs[FCM_TOKEN] = token
+        }
+    }
+
+    // Whether the OS notification permission dialog has been shown
+    val notificationPermissionAsked: Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[NOTIFICATION_PERMISSION_ASKED] ?: false
+    }
+
+    suspend fun setNotificationPermissionAsked(value: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[NOTIFICATION_PERMISSION_ASKED] = value
         }
     }
 
