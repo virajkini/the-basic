@@ -45,7 +45,7 @@ export default function HeroGarland() {
       {/* Warm glow behind the couple */}
       <div
         aria-hidden
-        className="absolute left-1/2 top-1/2 h-3/4 w-3/4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-300/[0.14] blur-3xl"
+        className="absolute left-1/2 top-1/2 h-3/4 w-3/4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-myColor-400/[0.15] blur-3xl"
       />
       <div className="relative aspect-[4/3]">
         {animationData && (

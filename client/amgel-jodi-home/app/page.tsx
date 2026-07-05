@@ -180,7 +180,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-b from-myColor-950/[0.94] via-myColor-900/[0.87] to-myColor-950/[0.96]" />
 
         {/* Candlelight glow — warm gold halo behind the couple */}
-        <div className="absolute left-1/2 top-[38%] h-[34rem] w-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-400/[0.08] blur-3xl md:h-[46rem] md:w-[52rem]" />
+        <div className="absolute left-1/2 top-[38%] h-[34rem] w-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-myColor-400/[0.10] blur-3xl md:h-[46rem] md:w-[52rem]" />
         <div className="absolute -bottom-24 left-1/4 h-80 w-80 rounded-full bg-myColor-500/15 blur-3xl animate-float" />
         <div className="absolute right-[12%] top-[18%] h-64 w-64 rounded-full bg-myColor-400/10 blur-3xl animate-float delay-500" />
 
@@ -191,18 +191,18 @@ export default function Home() {
         <div className="relative z-10 container mx-auto px-4 pb-16 pt-24 md:py-24">
           <div className="mx-auto max-w-4xl text-center">
             {/* Badge */}
-            <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-amber-200/25 bg-white/[0.06] px-5 py-2 backdrop-blur-sm animate-fade-in-down md:mb-8">
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-300 animate-pulse" />
-              <span className="text-[11px] font-medium uppercase tracking-[0.26em] text-amber-100/90 md:text-xs">
+            <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-myColor-300/30 bg-white/[0.06] px-5 py-2 backdrop-blur-sm animate-fade-in-down md:mb-8">
+              <span className="h-1.5 w-1.5 rounded-full bg-myColor-300 animate-pulse" />
+              <span className="text-[11px] font-medium uppercase tracking-[0.26em] text-myColor-100/90 md:text-xs">
                 Exclusively for our community
               </span>
             </div>
 
             {/* Main Title */}
             <h1 className="animate-fade-in-up">
-              <span className="block font-display text-6xl font-semibold tracking-tight text-amber-100/95 sm:text-7xl md:text-8xl">
+              <span className="block font-display text-6xl font-semibold tracking-tight text-myColor-50 sm:text-7xl md:text-8xl">
                 Amgel{' '}
-                <span className="inline-block bg-gradient-to-r from-amber-200 via-amber-300 to-amber-200 bg-clip-text pr-[0.14em] italic text-transparent">
+                <span className="inline-block bg-gradient-to-r from-myColor-300 via-myColor-400 to-myColor-300 bg-clip-text pr-[0.14em] italic text-transparent">
                   Jodi
                 </span>
               </span>
@@ -213,9 +213,9 @@ export default function Home() {
 
             {/* Ornamental divider */}
             <div className="mt-6 flex items-center justify-center gap-3 animate-fade-in-up delay-100" aria-hidden>
-              <span className="h-px w-14 bg-gradient-to-r from-transparent to-amber-300/60 md:w-20" />
-              <span className="h-1.5 w-1.5 rotate-45 bg-amber-300/80" />
-              <span className="h-px w-14 bg-gradient-to-l from-transparent to-amber-300/60 md:w-20" />
+              <span className="h-px w-14 bg-gradient-to-r from-transparent to-myColor-300/60 md:w-20" />
+              <span className="h-1.5 w-1.5 rotate-45 bg-myColor-300/80" />
+              <span className="h-px w-14 bg-gradient-to-l from-transparent to-myColor-300/60 md:w-20" />
             </div>
 
             {/* Varmala — garland exchange, plays once (negative margin swallows the empty top of the 4:3 canvas) */}
@@ -227,7 +227,7 @@ export default function Home() {
             <div className="flex h-12 items-center justify-center overflow-hidden md:h-14">
               <p
                 key={phrases[phraseIndex]}
-                className="animate-hero-cycle font-display text-2xl italic text-amber-100/95 sm:text-3xl md:text-4xl"
+                className="animate-hero-cycle font-display text-2xl italic text-myColor-200 sm:text-3xl md:text-4xl"
               >
                 {phrases[phraseIndex]}
               </p>
@@ -237,7 +237,7 @@ export default function Home() {
             <div className="mt-7 flex flex-col items-center justify-center gap-4 animate-fade-in-up delay-300 sm:flex-row">
               <button
                 onClick={openLoginSheet}
-                className="group relative w-full max-w-xs rounded-full bg-gradient-to-b from-amber-200 to-amber-400 px-10 py-4 text-lg font-semibold text-myColor-950 shadow-2xl shadow-amber-500/25 transition-all duration-300 hover:scale-105 hover:shadow-amber-400/40 active:scale-95 sm:w-auto"
+                className="group relative w-full max-w-xs rounded-full bg-gradient-to-b from-myColor-400 to-myColor-600 px-10 py-4 text-lg font-semibold text-white shadow-2xl shadow-myColor-500/30 transition-all duration-300 hover:scale-105 hover:shadow-myColor-400/50 active:scale-95 sm:w-auto"
               >
                 <span className="flex items-center justify-center gap-2">
                   Begin Your Story
