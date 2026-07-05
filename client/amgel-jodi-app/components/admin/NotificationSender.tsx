@@ -7,8 +7,10 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/
 
 interface UserProfile {
   userId: string
-  phone: string
+  phone: string | null
+  email: string | null
   name: string
+  gender: 'M' | 'F' | null
   isVerified: boolean
   isSubscribed: boolean
   hasFcmToken: boolean
@@ -25,6 +27,7 @@ export default function NotificationSender() {
   const [result, setResult] = useState<{ message: string; isError: boolean } | null>(null)
   const [showBroadcastConfirm, setShowBroadcastConfirm] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [genderFilter, setGenderFilter] = useState<'M' | 'F' | null>(null)
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -43,11 +46,15 @@ export default function NotificationSender() {
     fetchUsers()
   }, [])
 
-  const filteredUsers = users.filter(
-    (u) =>
-      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.phone.includes(searchQuery)
-  )
+  const filteredUsers = users.filter((u) => {
+    if (genderFilter && u.gender !== genderFilter) return false
+    const q = searchQuery.toLowerCase()
+    return (
+      u.name.toLowerCase().includes(q) ||
+      (u.phone || '').includes(searchQuery) ||
+      (u.email || '').toLowerCase().includes(q)
+    )
+  })
 
   const toggleUser = (userId: string) => {
     setSelectedIds((prev) => {
@@ -218,9 +225,25 @@ export default function NotificationSender() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by name or phone…"
+            placeholder="Search by name, phone or email…"
             className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-myColor-500"
           />
+          <div className="flex gap-2">
+            {(['M', 'F', null] as const).map((g) => (
+              <button
+                key={g ?? 'all'}
+                type="button"
+                onClick={() => setGenderFilter(g)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  genderFilter === g
+                    ? 'bg-myColor-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {g === 'M' ? 'Male' : g === 'F' ? 'Female' : 'All'}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="max-h-96 overflow-y-auto divide-y divide-gray-100">
@@ -239,7 +262,7 @@ export default function NotificationSender() {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
-                  <p className="text-xs text-gray-500">{user.phone}</p>
+                  <p className="text-xs text-gray-500">{user.phone || user.email || '—'}</p>
                 </div>
                 <div className="flex gap-1 shrink-0">
                   {user.isVerified && (

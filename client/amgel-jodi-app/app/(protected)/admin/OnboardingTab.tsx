@@ -19,7 +19,8 @@ const HEIGHT_OPTIONS = [
 
 interface AdminUserRow {
   userId: string
-  phone: string
+  phone: string | null
+  email: string | null
   userCreatedAt: string
   hasProfile: boolean
   name: string | null
@@ -582,6 +583,7 @@ export default function OnboardingTab() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Profile</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Verified</th>
@@ -614,7 +616,8 @@ export default function OnboardingTab() {
                 ) : (
                   sortedUsers.map((u) => (
                     <tr key={u.userId} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm">{u.phone}</td>
+                      <td className="px-4 py-3 text-sm">{u.phone || '—'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{u.email || '—'}</td>
                       <td className="px-4 py-3 text-xs font-mono">{u.userId}</td>
                       <td className="px-4 py-3 text-sm">{u.hasProfile ? (u.name || 'Yes') : '—'}</td>
                       <td className="px-4 py-3 text-sm">{u.hasProfile ? (u.isVerified ? 'Yes' : 'No') : '—'}</td>
