@@ -187,7 +187,8 @@ fun PhoneEntryScreen(
     sheetMode: Boolean = false,
     onCountrySelected: (String) -> Unit,
     onPhoneChanged: (String) -> Unit,
-    onContinue: () -> Unit
+    onContinue: () -> Unit,
+    onGoogleSignIn: (() -> Unit)? = null
 ) {
     val focusManager = LocalFocusManager.current
     val focusRequester = remember { FocusRequester() }
@@ -325,9 +326,73 @@ fun PhoneEntryScreen(
                     ) {
                         Text("Send OTP")
                     }
+
+                    if (onGoogleSignIn != null) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            androidx.compose.material3.HorizontalDivider(
+                                modifier = Modifier.weight(1f),
+                                color = OutlineSoft
+                            )
+                            Text(
+                                text = "or",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = TextSecondary
+                            )
+                            androidx.compose.material3.HorizontalDivider(
+                                modifier = Modifier.weight(1f),
+                                color = OutlineSoft
+                            )
+                        }
+
+                        androidx.compose.material3.OutlinedButton(
+                            onClick = { if (!isLoading) onGoogleSignIn() },
+                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !isLoading,
+                            shape = RoundedCornerShape(20.dp),
+                            border = BorderStroke(1.dp, OutlineSoft),
+                            colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+                                contentColor = TextPrimary
+                            )
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                GoogleColorIcon()
+                                Text("Continue with Google")
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun GoogleColorIcon() {
+    androidx.compose.foundation.Canvas(modifier = Modifier.size(18.dp)) {
+        val w = size.width
+        val h = size.height
+        // G shape rendered as four arcs via drawArc with clip paths — simplified to just colored rects
+        // We draw the 4-color Google G icon using drawPath approximations
+        drawArc(color = Color(0xFF4285F4), startAngle = -90f, sweepAngle = 180f, useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset(0f, 0f), size = size)
+        drawArc(color = Color(0xFF34A853), startAngle = 90f, sweepAngle = 90f, useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset(0f, 0f), size = size)
+        drawArc(color = Color(0xFFFBBC05), startAngle = 180f, sweepAngle = 90f, useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset(0f, 0f), size = size)
+        drawArc(color = Color(0xFFEA4335), startAngle = 270f, sweepAngle = 90f, useCenter = false,
+            topLeft = androidx.compose.ui.geometry.Offset(0f, 0f), size = size)
+        drawCircle(color = Color.White, radius = w * 0.35f,
+            center = androidx.compose.ui.geometry.Offset(w / 2f, h / 2f))
+        drawRect(color = Color(0xFF4285F4),
+            topLeft = androidx.compose.ui.geometry.Offset(w * 0.5f, h * 0.38f),
+            size = androidx.compose.ui.geometry.Size(w * 0.5f, h * 0.24f))
     }
 }
 

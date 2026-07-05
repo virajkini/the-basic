@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -52,6 +53,7 @@ fun AppEntryScreen(
     val useDebugUrl by viewModel.useDebugUrl.collectAsState(initial = false)
     val webUrl = deepLinkUrl ?: uiState.postLoginUrl
     val loginSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val context = LocalContext.current
 
     BackHandler(enabled = uiState.route == AppRoute.PhoneEntry || uiState.route == AppRoute.OtpEntry) {
         when (uiState.route) {
@@ -125,7 +127,8 @@ fun AppEntryScreen(
                                 sheetMode = true,
                                 onCountrySelected = viewModel::onCountrySelected,
                                 onPhoneChanged = viewModel::onPhoneChanged,
-                                onContinue = viewModel::sendOtp
+                                onContinue = viewModel::sendOtp,
+                                onGoogleSignIn = { viewModel.signInWithGoogle(context) }
                             )
 
                             AppRoute.OtpEntry -> OtpScreen(

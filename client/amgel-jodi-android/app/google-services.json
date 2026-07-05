@@ -12,7 +12,12 @@
           "package_name": "com.amgeljodi.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "125628505543-246ovq7i54uft180if48pdqip7iej6mv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDU4OAUIkuxiZZCWzHmafAd3Ow4xsf6WIs"
@@ -20,7 +25,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "125628505543-246ovq7i54uft180if48pdqip7iej6mv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

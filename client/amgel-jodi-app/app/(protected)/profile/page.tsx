@@ -12,6 +12,36 @@ import { FOOD_PREFERENCE_OPTIONS, type FoodPreference } from '@/lib/foodPreferen
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
+interface Country {
+  code: string
+  name: string
+  dialCode: string
+  flag: string
+}
+
+const COUNTRIES: Country[] = [
+  { code: 'IN', name: 'India', dialCode: '91', flag: '🇮🇳' },
+  { code: 'US', name: 'United States', dialCode: '1', flag: '🇺🇸' },
+  { code: 'GB', name: 'United Kingdom', dialCode: '44', flag: '🇬🇧' },
+  { code: 'CA', name: 'Canada', dialCode: '1', flag: '🇨🇦' },
+  { code: 'AU', name: 'Australia', dialCode: '61', flag: '🇦🇺' },
+  { code: 'NZ', name: 'New Zealand', dialCode: '64', flag: '🇳🇿' },
+  { code: 'SG', name: 'Singapore', dialCode: '65', flag: '🇸🇬' },
+  { code: 'MY', name: 'Malaysia', dialCode: '60', flag: '🇲🇾' },
+  { code: 'AE', name: 'UAE', dialCode: '971', flag: '🇦🇪' },
+  { code: 'KW', name: 'Kuwait', dialCode: '965', flag: '🇰🇼' },
+  { code: 'BH', name: 'Bahrain', dialCode: '973', flag: '🇧🇭' },
+  { code: 'QA', name: 'Qatar', dialCode: '974', flag: '🇶🇦' },
+  { code: 'SA', name: 'Saudi Arabia', dialCode: '966', flag: '🇸🇦' },
+  { code: 'OM', name: 'Oman', dialCode: '968', flag: '🇴🇲' },
+  { code: 'DE', name: 'Germany', dialCode: '49', flag: '🇩🇪' },
+  { code: 'NL', name: 'Netherlands', dialCode: '31', flag: '🇳🇱' },
+  { code: 'SE', name: 'Sweden', dialCode: '46', flag: '🇸🇪' },
+  { code: 'NO', name: 'Norway', dialCode: '47', flag: '🇳🇴' },
+  { code: 'CH', name: 'Switzerland', dialCode: '41', flag: '🇨🇭' },
+  { code: 'JP', name: 'Japan', dialCode: '81', flag: '🇯🇵' },
+]
+
 type CreatingFor = 'self' | 'daughter' | 'son' | 'other'
 type Gender = 'M' | 'F'
 type SalaryRange = '<5L' | '5-15L' | '15-30L' | '30-50L' | '>50L'
@@ -39,6 +69,10 @@ interface FormData {
   kuldeva: string
   /** Empty string = not specified */
   foodPreference: FoodPreference | ''
+  /** Phone number digits only — for Google-auth users without a linked phone */
+  phoneNumber: string
+  /** Optional email — for phone-auth users without a linked email */
+  email: string
   /** Main photo S3 key before first save only; after profile exists use existingProfile.primaryPhotoKey */
   primaryPhotoKey?: string | null
 }
@@ -153,8 +187,11 @@ export default function ProfilePage() {
     nakshatra: '',
     kuldeva: '',
     foodPreference: '',
+    phoneNumber: '',
+    email: '',
     primaryPhotoKey: null,
   })
+  const [phoneCountry, setPhoneCountry] = useState<Country>(COUNTRIES[0])
   const [showKundaliSection, setShowKundaliSection] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<FileWithPreview[]>([])
   const [existingImages, setExistingImages] = useState<ExistingImage[]>([])
@@ -276,6 +313,8 @@ export default function ProfilePage() {
               p.foodPreference === 'eggetarian'
                 ? p.foodPreference
                 : '',
+            phoneNumber: '',
+            email: '',
           })
           if (p.placeOfBirth || p.birthTiming || p.gothra || p.nakshatra || p.kuldeva) {
             setShowKundaliSection(true)
@@ -507,6 +546,13 @@ export default function ProfilePage() {
       if (!formData.nativePlace.trim()) errors.nativePlace = 'Native place is required'
       if (!formData.height) errors.height = 'Please select height'
 
+      if (user?.authProvider === 'google' && !user?.phone) {
+        if (!formData.phoneNumber.trim()) errors.phoneNumber = 'Phone number is required'
+      }
+      if (formData.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+        errors.email = 'Enter a valid email address'
+      }
+
       if (formData.dob) {
         const birthDate = new Date(formData.dob)
         const today = new Date()
@@ -660,6 +706,12 @@ export default function ProfilePage() {
         gothra: formData.gothra || undefined,
         nakshatra: formData.nakshatra || undefined,
         kuldeva: formData.kuldeva || undefined,
+        ...(user?.authProvider === 'google' && !user?.phone && formData.phoneNumber.trim()
+          ? { phoneDialCode: phoneCountry.dialCode, phoneNumber: formData.phoneNumber.trim() }
+          : {}),
+        ...(user?.authProvider === 'phone' && !user?.email && formData.email.trim()
+          ? { email: formData.email.trim() }
+          : {}),
       }
 
       if (existingProfile) {
@@ -1070,6 +1122,96 @@ export default function ProfilePage() {
                   )}
                 </div>
               </div>
+
+              {/* Phone number — editable only for Google-auth users without a linked phone */}
+              {user?.authProvider === 'google' && !user?.phone && (
+                <div>
+                  <label className="block text-sm font-medium text-myColor-800 mb-2">
+                    Your Phone Number
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="w-26 flex-shrink-0">
+                      <Dropdown
+                        id="phoneCountry"
+                        label="Country Code"
+                        options={COUNTRIES.map(c => ({ value: c.code, label: `${c.flag} ${c.name} (+${c.dialCode})` }))}
+                        value={phoneCountry.code}
+                        triggerLabel={`${phoneCountry.flag} +${phoneCountry.dialCode}`}
+                        onChange={(code) => setPhoneCountry(COUNTRIES.find(c => c.code === code) ?? COUNTRIES[0])}
+                        placeholder="Country"
+                        searchable
+                      />
+                    </div>
+                    <input
+                      id="phoneNumber"
+                      type="tel"
+                      inputMode="numeric"
+                      value={formData.phoneNumber}
+                      onChange={(e) => updateFormData('phoneNumber', e.target.value.replace(/\D/g, '').slice(0, 14))}
+                      className={`flex-1 px-4 py-3.5 bg-white border rounded-xl transition-all text-myColor-900 placeholder:text-myColor-300 ${
+                        fieldErrors.phoneNumber ? 'border-red-300' : 'border-myColor-200 focus:border-myColor-500'
+                      }`}
+                      placeholder="Phone number"
+                    />
+                  </div>
+                  {fieldErrors.phoneNumber && (
+                    <p className="mt-1.5 text-sm text-red-500">{fieldErrors.phoneNumber}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Phone number — locked display for Google-auth users who have already linked a phone */}
+              {user?.authProvider === 'google' && user?.phone && (
+                <div>
+                  <label className="block text-sm font-medium text-myColor-800 mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={user.phone}
+                    disabled
+                    className="w-full px-4 py-3.5 bg-myColor-50 border border-myColor-100 rounded-xl text-myColor-400 cursor-not-allowed opacity-80"
+                  />
+                </div>
+              )}
+
+              {/* Email — editable for phone-auth users who haven't set an email yet */}
+              {user?.authProvider === 'phone' && !user?.email && (
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-myColor-800 mb-2">
+                    Email address <span className="text-myColor-400 font-normal">(optional)</span>
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    inputMode="email"
+                    value={formData.email}
+                    onChange={(e) => updateFormData('email', e.target.value)}
+                    className={`w-full px-4 py-3.5 bg-white border rounded-xl transition-all text-myColor-900 placeholder:text-myColor-300 ${
+                      fieldErrors.email ? 'border-red-300' : 'border-myColor-200 focus:border-myColor-500'
+                    }`}
+                    placeholder="you@example.com"
+                  />
+                  {fieldErrors.email && (
+                    <p className="mt-1.5 text-sm text-red-500">{fieldErrors.email}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Email — locked display for phone-auth users who have already linked an email */}
+              {user?.authProvider === 'phone' && user?.email && (
+                <div>
+                  <label className="block text-sm font-medium text-myColor-800 mb-2">
+                    Email address
+                  </label>
+                  <input
+                    type="email"
+                    value={user.email}
+                    disabled
+                    className="w-full px-4 py-3.5 bg-myColor-50 border border-myColor-100 rounded-xl text-myColor-400 cursor-not-allowed opacity-80"
+                  />
+                </div>
+              )}
 
               <div>
                 <label htmlFor="foodPreference" className="block text-sm font-medium text-myColor-800 mb-2">

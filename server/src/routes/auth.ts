@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { findUserByPhone, createUser } from '../services/userManager.js';
+import { OAuth2Client } from 'google-auth-library';
+import { findUserByPhone, createUser, findUserByEmail, createUserWithEmail } from '../services/userManager.js';
 import { readProfile } from '../services/profileManager.js';
 
 const router = express.Router();
@@ -9,6 +10,9 @@ const router = express.Router();
 const MSG91_AUTH_KEY = process.env.MSG_TOKEN || '';
 const MSG91_VERIFY_URL = 'https://control.msg91.com/api/v5/widget/verifyAccessToken';
 
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const TOKEN_EXPIRY = '3d'; // 3 days - will be extended on activity
 const TOKEN_EXPIRY_MS = 3 * 24 * 60 * 60 * 1000; // 3 days in milliseconds
@@ -16,7 +20,9 @@ const REFRESH_THRESHOLD = 12 * 60 * 60; // Refresh if less than 12 hours left (i
 
 // Token payload type
 export interface TokenPayload {
-  phone: string;
+  phone?: string;
+  email?: string;
+  authProvider: 'phone' | 'google';
   userId: string;
   verified: boolean;
   subscribed: boolean;
@@ -53,6 +59,10 @@ const verifyAccessToken = (token: string): TokenPayload & { exp: number; type: s
   if (decoded.type !== 'access') {
     throw new Error('Invalid token type');
   }
+  // Backfill authProvider for tokens issued before this field existed
+  if (!decoded.authProvider) {
+    decoded.authProvider = 'phone';
+  }
   return decoded;
 };
 
@@ -84,6 +94,8 @@ router.post('/otp/login', async (req: Request, res: Response) => {
     // Generate our access token
     const accessToken = generateAccessToken({
       phone: normalizedPhone,
+      email: user.email,
+      authProvider: 'phone',
       userId: user._id,
       verified,
       subscribed,
@@ -93,6 +105,64 @@ router.post('/otp/login', async (req: Request, res: Response) => {
     // Set cookie
     res.cookie('accessToken', accessToken, getAccessTokenCookieOptions());
 
+    res.json({ authenticated: true });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to create session',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+// POST /auth/google - Login via Google ID token
+router.post('/google', async (req: Request, res: Response) => {
+  try {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+      return res.status(400).json({ error: 'ID token is required' });
+    }
+
+    if (!GOOGLE_CLIENT_ID) {
+      return res.status(500).json({ error: 'Google login is not configured' });
+    }
+
+    let email: string;
+    try {
+      const ticket = await googleClient.verifyIdToken({
+        idToken,
+        audience: GOOGLE_CLIENT_ID,
+      });
+      const payload = ticket.getPayload();
+      if (!payload?.email) {
+        return res.status(400).json({ error: 'Could not retrieve email from Google token' });
+      }
+      email = payload.email;
+    } catch {
+      return res.status(401).json({ error: 'Invalid or expired Google token' });
+    }
+
+    let user = await findUserByEmail(email);
+    if (!user) {
+      user = await createUserWithEmail(email);
+    }
+
+    const profile = await readProfile(user._id);
+    const verified = profile?.verified ?? false;
+    const subscribed = profile?.subscribed ?? false;
+    const gender = profile?.gender ?? null;
+
+    const accessToken = generateAccessToken({
+      phone: user.phone,
+      email,
+      authProvider: 'google',
+      userId: user._id,
+      verified,
+      subscribed,
+      gender,
+    });
+
+    res.cookie('accessToken', accessToken, getAccessTokenCookieOptions());
     res.json({ authenticated: true });
   } catch (error) {
     res.status(500).json({
@@ -175,6 +245,8 @@ router.post('/msg91/verify', async (req: Request, res: Response) => {
     // Generate our access token
     const ourAccessToken = generateAccessToken({
       phone: normalizedPhone,
+      email: user.email,
+      authProvider: 'phone',
       userId: user._id,
       verified,
       subscribed,
@@ -218,6 +290,8 @@ router.get('/me', async (req: Request, res: Response) => {
 
         const newToken = generateAccessToken({
           phone: payload.phone,
+          email: payload.email,
+          authProvider: payload.authProvider,
           userId: payload.userId,
           verified,
           subscribed,
@@ -228,13 +302,27 @@ router.get('/me', async (req: Request, res: Response) => {
 
         return res.json({
           loggedIn: true,
-          user: { phone: payload.phone, userId: payload.userId, verified, subscribed }
+          user: {
+            phone: payload.phone,
+            email: payload.email,
+            authProvider: payload.authProvider,
+            userId: payload.userId,
+            verified,
+            subscribed,
+          }
         });
       }
 
       return res.json({
         loggedIn: true,
-        user: { phone: payload.phone, userId: payload.userId, verified: payload.verified ?? false, subscribed: payload.subscribed ?? false }
+        user: {
+          phone: payload.phone,
+          email: payload.email,
+          authProvider: payload.authProvider,
+          userId: payload.userId,
+          verified: payload.verified ?? false,
+          subscribed: payload.subscribed ?? false,
+        }
       });
     } catch (err) {
       // Token expired or invalid

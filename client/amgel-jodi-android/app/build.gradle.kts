@@ -29,6 +29,7 @@ android {
 
         buildConfigField("String", "POSTHOG_API_KEY", "\"${localProperties.getProperty("posthog.apiKey", "")}\"")
         buildConfigField("String", "POSTHOG_HOST", "\"${localProperties.getProperty("posthog.host", "https://eu.i.posthog.com")}\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${localProperties.getProperty("google.webClientId", "")}\"")
     }
 
     buildTypes {
@@ -130,6 +131,11 @@ dependencies {
 
     // PostHog Analytics
     implementation("com.posthog:posthog-android:3.+")
+
+    // Google Sign-In via Credential Manager
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services)
+    implementation(libs.google.identity.googleid)
 
     // Firebase
     implementation(platform(libs.firebase.bom))

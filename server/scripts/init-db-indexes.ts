@@ -31,6 +31,7 @@ async function safeCreateIndex(
   }
 }
 
+
 async function createIndexes() {
   const client = new MongoClient(MONGODB_URI!);
 
@@ -61,8 +62,8 @@ async function createIndexes() {
 
     console.log('\nCreating indexes for users collection...');
     const usersCollection = db.collection('users');
-    if (await safeCreateIndex(usersCollection, { phone: 1 }, 'unique_user_phone')) {
-      console.log('  ✓ Created unique index: phone');
+    if (await safeCreateIndex(usersCollection, { phone: 1 }, 'unique_user_phone', { unique: true, sparse: true })) {
+      console.log('  ✓ Created sparse unique index: phone');
     } else {
       console.log('  ○ Index already exists: phone');
     }
@@ -70,6 +71,12 @@ async function createIndexes() {
       console.log('  ✓ Created index: createdAt');
     } else {
       console.log('  ○ Index already exists: createdAt');
+    }
+    // Sparse + unique: Google users have email, phone users don't — sparse skips null/missing docs
+    if (await safeCreateIndex(usersCollection, { email: 1 }, 'unique_user_email', { unique: true, sparse: true })) {
+      console.log('  ✓ Created sparse unique index: email');
+    } else {
+      console.log('  ○ Index already exists: email');
     }
 
     // Create connections collection indexes

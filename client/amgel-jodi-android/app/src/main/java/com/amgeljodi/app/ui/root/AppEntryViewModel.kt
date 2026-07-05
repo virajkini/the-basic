@@ -1,5 +1,6 @@
 package com.amgeljodi.app.ui.root
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -279,6 +280,32 @@ class AppEntryViewModel @Inject constructor(
                             "error_message" to result.message
                         )
                     )
+                    _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
+                }
+            }
+        }
+    }
+
+    fun signInWithGoogle(context: Context) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            when (val result = authRepository.signInWithGoogle(context)) {
+                is AuthActionResult.Success -> {
+                    PostHog.capture(event = "login_completed", properties = mapOf("method" to "google"))
+                    authRepository.syncStoredSessionToWebView()
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            route = AppRoute.WebView,
+                            webViewMode = WebViewMode.Authenticated,
+                            errorMessage = null,
+                            infoMessage = null
+                        )
+                    }
+                    tryRegisterFcmToken()
+                }
+                is AuthActionResult.Error -> {
+                    PostHog.capture(event = "login_failed", properties = mapOf("method" to "google", "error_message" to result.message))
                     _uiState.update { it.copy(isLoading = false, errorMessage = result.message) }
                 }
             }
