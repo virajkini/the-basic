@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { articles } from './articles'
+import HeroGarland from './components/HeroGarland'
 
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.amgeljodi.app'
 
@@ -167,60 +168,80 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
       <main className="min-h-screen overflow-x-hidden">
-      {/* Hero Section - Emotional & Clean */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      {/* Hero Section - Royal wedding invitation */}
+      <section className="relative flex min-h-screen items-center justify-center overflow-hidden">
         {/* Background image */}
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${PAGE_ASSETS_CDN}/SHI_1928.jpg)` }}
         />
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-myColor-900/[0.89] via-myColor-800/[0.84] to-myColor-950/[0.89]" />
+        {/* Deep plum overlay — darker at edges, breathing room in the middle */}
+        <div className="absolute inset-0 bg-gradient-to-b from-myColor-950/[0.94] via-myColor-900/[0.87] to-myColor-950/[0.96]" />
 
-        {/* SVG Pattern overlay */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }}
-        />
+        {/* Candlelight glow — warm gold halo behind the couple */}
+        <div className="absolute left-1/2 top-[38%] h-[34rem] w-[34rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-amber-400/[0.08] blur-3xl md:h-[46rem] md:w-[52rem]" />
+        <div className="absolute -bottom-24 left-1/4 h-80 w-80 rounded-full bg-myColor-500/15 blur-3xl animate-float" />
+        <div className="absolute right-[12%] top-[18%] h-64 w-64 rounded-full bg-myColor-400/10 blur-3xl animate-float delay-500" />
 
-        {/* Floating orbs */}
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-myColor-500/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-myColor-400/15 rounded-full blur-3xl animate-float delay-500" />
+        {/* Bottom fade into the next section */}
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent" />
 
         {/* Hero Content */}
-        <div className="relative z-10 container mx-auto px-4 py-20">
-          <div className="max-w-4xl mx-auto text-center">
+        <div className="relative z-10 container mx-auto px-4 pb-16 pt-24 md:py-24">
+          <div className="mx-auto max-w-4xl text-center">
             {/* Badge */}
-            <div className="hero-badge-shimmer inline-flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 mb-8 animate-fade-in-down">
-              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-white/80 text-sm font-medium">Exclusively for our community</span>
+            <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-amber-200/25 bg-white/[0.06] px-5 py-2 backdrop-blur-sm animate-fade-in-down md:mb-8">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-300 animate-pulse" />
+              <span className="text-[11px] font-medium uppercase tracking-[0.26em] text-amber-100/90 md:text-xs">
+                Exclusively for our community
+              </span>
             </div>
 
             {/* Main Title */}
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-display font-semibold text-white mb-6 animate-fade-in-up tracking-tight">
-              Amgel Jodi - GSB Konkani Matrimony
+            <h1 className="animate-fade-in-up">
+              <span className="block font-display text-6xl font-semibold tracking-tight text-amber-100/95 sm:text-7xl md:text-8xl">
+                Amgel{' '}
+                <span className="inline-block bg-gradient-to-r from-amber-200 via-amber-300 to-amber-200 bg-clip-text pr-[0.14em] italic text-transparent">
+                  Jodi
+                </span>
+              </span>
+              <span className="mt-4 block text-xs font-medium uppercase tracking-[0.42em] text-white/70 sm:text-sm md:text-base">
+                GSB Konkani Matrimony
+              </span>
             </h1>
 
-            {/* Typewriter Text */}
-            <div className="h-16 md:h-20 flex items-center justify-center mb-6 overflow-hidden">
+            {/* Ornamental divider */}
+            <div className="mt-6 flex items-center justify-center gap-3 animate-fade-in-up delay-100" aria-hidden>
+              <span className="h-px w-14 bg-gradient-to-r from-transparent to-amber-300/60 md:w-20" />
+              <span className="h-1.5 w-1.5 rotate-45 bg-amber-300/80" />
+              <span className="h-px w-14 bg-gradient-to-l from-transparent to-amber-300/60 md:w-20" />
+            </div>
+
+            {/* Varmala — garland exchange, plays once (negative margin swallows the empty top of the 4:3 canvas) */}
+            <div className="-mt-6 animate-fade-in-up delay-200 md:-mt-10">
+              <HeroGarland />
+            </div>
+
+            {/* Rotating phrase */}
+            <div className="flex h-12 items-center justify-center overflow-hidden md:h-14">
               <p
                 key={phrases[phraseIndex]}
-                className="animate-hero-cycle text-2xl md:text-4xl lg:text-5xl text-myColor-300 font-medium"
+                className="animate-hero-cycle font-display text-2xl italic text-amber-100/95 sm:text-3xl md:text-4xl"
               >
                 {phrases[phraseIndex]}
               </p>
             </div>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-fade-in-up delay-300">
+            <div className="mt-7 flex flex-col items-center justify-center gap-4 animate-fade-in-up delay-300 sm:flex-row">
               <button
                 onClick={openLoginSheet}
-                className="group relative px-10 py-4 bg-white text-myColor-800 rounded-full font-semibold text-lg shadow-2xl shadow-white/20 hover:shadow-white/30 transition-all duration-300 hover:scale-105 active:scale-95"
+                className="group relative w-full max-w-xs rounded-full bg-gradient-to-b from-amber-200 to-amber-400 px-10 py-4 text-lg font-semibold text-myColor-950 shadow-2xl shadow-amber-500/25 transition-all duration-300 hover:scale-105 hover:shadow-amber-400/40 active:scale-95 sm:w-auto"
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center justify-center gap-2">
                   Begin Your Story
-                  <svg className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
                 </span>
@@ -228,13 +249,13 @@ export default function Home() {
 
               <a
                 href="#how-it-works"
-                className="px-10 py-4 border border-white/30 text-white rounded-full font-medium text-lg hover:bg-white/10 transition-all duration-300"
+                className="w-full max-w-xs rounded-full border border-white/25 px-10 py-4 text-center text-lg font-medium text-white/90 backdrop-blur-sm transition-all duration-300 hover:border-white/40 hover:bg-white/10 sm:w-auto"
               >
                 See How It Works
               </a>
             </div>
 
-            <div className="mt-9 flex flex-col items-center gap-3 animate-fade-in-up delay-300">
+            <div className="mt-9 flex flex-col items-center gap-3 animate-fade-in-up delay-400">
               <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-[0.24em] text-white/55">
                 <span className="h-px w-10 bg-white/18" />
                 <span>Also on Android</span>
@@ -244,8 +265,8 @@ export default function Home() {
             </div>
 
             {/* Scroll indicator */}
-            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-              <svg className="w-6 h-6 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 animate-bounce md:block">
+              <svg className="h-6 w-6 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
               </svg>
             </div>
