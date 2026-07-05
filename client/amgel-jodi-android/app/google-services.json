@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "125628505543-66u4q8u0814eq1k1rh5vaj7fpiuronp5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.amgeljodi.app",
+            "certificate_hash": "7c57926bce0d087968df540d54ca0f32db774263"
+          }
+        },
+        {
           "client_id": "125628505543-246ovq7i54uft180if48pdqip7iej6mv.apps.googleusercontent.com",
           "client_type": 3
         }
