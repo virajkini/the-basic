@@ -22,6 +22,8 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/
 const LAYOUT_STORAGE_KEY = 'dashboard-layout'
 /** YYYY-MM-DD in local calendar; first dashboard visit per day shows welcome header */
 const DAILY_WELCOME_LS_KEY = 'amgel-dashboard-daily-welcome'
+/** Set on first dashboard visit; returning users get 'recent' as default sort */
+const SORT_VISITED_KEY = 'amgel-dashboard-sort-visited'
 
 function localCalendarYmd(): string {
   return new Date().toLocaleDateString('en-CA')
@@ -112,6 +114,16 @@ export default function DiscoverTab({
       setShowDailyWelcome(false)
     }
   }, [profile?._id])
+
+  useLayoutEffect(() => {
+    try {
+      if (localStorage.getItem(SORT_VISITED_KEY)) {
+        setSortBy('recent')
+      } else {
+        localStorage.setItem(SORT_VISITED_KEY, '1')
+      }
+    } catch {}
+  }, [])
 
   // Load layout preference from localStorage
   useEffect(() => {
