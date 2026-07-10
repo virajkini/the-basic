@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, memo, useMemo } from 'react'
-import { useWindowVirtualizer } from '@tanstack/react-virtual'
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, memo, useMemo, type RefObject } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import posthog from 'posthog-js'
 import Link from 'next/link'
 import { useAuth } from '../../app/context/AuthContext'
@@ -55,7 +55,11 @@ function useIsMobile() {
   return isMobile
 }
 
-export default function DiscoverTab() {
+export default function DiscoverTab({
+  scrollContainerRef,
+}: {
+  scrollContainerRef?: RefObject<HTMLDivElement | null>
+}) {
   const isMobile = useIsMobile()
   const { user } = useAuth()
   const { setSearchableProfiles, registerOpenDiscoverProfile, setProfileDetailOpen } =
@@ -534,6 +538,7 @@ export default function DiscoverTab() {
               favoriteSavingId={favoriteSavingId}
               onSelect={handleOpenDiscoverProfile}
               onToggleFavorite={handleToggleFavorite}
+              scrollContainerRef={scrollContainerRef}
             />
           ) : (
             <div className={`grid transition-all duration-300 ease-in-out ${
@@ -609,8 +614,9 @@ export default function DiscoverTab() {
   )
 }
 
-// Virtualized grid for mobile — only mounts cards near the viewport, keeping
-// Safari's memory usage flat regardless of how many profiles are returned.
+// Virtualized grid for mobile — only mounts cards near the viewport so
+// Safari's memory stays flat regardless of how many profiles are returned.
+// Uses the actual scroll container from TabShell as the scroll element.
 function VirtualizedGrid({
   profiles,
   layout,
@@ -618,6 +624,7 @@ function VirtualizedGrid({
   favoriteSavingId,
   onSelect,
   onToggleFavorite,
+  scrollContainerRef,
 }: {
   profiles: DiscoverProfile[]
   layout: 'default' | 'compact'
@@ -625,8 +632,8 @@ function VirtualizedGrid({
   favoriteSavingId: string | null
   onSelect: (p: DiscoverProfile) => void
   onToggleFavorite: (id: string) => void
+  scrollContainerRef?: RefObject<HTMLDivElement | null>
 }) {
-  const listRef = useRef<HTMLDivElement>(null)
   const cardsPerRow = layout === 'compact' ? 2 : 1
 
   const rows = useMemo(() => {
@@ -637,76 +644,49 @@ function VirtualizedGrid({
     return result
   }, [profiles, cardsPerRow])
 
-  // scrollMargin = distance from top of document to top of list container.
-  // Must be measured after mount; reading listRef.current at render time gives
-  // null (ref not attached yet), causing the virtualizer to think the list
-  // starts at y=0 and only render the first few rows.
-  const [scrollMargin, setScrollMargin] = useState(0)
-  useEffect(() => {
-    if (listRef.current) {
-      setScrollMargin(listRef.current.getBoundingClientRect().top + window.scrollY)
-    }
-  }, [profiles]) // re-measure if profiles change (affects layout height above)
-
-  // estimated px height per row — virtualizer corrects after first measure
-  const estimateSize = useCallback(
-    () => (layout === 'compact' ? 280 : 530),
-    [layout]
-  )
-
-  const rowVirtualizer = useWindowVirtualizer({
+  const rowVirtualizer = useVirtualizer({
     count: rows.length,
-    estimateSize,
+    getScrollElement: () => scrollContainerRef?.current ?? null,
+    estimateSize: () => (layout === 'compact' ? 280 : 530),
     overscan: 3,
-    scrollMargin,
   })
 
-  const gap = layout === 'compact' ? 12 : 24
-
   return (
-    <div ref={listRef}>
-      <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
-        {rowVirtualizer.getVirtualItems().map((virtualRow) => {
-          const rowProfiles = rows[virtualRow.index]
-          const rowStartIndex = virtualRow.index * cardsPerRow
-          return (
-            <div
-              key={virtualRow.key}
-              data-index={virtualRow.index}
-              ref={rowVirtualizer.measureElement}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                transform: `translateY(${virtualRow.start - rowVirtualizer.options.scrollMargin}px)`,
-                paddingBottom: gap,
-              }}
-            >
-              <div
-                className={
-                  layout === 'compact'
-                    ? 'grid grid-cols-2 gap-3'
-                    : 'flex flex-col'
-                }
-              >
-                {rowProfiles.map((p, i) => (
-                  <ProfileCard
-                    key={p._id}
-                    profile={p}
-                    onSelect={onSelect}
-                    priority={rowStartIndex + i < 3}
-                    compact={layout === 'compact'}
-                    isFavorite={favoriteUserIds.includes(p._id)}
-                    onToggleFavorite={onToggleFavorite}
-                    favoriteDisabled={favoriteSavingId === p._id}
-                  />
-                ))}
-              </div>
+    <div style={{ height: `${rowVirtualizer.getTotalSize()}px`, position: 'relative' }}>
+      {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+        const rowProfiles = rows[virtualRow.index]
+        const rowStartIndex = virtualRow.index * cardsPerRow
+        return (
+          <div
+            key={virtualRow.key}
+            data-index={virtualRow.index}
+            ref={rowVirtualizer.measureElement}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              transform: `translateY(${virtualRow.start}px)`,
+              paddingBottom: layout === 'compact' ? 12 : 24,
+            }}
+          >
+            <div className={layout === 'compact' ? 'grid grid-cols-2 gap-3' : 'flex flex-col'}>
+              {rowProfiles.map((p, i) => (
+                <ProfileCard
+                  key={p._id}
+                  profile={p}
+                  onSelect={onSelect}
+                  priority={rowStartIndex + i < 3}
+                  compact={layout === 'compact'}
+                  isFavorite={favoriteUserIds.includes(p._id)}
+                  onToggleFavorite={onToggleFavorite}
+                  favoriteDisabled={favoriteSavingId === p._id}
+                />
+              ))}
             </div>
-          )
-        })}
-      </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
