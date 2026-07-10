@@ -637,6 +637,17 @@ function VirtualizedGrid({
     return result
   }, [profiles, cardsPerRow])
 
+  // scrollMargin = distance from top of document to top of list container.
+  // Must be measured after mount; reading listRef.current at render time gives
+  // null (ref not attached yet), causing the virtualizer to think the list
+  // starts at y=0 and only render the first few rows.
+  const [scrollMargin, setScrollMargin] = useState(0)
+  useEffect(() => {
+    if (listRef.current) {
+      setScrollMargin(listRef.current.getBoundingClientRect().top + window.scrollY)
+    }
+  }, [profiles]) // re-measure if profiles change (affects layout height above)
+
   // estimated px height per row — virtualizer corrects after first measure
   const estimateSize = useCallback(
     () => (layout === 'compact' ? 280 : 530),
@@ -646,8 +657,8 @@ function VirtualizedGrid({
   const rowVirtualizer = useWindowVirtualizer({
     count: rows.length,
     estimateSize,
-    overscan: 2,
-    scrollMargin: listRef.current?.offsetTop ?? 0,
+    overscan: 3,
+    scrollMargin,
   })
 
   const gap = layout === 'compact' ? 12 : 24
