@@ -1,9 +1,11 @@
 'use client'
 
-import { Suspense, useRef } from 'react'
+import { Suspense, useRef, type RefObject } from 'react'
 import { usePathname } from 'next/navigation'
 import DiscoverTab from './DiscoverTab'
 import ConnectionsTab from './ConnectionsTab'
+
+export type ScrollContainerRef = RefObject<HTMLDivElement | null>
 
 function ConnectionsTabFallback() {
   return (
@@ -33,13 +35,16 @@ export default function TabShell() {
   const hasVisitedConnections = useRef(false)
   if (showConnections) hasVisitedConnections.current = true
 
+  const discoverScrollRef = useRef<HTMLDivElement>(null)
+
   return (
     <div className="flex flex-1 min-h-0 flex-col">
       <div
+        ref={discoverScrollRef}
         className={`flex flex-1 min-h-0 flex-col overflow-y-auto ${showDiscover ? '' : 'hidden'}`}
         aria-hidden={!showDiscover}
       >
-        <DiscoverTab />
+        <DiscoverTab scrollContainerRef={discoverScrollRef} />
       </div>
       <div
         className={`flex flex-1 min-h-0 flex-col overflow-y-auto ${showConnections ? '' : 'hidden'}`}
