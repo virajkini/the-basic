@@ -606,41 +606,13 @@ const ProfileCard = memo(function ProfileCard({
   favoriteDisabled?: boolean
 }) {
   const carouselRef = useRef<HTMLDivElement>(null)
-  const cardRef = useRef<HTMLDivElement>(null)
   const [activeIndex, setActiveIndex] = useState(0)
-  const [isInView, setIsInView] = useState(priority) // Priority cards are "in view" immediately
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set([0]))
   const [failedImages, setFailedImages] = useState<Set<number>>(new Set())
 
   const handleSelect = useCallback(() => {
     onSelect(profile)
   }, [onSelect, profile])
-
-  // Observe when card enters viewport (skip for priority cards)
-  useEffect(() => {
-    if (priority) {
-      setIsInView(true)
-      return
-    }
-
-    const card = cardRef.current
-    if (!card) return
-
-    // Use IntersectionObserver - it fires immediately if already visible
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsInView(true)
-          observer.disconnect()
-        }
-      },
-      { rootMargin: '100px', threshold: 0 }
-    )
-
-    observer.observe(card)
-
-    return () => observer.disconnect()
-  }, [priority])
 
   const handleScroll = useCallback(() => {
     if (!carouselRef.current) return
@@ -684,11 +656,10 @@ const ProfileCard = memo(function ProfileCard({
   )
 
   const hasImages = profile.images.length > 0
-  const shouldLoadImage = (idx: number) => isInView && loadedImages.has(idx) && !failedImages.has(idx)
+  const shouldLoadImage = (idx: number) => loadedImages.has(idx) && !failedImages.has(idx)
 
   return (
     <div
-      ref={cardRef}
       onClick={handleSelect}
       className={`group relative bg-white overflow-hidden shadow-lg shadow-myColor-900/10 hover:shadow-2xl hover:shadow-myColor-900/20 transition-[transform,box-shadow] duration-300 ease-in-out hover:-translate-y-1 cursor-pointer ${
         compact ? 'rounded-2xl' : 'rounded-3xl'
@@ -727,6 +698,8 @@ const ProfileCard = memo(function ProfileCard({
                     alt={`${profile.firstName} photo`}
                     className="w-full h-full object-cover"
                     fetchPriority={priority ? 'high' : 'auto'}
+                    loading={priority ? 'eager' : 'lazy'}
+                    decoding="async"
                     onError={() => handleImageError(0)}
                   />
                 ) : (
@@ -762,6 +735,8 @@ const ProfileCard = memo(function ProfileCard({
                           alt={`${profile.firstName} photo ${idx + 1}`}
                           className="w-full h-full object-cover"
                           fetchPriority={priority && idx === 0 ? 'high' : 'auto'}
+                          loading={priority && idx === 0 ? 'eager' : 'lazy'}
+                          decoding="async"
                           onError={() => handleImageError(idx)}
                         />
                       ) : (
