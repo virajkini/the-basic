@@ -24,6 +24,8 @@ const LAYOUT_STORAGE_KEY = 'dashboard-layout'
 const DAILY_WELCOME_LS_KEY = 'amgel-dashboard-daily-welcome'
 /** Set on first dashboard visit; returning users get 'recent' as default sort */
 const SORT_VISITED_KEY = 'amgel-dashboard-sort-visited'
+/** Persists the user's last chosen sort option */
+const SORT_PREFERENCE_KEY = 'amgel-dashboard-sort'
 
 function localCalendarYmd(): string {
   return new Date().toLocaleDateString('en-CA')
@@ -118,7 +120,8 @@ export default function DiscoverTab({
   useLayoutEffect(() => {
     try {
       if (localStorage.getItem(SORT_VISITED_KEY)) {
-        setSortBy('recent')
+        const saved = localStorage.getItem(SORT_PREFERENCE_KEY) as SortOption | null
+        setSortBy(saved ?? 'recent')
       } else {
         localStorage.setItem(SORT_VISITED_KEY, '1')
       }
@@ -605,6 +608,7 @@ export default function DiscoverTab({
           onSortChange={(newSort) => {
             posthog.capture('discover_sort_changed', { sort_by: newSort, previous_sort: sortBy })
             setSortBy(newSort)
+            try { localStorage.setItem(SORT_PREFERENCE_KEY, newSort) } catch {}
           }}
         />
 
