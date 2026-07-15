@@ -5,7 +5,7 @@ import type { Gender } from '../models/profile.js';
  *
  * For each candidate profile we compute:
  *
- *   final_score = min(1, base_score × match_factor × jitter)
+ *   final_score = min(1, base_score × match_factor × daily_jitter)
  *
  * Viewer segment (from gender + age) selects:
  *   - ageWeight / heightWeight for match_factor blending
@@ -16,7 +16,14 @@ import type { Gender } from '../models/profile.js';
  *                  OR age_score alone when heightCm is missing on either side
  *
  *   base_score   — precomputed quality (default 0.3 if absent)
- *   jitter       — × (1 + (random − 0.5) × 0.06)  → ±3%
+ *   daily_jitter — × (1 + (hash(viewerId:profileId:date) − 0.5) × 0.3) → ±15%,
+ *                  deterministic per viewer per day: the order visibly rotates
+ *                  each day but stays stable across refreshes within a day
+ *
+ * New-profile injection (after scoring):
+ *   Profiles created within the last 5 days are pulled out and pinned into
+ *   positions 2, 3, 5, 8 (newest first, max 4) regardless of match score,
+ *   so every viewer sees fresh faces near the top of the list.
  *
  * Age diff direction:
  *   Male viewer:   diff = viewer.age − profile.age  (positive = she is younger)
@@ -38,9 +45,13 @@ import type { Gender } from '../models/profile.js';
  */
 
 const DEFAULT_BASE_SCORE = 0.3;
-const JITTER_FACTOR = 0.06;
+const JITTER_FACTOR = 0.3;
 const TALL_MALE_THRESHOLD_CM = 185;
 const TALL_FEMALE_THRESHOLD_CM = 168;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+const NEW_PROFILE_DAYS = 5;
+// 0-indexed slots where new profiles are pinned (positions 2, 3, 5, 8)
+const NEW_PROFILE_SLOTS = [1, 2, 4, 7];
 
 type Segment =
   | 'YOUNG_MALE'
@@ -82,12 +93,16 @@ export interface RankViewer {
   gender: Gender;
   age?: number | null;
   heightCm?: number | null;
+  /** Seeds the deterministic daily jitter; omit to fall back to Math.random */
+  viewerId?: string;
 }
 
 export interface RankableProfile {
+  _id?: string;
   age?: number | null;
   base_score?: number;
   heightCm?: number | null;
+  createdAt?: Date | string | null;
 }
 
 export type RankedProfile<T extends RankableProfile> = T & { final_score: number };
@@ -210,6 +225,45 @@ function heightScoreProportional(
   return Math.max(0.3, 1.0 - ((diff - band) / band) * 0.7);
 }
 
+/** FNV-1a 32-bit hash mapped to [0, 1) — deterministic stand-in for Math.random */
+function hashToUnit(str: string): number {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0) / 0x100000000;
+}
+
+function isNewProfile(profile: RankableProfile, now: number): boolean {
+  if (!profile.createdAt) return false;
+  const date = profile.createdAt instanceof Date ? profile.createdAt : new Date(profile.createdAt);
+  if (Number.isNaN(date.getTime())) return false;
+  return (now - date.getTime()) / MS_PER_DAY <= NEW_PROFILE_DAYS;
+}
+
+function createdAtMs(profile: RankableProfile): number {
+  const date = profile.createdAt instanceof Date ? profile.createdAt : new Date(profile.createdAt ?? 0);
+  return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+}
+
+/** Pin the newest ≤5-day-old profiles into NEW_PROFILE_SLOTS; rest of the list keeps score order */
+function injectNewProfiles<T extends RankableProfile>(ranked: T[], now: number): T[] {
+  const toInject = ranked
+    .filter((p) => isNewProfile(p, now))
+    .sort((a, b) => createdAtMs(b) - createdAtMs(a))
+    .slice(0, NEW_PROFILE_SLOTS.length);
+
+  if (toInject.length === 0) return ranked;
+
+  const injectSet = new Set(toInject);
+  const result = ranked.filter((p) => !injectSet.has(p));
+  toInject.forEach((profile, i) => {
+    result.splice(Math.min(NEW_PROFILE_SLOTS[i], result.length), 0, profile);
+  });
+  return result;
+}
+
 export function rankProfiles<T extends RankableProfile>(
   profiles: T[],
   viewer: RankViewer
@@ -223,6 +277,8 @@ export function rankProfiles<T extends RankableProfile>(
   const weights = SEGMENT_WEIGHTS[segment];
   const tall = isTallViewer(viewer);
   const viewerHeightCm = toHeightCm(viewer.heightCm);
+  const now = Date.now();
+  const today = new Date(now).toISOString().slice(0, 10);
 
   const ranked: RankedProfile<T>[] = profiles.map((profile) => {
     const baseScore =
@@ -246,8 +302,13 @@ export function rankProfiles<T extends RankableProfile>(
         ? ageScore
         : weights.ageWeight * ageScore + weights.heightWeight * heightScore;
 
+    const jitterUnit =
+      viewer.viewerId && profile._id
+        ? hashToUnit(`${viewer.viewerId}:${profile._id}:${today}`)
+        : Math.random();
+
     let finalScore = baseScore * matchFactor;
-    finalScore *= 1 + (Math.random() - 0.5) * JITTER_FACTOR;
+    finalScore *= 1 + (jitterUnit - 0.5) * JITTER_FACTOR;
     finalScore = Math.min(1, Math.round(finalScore * 10000) / 10000);
 
     return {
@@ -257,5 +318,5 @@ export function rankProfiles<T extends RankableProfile>(
   });
 
   ranked.sort((a, b) => b.final_score - a.final_score);
-  return ranked;
+  return injectNewProfiles(ranked, now);
 }

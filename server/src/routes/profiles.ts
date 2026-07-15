@@ -227,6 +227,7 @@ router.get('/discover',
             designation: isWorking ? profile.designation : null,
             verified: profile.verified,
             base_score: profile.base_score,
+            createdAt: profile.createdAt,
             images,
           };
         })
@@ -242,6 +243,7 @@ router.get('/discover',
               gender: viewerProfile.gender,
               age: viewerAge,
               heightCm: viewerProfile.heightCm,
+              viewerId: currentUserId,
             })
           : profilesWithImages;
 
