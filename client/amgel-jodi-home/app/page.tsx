@@ -240,7 +240,7 @@ export default function Home() {
                 className="group relative w-full max-w-xs rounded-full bg-gradient-to-b from-myColor-400 to-myColor-600 px-10 py-4 text-lg font-semibold text-white shadow-2xl shadow-myColor-500/30 transition-all duration-300 hover:scale-105 hover:shadow-myColor-400/50 active:scale-95 sm:w-auto"
               >
                 <span className="flex items-center justify-center gap-2">
-                  Begin Your Story
+                  Register Free
                   <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
@@ -248,10 +248,10 @@ export default function Home() {
               </button>
 
               <a
-                href="#how-it-works"
+                href="#why-choose-us"
                 className="w-full max-w-xs rounded-full border border-white/25 px-10 py-4 text-center text-lg font-medium text-white/90 backdrop-blur-sm transition-all duration-300 hover:border-white/40 hover:bg-white/10 sm:w-auto"
               >
-                See How It Works
+                Why Amgel Jodi?
               </a>
             </div>
 
@@ -322,41 +322,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Marriage biodata — landing CTA */}
-      <section className="relative border-t border-myColor-100/80 bg-gradient-to-b from-myColor-50/90 to-white py-12 md:py-16">
-        <div className="container mx-auto px-4">
-          <div className="mx-auto flex max-w-5xl flex-col gap-8 overflow-hidden rounded-3xl border border-myColor-100/90 bg-white p-6 shadow-[0_24px_80px_-40px_rgba(33,20,48,0.2)] ring-1 ring-myColor-100/50 md:flex-row md:items-center md:justify-between md:p-10">
-            <div className="flex flex-1 flex-col gap-4 md:flex-row md:items-center md:gap-6">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-myColor-500 to-myColor-700 text-white shadow-lg shadow-myColor-600/30">
-                <svg className="h-9 w-9" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-myColor-500">New</p>
-                <h2 className="mt-1 font-display text-2xl font-semibold tracking-tight text-myColor-900 md:text-3xl">
-                  Create marriage bio-data for <span className="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">FREE</span>
-                </h2>
-                <p className="mt-2 max-w-xl text-myColor-600 md:text-lg">
-                  Build a polished marriage biodata PDF from your verified profile—download and share in minutes. The biodata tool and the rest of the matrimony platform are completely free to use.
-                </p>
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
-              <Link
-                href="/create-free-biodata"
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-myColor-700 to-myColor-800 px-8 py-3.5 text-center text-base font-semibold text-white shadow-lg shadow-myColor-700/25 transition-all hover:from-myColor-800 hover:to-myColor-900 hover:shadow-xl active:scale-[0.98]"
-              >
-                Learn more
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* How It Works - Visual Journey */}
       <section id="how-it-works" className="relative py-24 md:py-32 bg-myColor-50 overflow-hidden">
         {/* Background decorations */}
@@ -366,14 +331,11 @@ export default function Home() {
         <div className="container mx-auto px-4 relative z-10">
           {/* Section Header */}
           <div className="text-center mb-16 md:mb-20">
-            <span className="inline-block px-4 py-2 bg-myColor-100 text-myColor-700 rounded-full text-sm font-medium mb-4">
-              Simple & Meaningful
-            </span>
             <h2 className="text-4xl md:text-5xl font-display font-semibold text-myColor-900 mb-4">
-              Your Journey to Forever
+              How It Works
             </h2>
             <p className="text-lg text-myColor-600 max-w-xl mx-auto">
-              Three simple steps. One beautiful beginning.
+              Three steps to get started.
             </p>
           </div>
 
@@ -517,7 +479,7 @@ export default function Home() {
       </section>
 
       {/* Why Amgel Jodi - Unique Value Props */}
-      <section className="relative py-24 md:py-32 bg-myColor-950 overflow-hidden">
+      <section id="why-choose-us" className="relative py-24 md:py-32 bg-myColor-950 overflow-hidden">
         {/* SVG Pattern overlay */}
         <div
           className="absolute inset-0 opacity-[0.03]"
@@ -536,14 +498,13 @@ export default function Home() {
               <span className="inline-block px-4 py-2 bg-myColor-800 text-myColor-300 rounded-full text-sm font-medium mb-6">
                 Why Choose Us
               </span>
-              <h2 className="text-4xl md:text-5xl font-display font-semibold text-white mb-6 leading-tight">
-                Built for Our
-                <span className="text-myColor-400"> Community,</span><br />
-                By Our Community
+              <h2 className="text-4xl md:text-5xl font-display font-semibold text-white mb-3 leading-tight">
+                Yes, there are many other
+                <span className="text-myColor-400"> websites and</span><br />
+                WhatsApp groups.
               </h2>
-              <p className="text-lg text-myColor-300 mb-10 leading-relaxed">
-                We're not just a matrimony platform. We're Konkani GSBs who understand the delicate balance
-                of honoring traditions while embracing modern connections.
+              <p className="text-myColor-400 mb-10 leading-relaxed">
+                Three reasons GSB Konkani families still choose us.
               </p>
 
               {/* Feature list */}
@@ -570,19 +531,23 @@ export default function Home() {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-1">Privacy You Can Trust</h3>
-                    <p className="text-myColor-400">Your data stays yours. We never share your information without your consent.</p>
+                    <p className="text-myColor-400">
+                      Randomly sharing your biodata in a WhatsApp group means zero control over who sees it, saves it, or forwards it. Register once at one clean, structured platform. <span className="text-myColor-300">Your contact details stay hidden until you accept a connection request</span> — no one can see them without your say.
+                    </p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-white mb-1">Family-First Approach</h3>
-                    <p className="text-myColor-400">Because we know that in our culture, it's not just two people - it's two families coming together.</p>
+                    <h3 className="text-lg font-semibold text-white mb-1">Completely Free</h3>
+                    <p className="text-myColor-400">
+                      This platform is built out of passion and a desire to give something back to our community. There is a minimal cost to keep it running, but <span className="text-myColor-300">we bear it ourselves</span> — no subscription, no paid unlocks, no tiers. Everything you need to find a match is free.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -725,6 +690,41 @@ export default function Home() {
                   </div>
                 </Link>
               ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Marriage biodata — landing CTA */}
+      <section className="relative border-t border-myColor-100/80 bg-gradient-to-b from-myColor-50/90 to-white py-12 md:py-16">
+        <div className="container mx-auto px-4">
+          <div className="mx-auto flex max-w-5xl flex-col gap-8 overflow-hidden rounded-3xl border border-myColor-100/90 bg-white p-6 shadow-[0_24px_80px_-40px_rgba(33,20,48,0.2)] ring-1 ring-myColor-100/50 md:flex-row md:items-center md:justify-between md:p-10">
+            <div className="flex flex-1 flex-col gap-4 md:flex-row md:items-center md:gap-6">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-myColor-500 to-myColor-700 text-white shadow-lg shadow-myColor-600/30">
+                <svg className="h-9 w-9" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-myColor-500">New</p>
+                <h2 className="mt-1 font-display text-2xl font-semibold tracking-tight text-myColor-900 md:text-3xl">
+                  Create marriage bio-data for <span className="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">FREE</span>
+                </h2>
+                <p className="mt-2 max-w-xl text-myColor-600 md:text-lg">
+                  Build a polished marriage biodata PDF from your verified profile—download and share in minutes. The biodata tool and the rest of the matrimony platform are completely free to use.
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 flex-col gap-3 sm:flex-row md:flex-col lg:flex-row">
+              <Link
+                href="/create-free-biodata"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-myColor-700 to-myColor-800 px-8 py-3.5 text-center text-base font-semibold text-white shadow-lg shadow-myColor-700/25 transition-all hover:from-myColor-800 hover:to-myColor-900 hover:shadow-xl active:scale-[0.98]"
+              >
+                Learn more
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </Link>
             </div>
           </div>
         </div>
