@@ -109,17 +109,16 @@ export default function Header() {
               </a>
               {!hideAuthButtons && (
                 <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsLoginOpen(true)}
+                  <a
+                    href="#how-it-works"
                     className={`rounded-full px-5 py-2.5 text-sm font-semibold transition-all duration-300 md:px-6 md:text-base ${
                       showSolidHeader
                         ? 'border border-myColor-200 bg-white text-myColor-800 hover:border-myColor-300 hover:bg-myColor-50'
                         : 'border border-white/35 bg-white/10 text-white backdrop-blur-sm hover:border-white/50 hover:bg-white/18'
                     } hover:scale-[1.02] active:scale-95`}
                   >
-                    Register Free
-                  </button>
+                    How it works
+                  </a>
                   <button
                     type="button"
                     onClick={() => setIsLoginOpen(true)}
@@ -153,17 +152,16 @@ export default function Header() {
             {/* Mobile: Register + Login */}
             {!hideAuthButtons && (
               <div className="flex items-center gap-2 md:hidden">
-                <button
-                  type="button"
-                  onClick={() => setIsLoginOpen(true)}
+                <a
+                  href="#how-it-works"
                   className={`rounded-full px-3.5 py-2 text-xs font-semibold transition-all duration-300 sm:px-4 sm:text-sm ${
                     showSolidHeader
                       ? 'border border-myColor-200 bg-white text-myColor-800 hover:bg-myColor-50'
                       : 'border border-white/35 bg-white/10 text-white backdrop-blur-sm hover:bg-white/18'
                   } active:scale-95`}
                 >
-                  Register Free
-                </button>
+                  How it works
+                </a>
                 <button
                   type="button"
                   onClick={() => setIsLoginOpen(true)}
