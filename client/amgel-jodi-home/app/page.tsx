@@ -235,17 +235,17 @@ export default function Home() {
 
             {/* CTA Buttons */}
             <div className="mt-7 flex flex-col items-center justify-center gap-4 animate-fade-in-up delay-300 sm:flex-row">
-              <a
-                href="#how-it-works"
-                className="group relative w-full max-w-xs rounded-full bg-gradient-to-b from-myColor-400 to-myColor-600 px-10 py-4 text-center text-lg font-semibold text-white shadow-2xl shadow-myColor-500/30 transition-all duration-300 hover:scale-105 hover:shadow-myColor-400/50 active:scale-95 sm:w-auto"
+              <button
+                onClick={openLoginSheet}
+                className="group relative w-full max-w-xs rounded-full bg-gradient-to-b from-myColor-400 to-myColor-600 px-10 py-4 text-lg font-semibold text-white shadow-2xl shadow-myColor-500/30 transition-all duration-300 hover:scale-105 hover:shadow-myColor-400/50 active:scale-95 sm:w-auto"
               >
                 <span className="flex items-center justify-center gap-2">
-                  How it works
+                  Register Free
                   <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
                 </span>
-              </a>
+              </button>
 
               <a
                 href="#why-choose-us"
