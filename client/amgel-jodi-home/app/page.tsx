@@ -235,17 +235,17 @@ export default function Home() {
 
             {/* CTA Buttons */}
             <div className="mt-7 flex flex-col items-center justify-center gap-4 animate-fade-in-up delay-300 sm:flex-row">
-              <button
-                onClick={openLoginSheet}
-                className="group relative w-full max-w-xs rounded-full bg-gradient-to-b from-myColor-400 to-myColor-600 px-10 py-4 text-lg font-semibold text-white shadow-2xl shadow-myColor-500/30 transition-all duration-300 hover:scale-105 hover:shadow-myColor-400/50 active:scale-95 sm:w-auto"
+              <a
+                href="#how-it-works"
+                className="group relative w-full max-w-xs rounded-full bg-gradient-to-b from-myColor-400 to-myColor-600 px-10 py-4 text-center text-lg font-semibold text-white shadow-2xl shadow-myColor-500/30 transition-all duration-300 hover:scale-105 hover:shadow-myColor-400/50 active:scale-95 sm:w-auto"
               >
                 <span className="flex items-center justify-center gap-2">
-                  Register Free
+                  How it works
                   <svg className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                   </svg>
                 </span>
-              </button>
+              </a>
 
               <a
                 href="#why-choose-us"
@@ -400,7 +400,7 @@ export default function Home() {
               <div className="text-center md:text-left flex-1 bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-amber-100">
                 <h3 className="text-xl md:text-2xl font-bold text-myColor-900 mb-2">Connect & Meet</h3>
                 <p className="text-myColor-600 leading-relaxed">
-                  Send a connection request. Once the other person accepts, both contacts are unlocked and you can connect directly. Contact and matching are included at no cost. Amgel Jodi is completely free, with no paid unlocks.
+                  Send a connection request. Once the other person accepts, both contacts are unlocked and you can connect directly.
                 </p>
               </div>
             </div>
