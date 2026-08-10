@@ -15,7 +15,8 @@ import { useLastActivePing } from '../../hooks/useLastActivePing'
 import ProfileDetailView from '../ProfileDetailView'
 import FavoriteToggle from '../FavoriteToggle'
 import SortSheet, { SortOption } from '../SortSheet'
-import FilterSheet, { FilterOptions } from '../FilterSheet'
+import { FilterOptions } from '../FilterSheet'
+import DiscoverFilterButton from '../DiscoverFilterButton'
 import RequestCallbackSection from '../RequestCallbackSection'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
@@ -92,7 +93,6 @@ export default function DiscoverTab({
   const [sortBy, setSortBy] = useState<SortOption>('relevant')
   const [filters, setFilters] = useState<FilterOptions>({})
   const [showSortSheet, setShowSortSheet] = useState(false)
-  const [showFilterSheet, setShowFilterSheet] = useState(false)
   const [layout, setLayout] = useState<LayoutType>('default')
   const [showDailyWelcome, setShowDailyWelcome] = useState(false)
 
@@ -285,6 +285,20 @@ export default function DiscoverTab({
     }
   }
 
+  const locationOptions = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const p of discoverProfiles) {
+      if (p.nativePlace) counts.set(p.nativePlace, (counts.get(p.nativePlace) ?? 0) + 1)
+    }
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).map(([loc]) => loc)
+  }, [discoverProfiles])
+
+  const hasLocationFilter = !!(filters.nativePlaces?.length)
+
+  const visibleProfiles = hasLocationFilter
+    ? discoverProfiles.filter(p => filters.nativePlaces!.includes(p.nativePlace))
+    : discoverProfiles
+
   if (loading) {
     return (
       <div className="min-h-full container mx-auto px-4 py-4 md:py-6">
@@ -375,8 +389,6 @@ export default function DiscoverTab({
     )
   }
 
-  const activeFilterCount = (filters.ageMin || filters.ageMax) ? 1 : 0
-
   // Has profile - Show Discover Profiles
   return (
     <div className="min-h-full container mx-auto px-4 py-4 md:py-6">
@@ -460,26 +472,18 @@ export default function DiscoverTab({
               </button>
 
               {/* Filter Button */}
-              <button
-                onClick={() => setShowFilterSheet(true)}
-                className={`relative flex items-center gap-2 px-4 py-2.5 rounded-full font-medium text-sm transition-all duration-200 ${
-                  activeFilterCount > 0
-                    ? 'bg-myColor-600 text-white shadow-lg shadow-myColor-500/20'
-                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-                }`}
-              >
-                <div className="relative">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                  </svg>
-                  {activeFilterCount > 0 && (
-                    <span className="absolute -top-2 -right-2 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
-                      {activeFilterCount}
-                    </span>
-                  )}
-                </div>
-                <span>Filter</span>
-              </button>
+              <DiscoverFilterButton
+                currentFilters={filters}
+                locationOptions={locationOptions}
+                onApply={(newFilters) => {
+                  posthog.capture('discover_filter_applied', {
+                    age_min: newFilters.ageMin,
+                    age_max: newFilters.ageMax,
+                    native_places: newFilters.nativePlaces,
+                  })
+                  setFilters(newFilters)
+                }}
+              />
 
               {/* Divider */}
               <div className="w-px h-6 bg-gray-200" />
@@ -521,12 +525,12 @@ export default function DiscoverTab({
 
               {/* Profile count - desktop only */}
               <span className="hidden md:block text-sm text-myColor-500 ml-2">
-                {discoverProfiles.length} profiles
+                {visibleProfiles.length} profiles
               </span>
             </div>
           </div>
 
-          {discoverProfiles.length === 0 ? (
+          {visibleProfiles.length === 0 ? (
             <div className="glass-card rounded-2xl p-12 text-center">
               <div className="w-20 h-20 bg-myColor-100 rounded-full mx-auto mb-4 flex items-center justify-center">
                 <svg className="w-10 h-10 text-myColor-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -537,6 +541,11 @@ export default function DiscoverTab({
                 <>
                   <p className="text-myColor-600">Your shortlist is empty</p>
                   <p className="text-sm text-myColor-400 mt-1">Tap the star on a profile to add them to your shortlist</p>
+                </>
+              ) : hasLocationFilter ? (
+                <>
+                  <p className="text-myColor-600">No profiles for selected locations</p>
+                  <p className="text-sm text-myColor-400 mt-1">Try selecting a different place or clear the location filter</p>
                 </>
               ) : (
                 <>
@@ -561,7 +570,7 @@ export default function DiscoverTab({
                 ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3'
                 : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'
             }`}>
-              {discoverProfiles.map((discoverProfile, index) => (
+              {visibleProfiles.map((discoverProfile, index) => (
                 <ProfileCard
                   key={discoverProfile._id}
                   profile={discoverProfile}
@@ -612,19 +621,6 @@ export default function DiscoverTab({
           }}
         />
 
-        {/* Filter Sheet */}
-        <FilterSheet
-          isOpen={showFilterSheet}
-          onClose={() => setShowFilterSheet(false)}
-          currentFilters={filters}
-          onApply={(newFilters) => {
-            posthog.capture('discover_filter_applied', {
-              age_min: newFilters.ageMin,
-              age_max: newFilters.ageMax,
-            })
-            setFilters(newFilters)
-          }}
-        />
       </div>
     </div>
   )
