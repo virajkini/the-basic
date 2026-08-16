@@ -91,6 +91,8 @@ export default function DiscoverTab({
 
   // Sort, Filter, and Layout state
   const [sortBy, setSortBy] = useState<SortOption>('relevant')
+  const sortByRef = useRef<SortOption>('relevant')
+  sortByRef.current = sortBy
   const [filters, setFilters] = useState<FilterOptions>({})
   const [showSortSheet, setShowSortSheet] = useState(false)
   const [layout, setLayout] = useState<LayoutType>('default')
@@ -121,7 +123,9 @@ export default function DiscoverTab({
     try {
       if (localStorage.getItem(SORT_VISITED_KEY)) {
         const saved = localStorage.getItem(SORT_PREFERENCE_KEY) as SortOption | null
-        setSortBy(saved ?? 'recent')
+        const resolved = saved ?? 'recent'
+        sortByRef.current = resolved
+        setSortBy(resolved)
       } else {
         localStorage.setItem(SORT_VISITED_KEY, '1')
       }
@@ -209,7 +213,7 @@ export default function DiscoverTab({
     try {
       // Build query params
       const params = new URLSearchParams()
-      params.set('sort', sortBy)
+      params.set('sort', sortByRef.current)
       if (filters.ageMin) params.set('ageMin', filters.ageMin.toString())
       if (filters.ageMax) params.set('ageMax', filters.ageMax.toString())
       appendShortlistDiscoverParams(params)
@@ -236,7 +240,7 @@ export default function DiscoverTab({
 
       // Build query params for discover
       const params = new URLSearchParams()
-      params.set('sort', sortBy)
+      params.set('sort', sortByRef.current)
       if (filters.ageMin) params.set('ageMin', filters.ageMin.toString())
       if (filters.ageMax) params.set('ageMax', filters.ageMax.toString())
       appendShortlistDiscoverParams(params)
