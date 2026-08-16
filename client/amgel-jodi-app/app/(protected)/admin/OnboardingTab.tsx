@@ -405,11 +405,14 @@ export default function OnboardingTab() {
         setExistingImages(refreshed)
 
         // Persist photoKeys to the profile document
-        await authFetch(`${API_BASE}/admin/users/${editorUserId}/profile`, {
+        const saveRes = await authFetch(`${API_BASE}/admin/users/${editorUserId}/profile`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ photoKeys: refreshed.map((f) => f.key) }),
         })
+        if (!saveRes.ok) {
+          throw new Error('Images uploaded but failed to save photoKeys to profile')
+        }
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Upload failed')
