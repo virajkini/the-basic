@@ -323,7 +323,7 @@ export default function FilterSheet({ isOpen, onClose, currentFilters, locationO
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <h3 className={`text-sm font-bold tracking-wide ${hasLocationFilter ? 'text-myColor-700' : 'text-gray-500'}`}>
-                  Native Place
+                  Location <span className="font-normal text-xs opacity-70">(Native / Work)</span>
                 </h3>
               </div>
               {hasLocationFilter && (

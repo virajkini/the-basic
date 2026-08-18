@@ -293,6 +293,7 @@ export default function DiscoverTab({
     const counts = new Map<string, number>()
     for (const p of discoverProfiles) {
       if (p.nativePlace) counts.set(p.nativePlace, (counts.get(p.nativePlace) ?? 0) + 1)
+      if (p.workLocation) counts.set(p.workLocation, (counts.get(p.workLocation) ?? 0) + 1)
     }
     return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).map(([loc]) => loc)
   }, [discoverProfiles])
@@ -300,7 +301,10 @@ export default function DiscoverTab({
   const hasLocationFilter = !!(filters.nativePlaces?.length)
 
   const visibleProfiles = hasLocationFilter
-    ? discoverProfiles.filter(p => filters.nativePlaces!.includes(p.nativePlace))
+    ? discoverProfiles.filter(p =>
+        filters.nativePlaces!.includes(p.nativePlace) ||
+        (p.workLocation ? filters.nativePlaces!.includes(p.workLocation) : false)
+      )
     : discoverProfiles
 
   if (loading) {

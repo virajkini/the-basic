@@ -15,6 +15,7 @@ export interface DiscoverProfile {
   firstName: string
   age: number
   nativePlace: string
+  workLocation?: string
   height: string
   designation: string | null
   verified: boolean
