@@ -23,4 +23,4 @@ export interface QuotaStatus {
 
 // Default values for new users
 export const DEFAULT_DAILY_LIMIT = 2;
-export const DEFAULT_TOTAL_CREDITS = 20;
+export const DEFAULT_TOTAL_CREDITS = 100;
