@@ -532,7 +532,7 @@ export default function Home() {
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-1">Privacy You Can Trust</h3>
                     <p className="text-myColor-400">
-                      Randomly sharing your biodata in a WhatsApp group means zero control over who sees it, saves it, or forwards it. Register once at one clean, structured platform. <span className="text-myColor-300">Your contact details stay hidden until you accept a connection request</span> — no one can see them without your say.
+                      Randomly sharing your biodata in a WhatsApp group means zero control over who sees it, saves it, or forwards it. Register once at one clean, structured platform. <span className="text-myColor-300">We only display your first name — your full name and contact details stay hidden until you accept a connection request.</span>
                     </p>
                   </div>
                 </div>

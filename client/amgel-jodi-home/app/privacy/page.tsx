@@ -32,6 +32,13 @@ export default function PrivacyPolicy() {
               </p>
             </section>
 
+            <section className="mb-10 rounded-2xl bg-myColor-900 p-6 md:p-8">
+              <h2 className="text-2xl font-bold text-white mb-3">Your name and contact details are never shared without your permission</h2>
+              <p className="text-myColor-200 leading-relaxed">
+                Other members only see your <strong className="text-white">first name</strong>. Your full name, phone number, and email address remain completely hidden until you accept a connection request. Nobody can access your contact details without your explicit consent — not by browsing, not by searching, not in any other way.
+              </p>
+            </section>
+
             <section className="mb-10">
               <h2 className="text-2xl font-bold text-myColor-900 mb-4">2. Information We Collect</h2>
 
@@ -49,14 +56,6 @@ export default function PrivacyPolicy() {
                 <li>Location information (city, state, country)</li>
               </ul>
 
-              <h3 className="text-xl font-semibold text-myColor-800 mb-3">2.2 Automatically Collected Information</h3>
-              <p className="mb-4">We automatically collect certain information when you visit our platform:</p>
-              <ul className="list-disc pl-6 mb-4 space-y-2">
-                <li>Device information (browser type, operating system)</li>
-                <li>IP address and location data</li>
-                <li>Usage patterns and preferences</li>
-                <li>Cookies and similar tracking technologies</li>
-              </ul>
             </section>
 
             <section className="mb-10 rounded-2xl border border-myColor-100 bg-myColor-50/80 p-6 md:p-8">
@@ -83,15 +82,17 @@ export default function PrivacyPolicy() {
 
             <section className="mb-10">
               <h2 className="text-2xl font-bold text-myColor-900 mb-4">4. Information Sharing</h2>
+              <p className="mb-6 text-lg font-semibold leading-snug">
+                <span className="text-myColor-600">Your full name and contact details — phone number and email — are </span>
+                <span className="text-myColor-500 bg-myColor-50 px-1 rounded">never visible to anyone</span>
+                <span className="text-myColor-600"> until you personally accept a connection request. Only your first name is shown on your profile.</span>
+              </p>
               <p className="mb-4">We may share your information in the following circumstances:</p>
               <ul className="list-disc pl-6 mb-4 space-y-2">
                 <li><strong>With Other Members:</strong> Your profile information is visible to other registered members as part of our matchmaking service.</li>
                 <li><strong>For Legal Compliance:</strong> When required by law or to protect our rights and safety.</li>
                 <li><strong>With Your Consent:</strong> When you explicitly agree to share information.</li>
               </ul>
-              <p className="mb-4 font-bold text-myColor-900">
-                Contact information (such as phone number and email) is shared with other members only when you connect with them—that is, only with your consent.
-              </p>
               <p>
                 We do not share your data with third-party service providers. We never sell your personal information to third parties for marketing purposes.
               </p>
