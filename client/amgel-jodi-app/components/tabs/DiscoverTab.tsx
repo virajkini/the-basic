@@ -18,6 +18,8 @@ import SortSheet, { SortOption } from '../SortSheet'
 import { FilterOptions } from '../FilterSheet'
 import DiscoverFilterButton from '../DiscoverFilterButton'
 import RequestCallbackSection from '../RequestCallbackSection'
+import RateAppBottomSheet from '../RateAppBottomSheet'
+import { useRateAppPrompt } from '../../hooks/useRateAppPrompt'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 const LAYOUT_STORAGE_KEY = 'dashboard-layout'
@@ -47,6 +49,7 @@ interface Profile {
   designation?: string
   verified: boolean
   favoriteUserIds?: string[]
+  createdAt: string
 }
 
 function useIsMobile() {
@@ -88,6 +91,7 @@ export default function DiscoverTab({
   const [ownProfileImages, setOwnProfileImages] = useState<string[]>([])
   const [showOwnProfilePreview, setShowOwnProfilePreview] = useState(false)
   const hasFetched = useRef(false)
+  const rateAppPrompt = useRateAppPrompt(profile?.createdAt)
 
   // Sort, Filter, and Layout state
   const [sortBy, setSortBy] = useState<SortOption>('relevant')
@@ -626,6 +630,19 @@ export default function DiscoverTab({
             posthog.capture('discover_sort_changed', { sort_by: newSort, previous_sort: sortBy })
             setSortBy(newSort)
             try { localStorage.setItem(SORT_PREFERENCE_KEY, newSort) } catch {}
+          }}
+        />
+
+        {/* Rate App Bottom Sheet */}
+        <RateAppBottomSheet
+          isOpen={rateAppPrompt.isOpen}
+          onDismiss={() => {
+            posthog.capture('rate_app_prompt_dismissed')
+            rateAppPrompt.dismiss()
+          }}
+          onRate={() => {
+            posthog.capture('rate_app_prompt_accepted')
+            rateAppPrompt.markRated()
           }}
         />
 
