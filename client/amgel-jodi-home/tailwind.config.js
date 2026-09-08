@@ -6,10 +6,11 @@ module.exports = {
   ],
   theme: {
     extend: {
+      // Single source of truth for the site font - change the CSS var target here only.
       fontFamily: {
-        sans: ['var(--font-dm-sans)', 'system-ui', 'sans-serif'],
-        heading: ['var(--font-cormorant)', 'Georgia', 'serif'],
-        display: ['var(--font-cormorant)', 'Georgia', 'serif'],
+        sans: ['var(--font-satoshi)', 'system-ui', 'sans-serif'],
+        heading: ['var(--font-satoshi)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-satoshi)', 'system-ui', 'sans-serif'],
       },
       colors: {
         "myColor": {
