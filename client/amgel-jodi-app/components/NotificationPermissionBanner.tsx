@@ -13,6 +13,9 @@ export default function NotificationPermissionBanner() {
       // Only show inside the Android WebView
       if (!window.isAndroidApp || !window.AmgelJodiNative) return
 
+      // Older installed app versions have the bridge but not this method.
+      if (typeof window.AmgelJodiNative.getNotificationPermissionStatus !== 'function') return
+
       const count = parseInt(localStorage.getItem(PROMPT_COUNT_KEY) || '0', 10)
       if (count >= MAX_PROMPTS) return
 

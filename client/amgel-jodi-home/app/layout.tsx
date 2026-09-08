@@ -1,25 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans, Cormorant_Garamond } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { PostHogProvider } from "./providers";
 import Header from "./components/Header";
 import AuthCheck from "./providers/AuthCheck";
 import { SubpageAndroidAppStrip } from "./components/AndroidAppCta";
 
-// Refined sans-serif for body text
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-dm-sans",
+// Single site-wide font - see tailwind.config.js `fontFamily` for how this is wired up
+const satoshi = localFont({
+  src: [
+    { path: "./fonts/Satoshi-Variable.woff2", weight: "300 900", style: "normal" },
+    { path: "./fonts/Satoshi-VariableItalic.woff2", weight: "300 900", style: "italic" },
+  ],
+  variable: "--font-satoshi",
   display: "swap",
-  weight: ["400", "500", "600", "700"],
-});
-
-// Elegant serif for display headings - distinctive and memorable
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  variable: "--font-cormorant",
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
 });
 
 const siteUrl = "https://amgeljodi.com";
@@ -236,7 +230,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${dmSans.variable} ${cormorant.variable}`}>
+    <html lang="en" className={satoshi.variable}>
       <head>
         <script
           type="application/ld+json"
