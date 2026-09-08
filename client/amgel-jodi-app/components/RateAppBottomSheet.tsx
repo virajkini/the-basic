@@ -21,7 +21,14 @@ export default function RateAppBottomSheet({ isOpen, onDismiss, onRate }: RateAp
   if (!isOpen) return null
 
   const handleRate = () => {
-    window.open(PLAY_STORE_URL, '_blank', 'noopener,noreferrer')
+    // window.open() is silently dropped inside the Android WebView (no onCreateWindow
+    // handler); navigating the current window instead is intercepted by
+    // shouldOverrideUrlLoading, which hands external URLs off to the Play Store app.
+    if (window.isAndroidApp) {
+      window.location.href = PLAY_STORE_URL
+    } else {
+      window.open(PLAY_STORE_URL, '_blank', 'noopener,noreferrer')
+    }
     onRate()
   }
 
