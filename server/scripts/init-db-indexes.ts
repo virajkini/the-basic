@@ -185,6 +185,13 @@ async function createIndexes() {
       console.log('  ○ Index already exists: fcmToken');
     }
 
+    // Admin console filters profiles by verification workflow status
+    if (await safeCreateIndex(profilesCollection, { verificationStatus: 1 }, 'verification_status')) {
+      console.log('  ✓ Created index: verificationStatus (admin filter)');
+    } else {
+      console.log('  ○ Index already exists: verificationStatus');
+    }
+
     console.log('\nCreating indexes for connection_quotas collection...');
     const quotasCollection = db.collection('connection_quotas');
     await quotasCollection.createIndex(
