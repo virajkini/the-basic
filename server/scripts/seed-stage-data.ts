@@ -193,6 +193,7 @@ async function seed() {
             gothra: profile.gothra,
             nakshatra: profile.nakshatra,
             verified: true,
+            verificationStatus: 'verified',
             subscribed: true,
             updatedAt: now,
           },

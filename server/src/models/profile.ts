@@ -8,6 +8,40 @@ export type FoodPreference = 'pure_veg' | 'non_veg' | 'eggetarian';
 
 export const FOOD_PREFERENCE_VALUES: FoodPreference[] = ['pure_veg', 'non_veg', 'eggetarian'];
 
+/** Admin verification workflow status. `verified` (boolean) is derived from it: verified === (status === 'verified'). */
+export const VERIFICATION_STATUSES = [
+  'pending',
+  'not_reachable',
+  'callback',
+  'verified',
+  'invalid',
+  'not_gsb',
+  'got_married',
+  'on_hold',
+] as const;
+export type VerificationStatus = (typeof VERIFICATION_STATUSES)[number];
+
+export function isVerificationStatus(value: unknown): value is VerificationStatus {
+  return typeof value === 'string' && (VERIFICATION_STATUSES as readonly string[]).includes(value);
+}
+
+/** Status for a profile, falling back to the legacy boolean for profiles not yet migrated. */
+export function resolveVerificationStatus(p: Pick<Profile, 'verified' | 'verificationStatus'>): VerificationStatus {
+  return p.verificationStatus ?? (p.verified ? 'verified' : 'pending');
+}
+
+/** Statuses that deactivate a profile: the user can't browse other profiles (not even blurred). */
+export const DEACTIVATED_VERIFICATION_STATUSES: readonly VerificationStatus[] = ['invalid', 'not_gsb', 'got_married'];
+
+export function isDeactivatedStatus(status: VerificationStatus): boolean {
+  return DEACTIVATED_VERIFICATION_STATUSES.includes(status);
+}
+
+/** The only way to set verification fields — keeps `verified` in sync with `verificationStatus`. */
+export function verificationFields(status: VerificationStatus): Pick<Profile, 'verified' | 'verificationStatus'> {
+  return { verificationStatus: status, verified: status === 'verified' };
+}
+
 export interface Profile {
   _id: string; // Same as user id: "u_12345"
 
@@ -55,7 +89,10 @@ export interface Profile {
   photoKeys?: string[];
 
   // System fields
+  /** Derived from verificationStatus — never set directly; use verificationFields(). */
   verified: boolean;
+  /** Admin verification workflow status. Optional only for profiles created before the migration. */
+  verificationStatus?: VerificationStatus;
   subscribed: boolean;
   /** FCM token for push notifications. One per user; replaced when device changes. */
   fcmToken?: string;

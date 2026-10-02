@@ -1,8 +1,16 @@
 import express, { Request, Response, NextFunction } from 'express';
 import { authenticateToken } from '../middleware/auth.js';
 import { requireAdmin } from '../middleware/admin.js';
-import { getAllProfiles, updateProfile, deleteProfile, readProfile, createProfile, removePhotoKey } from '../services/profileManager.js';
-import { createUser, findUserById, listAllUsersWithProfileSummary } from '../services/userManager.js';
+import { updateProfile, deleteProfile, readProfile, createProfile, removePhotoKey } from '../services/profileManager.js';
+import { createUser, findUserById } from '../services/userManager.js';
+import {
+  ADMIN_PAGE_SIZE_DEFAULT,
+  ADMIN_PAGE_SIZE_MAX,
+  countAllUsers,
+  getVerificationStatusCounts,
+  listAdminProfilesPage,
+  listAdminUsersPage,
+} from '../services/adminListManager.js';
 import { deleteAllUserConnections } from '../services/connectionManager.js';
 import { deleteAllUserNotifications, createCustomNotification } from '../services/notificationManager.js';
 import { sendMulticastNotification } from '../services/fcmService.js';
@@ -15,6 +23,7 @@ import {
   deleteFile,
 } from '../services/fileManager.js';
 import { parseCreateProfileBody, parseProfileUpdateBody } from '../validation/profilePayload.js';
+import { isVerificationStatus, resolveVerificationStatus, verificationFields } from '../models/profile.js';
 
 function adminAudit(actorId: string | undefined, action: string, targetUserId?: string, extra?: Record<string, unknown>) {
   console.log(
@@ -26,6 +35,17 @@ function adminAudit(actorId: string | undefined, action: string, targetUserId?: 
       ...extra,
     })
   );
+}
+
+/** Paging + filters shared by the admin list endpoints. `paged` is false when no limit is sent (legacy: return all). */
+function parseAdminListQuery(query: Request['query']) {
+  const rawLimit = parseInt(String(query.limit ?? ''), 10);
+  const paged = !isNaN(rawLimit);
+  const limit = paged ? Math.min(Math.max(rawLimit, 1), ADMIN_PAGE_SIZE_MAX) : 1_000_000;
+  const skip = Math.max(parseInt(String(query.skip ?? ''), 10) || 0, 0);
+  const status = isVerificationStatus(query.status) ? query.status : undefined;
+  const q = typeof query.q === 'string' && query.q.trim() ? query.q.trim() : undefined;
+  return { paged, limit, skip, status, q };
 }
 
 function normalizeAdminPhone(input: unknown): string | null {
@@ -54,40 +74,28 @@ const router = express.Router();
 
 /**
  * GET /api/admin/profiles
- * Get all profiles with user information (admin only)
- * Returns: user id, phone number, name, isVerified, isSubscribed
+ * Profiles with user info, newest first (admin only).
+ * Query: limit (default all; Profiles tab sends 20), skip, status, q (name / phone / email / user id).
+ * On the first page also returns status counts for the filter chips.
  */
 router.get('/profiles',
   authenticateToken,
   requireAdmin,
-  async (_req, res) => {
+  async (req, res) => {
     try {
-      const profiles = await getAllProfiles();
-
-      // Fetch user phone numbers for each profile
-      const profilesWithUsers = await Promise.all(
-        profiles.map(async (profile) => {
-          const user = await findUserById(profile._id);
-          const name = profile.name || `${profile.firstName || ''} ${profile.lastName || ''}`.trim() || 'N/A';
-          
-          return {
-            userId: profile._id,
-            phone: user?.phone || null,
-            email: user?.email || null,
-            name: name,
-            gender: profile.gender || null,
-            isVerified: profile.verified ?? false,
-            isSubscribed: profile.subscribed ?? false,
-            hasFcmToken: !!profile.fcmToken,
-            createdAt: profile.createdAt,
-          };
-        })
-      );
+      const { paged, limit, skip, status, q } = parseAdminListQuery(req.query);
+      const [page, statusCounts] = await Promise.all([
+        listAdminProfilesPage({ limit, skip, status, q }),
+        paged && skip === 0 ? getVerificationStatusCounts() : Promise.resolve(null),
+      ]);
 
       res.json({
         success: true,
-        profiles: profilesWithUsers,
-        count: profilesWithUsers.length,
+        profiles: page.rows,
+        count: page.rows.length,
+        total: page.total,
+        hasMore: page.hasMore,
+        ...(statusCounts ? { statusCounts: statusCounts.counts, totalProfiles: statusCounts.total } : {}),
       });
     } catch (error) {
       console.error('Error fetching all profiles:', error);
@@ -100,9 +108,50 @@ router.get('/profiles',
 );
 
 /**
+ * PATCH /api/admin/profiles/:userId/verification-status
+ * Set the verification workflow status (admin only). `verified` is derived from it.
+ * Body: { status: VerificationStatus }
+ */
+router.patch('/profiles/:userId/verification-status',
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { status } = req.body;
+
+      if (!isVerificationStatus(status)) {
+        return res.status(400).json({ error: 'status is required and must be a valid verification status' });
+      }
+
+      const updatedProfile = await updateProfile(userId, verificationFields(status));
+
+      if (!updatedProfile) {
+        return res.status(404).json({ error: 'Profile not found' });
+      }
+
+      adminAudit(req.authenticatedUserId, 'set_verification_status', userId, { status });
+      res.json({
+        success: true,
+        profile: {
+          userId: updatedProfile._id,
+          verified: updatedProfile.verified,
+          verificationStatus: resolveVerificationStatus(updatedProfile),
+        },
+      });
+    } catch (error) {
+      console.error('Error updating verification status:', error);
+      res.status(500).json({
+        error: 'Failed to update verification status',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+);
+
+/**
  * PATCH /api/admin/profiles/:userId/verified
- * Update the verified status of a user profile (admin only)
- * Body: { verified: boolean }
+ * Legacy endpoint for older admin clients. Body: { verified: boolean } → 'verified' | 'pending'.
  */
 router.patch('/profiles/:userId/verified',
   authenticateToken,
@@ -112,15 +161,13 @@ router.patch('/profiles/:userId/verified',
       const { userId } = req.params;
       const { verified } = req.body;
 
-      // Validate input
       if (typeof verified !== 'boolean') {
         return res.status(400).json({
           error: 'verified field is required and must be a boolean'
         });
       }
 
-      // Update the profile
-      const updatedProfile = await updateProfile(userId, { verified });
+      const updatedProfile = await updateProfile(userId, verificationFields(verified ? 'verified' : 'pending'));
 
       if (!updatedProfile) {
         return res.status(404).json({ error: 'Profile not found' });
@@ -175,16 +222,31 @@ router.post('/users',
 
 /**
  * GET /api/admin/users
- * List all users with optional profile summary. Query: q (phone substring).
+ * Users with optional profile summary, newest first.
+ * Query: limit (default all; Onboarding tab sends 20), skip, status, q (phone / email / user id),
+ * unseenSort (asc | desc). On the first page also returns status counts for the filter chips.
  */
 router.get('/users',
   authenticateToken,
   requireAdmin,
   async (req, res) => {
     try {
-      const q = typeof req.query.q === 'string' ? req.query.q : undefined;
-      const users = await listAllUsersWithProfileSummary(q);
-      res.json({ success: true, users, count: users.length });
+      const { paged, limit, skip, status, q } = parseAdminListQuery(req.query);
+      const unseenSort = req.query.unseenSort === 'asc' || req.query.unseenSort === 'desc' ? req.query.unseenSort : undefined;
+      const firstPage = paged && skip === 0;
+      const [page, statusCounts, totalUsers] = await Promise.all([
+        listAdminUsersPage({ limit, skip, status, q, unseenSort }),
+        firstPage ? getVerificationStatusCounts() : Promise.resolve(null),
+        firstPage ? countAllUsers() : Promise.resolve(null),
+      ]);
+      res.json({
+        success: true,
+        users: page.rows,
+        count: page.rows.length,
+        total: page.total,
+        hasMore: page.hasMore,
+        ...(statusCounts ? { statusCounts: statusCounts.counts, totalUsers } : {}),
+      });
     } catch (error) {
       console.error('Error listing users (admin):', error);
       res.status(500).json({
@@ -392,8 +454,13 @@ router.post('/users/:userId/profile',
 
       const body = req.body as Record<string, unknown>;
       let profileData = { ...parsed.data };
-      if (typeof body.verified === 'boolean') {
-        profileData.verified = body.verified;
+      if (body.verificationStatus !== undefined) {
+        if (!isVerificationStatus(body.verificationStatus)) {
+          return res.status(400).json({ error: 'verificationStatus is invalid' });
+        }
+        profileData = { ...profileData, ...verificationFields(body.verificationStatus) };
+      } else if (typeof body.verified === 'boolean') {
+        profileData = { ...profileData, ...verificationFields(body.verified ? 'verified' : 'pending') };
       }
       if (typeof body.subscribed === 'boolean') {
         profileData.subscribed = body.subscribed;
