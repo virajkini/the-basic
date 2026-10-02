@@ -1,6 +1,6 @@
 import { getDatabase } from '../db/mongodb.js';
 import { User } from '../models/user.js';
-import { Profile } from '../models/profile.js';
+import { Profile, VerificationStatus, resolveVerificationStatus } from '../models/profile.js';
 import { countUnseenIncomingRequestsSince } from './connectionManager.js';
 
 export type AdminUserListRow = {
@@ -12,6 +12,7 @@ export type AdminUserListRow = {
   hasProfile: boolean;
   name: string | null;
   isVerified: boolean;
+  verificationStatus: VerificationStatus | null;
   isSubscribed: boolean;
   profileCreatedAt: Date | null;
   profileUpdatedAt: Date | null;
@@ -194,6 +195,7 @@ export async function listAllUsersWithProfileSummary(q?: string): Promise<AdminU
       hasProfile: !!p,
       name,
       isVerified: p?.verified ?? false,
+      verificationStatus: p ? resolveVerificationStatus(p) : null,
       isSubscribed: p?.subscribed ?? false,
       profileCreatedAt: p?.createdAt ?? null,
       profileUpdatedAt: p?.updatedAt ?? null,

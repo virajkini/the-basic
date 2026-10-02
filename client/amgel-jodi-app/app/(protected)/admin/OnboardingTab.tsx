@@ -5,6 +5,9 @@ import { createPortal } from 'react-dom'
 import imageCompression from 'browser-image-compression'
 import { authFetch } from '../../utils/authFetch'
 import { FOOD_PREFERENCE_OPTIONS, type FoodPreference } from '@/lib/foodPreference'
+import type { VerificationStatus } from '@/lib/verificationStatus'
+import VerificationStatusSelect from '@/components/admin/VerificationStatusSelect'
+import VerificationStatusFilter, { type VerificationFilterValue } from '@/components/admin/VerificationStatusFilter'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
@@ -25,6 +28,7 @@ interface AdminUserRow {
   hasProfile: boolean
   name: string | null
   isVerified: boolean
+  verificationStatus: VerificationStatus | null
   isSubscribed: boolean
   profileCreatedAt: string | null
   profileUpdatedAt: string | null
@@ -66,7 +70,7 @@ type ProfileForm = {
   nakshatra: string
   kuldeva: string
   foodPreference: FoodPreference | ''
-  verified: boolean
+  verificationStatus: VerificationStatus
   subscribed: boolean
 }
 
@@ -91,7 +95,7 @@ const emptyForm = (): ProfileForm => ({
   nakshatra: '',
   kuldeva: '',
   foodPreference: '',
-  verified: false,
+  verificationStatus: 'pending',
   subscribed: false,
 })
 
@@ -129,7 +133,7 @@ function profileToForm(p: Record<string, unknown>): ProfileForm {
       p.foodPreference === 'eggetarian'
         ? (p.foodPreference as FoodPreference)
         : '',
-    verified: Boolean(p.verified),
+    verificationStatus: (p.verificationStatus as VerificationStatus) || (p.verified ? 'verified' : 'pending'),
     subscribed: Boolean(p.subscribed),
   }
 }
@@ -162,13 +166,8 @@ function buildProfilePayload(form: ProfileForm, mode: 'create' | 'edit'): Record
   } else if (form.foodPreference) {
     base.foodPreference = form.foodPreference
   }
-  if (mode === 'create') {
-    base.verified = form.verified
-    base.subscribed = form.subscribed
-  } else {
-    base.verified = form.verified
-    base.subscribed = form.subscribed
-  }
+  base.verificationStatus = form.verificationStatus
+  base.subscribed = form.subscribed
   return base
 }
 
@@ -177,6 +176,8 @@ export default function OnboardingTab() {
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [userSearch, setUserSearch] = useState('')
   const [unseenSort, setUnseenSort] = useState<'desc' | 'asc' | null>(null)
+  const [statusFilter, setStatusFilter] = useState<VerificationFilterValue>('all')
+  const [updatingStatusFor, setUpdatingStatusFor] = useState<string | null>(null)
   const [newPhone, setNewPhone] = useState('')
   const [creatingUser, setCreatingUser] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -185,6 +186,8 @@ export default function OnboardingTab() {
   const [editorUserId, setEditorUserId] = useState<string | null>(null)
   const [editorHasProfile, setEditorHasProfile] = useState(false)
   const [form, setForm] = useState<ProfileForm>(emptyForm)
+  /** Status persisted on the server when the editor opened — drives the "remove verification?" confirm */
+  const [savedStatus, setSavedStatus] = useState<VerificationStatus>('pending')
   const [savingProfile, setSavingProfile] = useState(false)
 
   const [imageFiles, setImageFiles] = useState<File[]>([])
@@ -235,13 +238,45 @@ export default function OnboardingTab() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- initial list only; use Refresh / Apply filter
   }, [])
 
+  const statusCounts = useMemo(() => {
+    const counts: Partial<Record<VerificationStatus, number>> = {}
+    for (const u of users) {
+      if (u.verificationStatus) counts[u.verificationStatus] = (counts[u.verificationStatus] ?? 0) + 1
+    }
+    return counts
+  }, [users])
+
   const sortedUsers = useMemo(() => {
-    if (!unseenSort) return users
-    return [...users].sort((a, b) => {
+    const visible = statusFilter === 'all' ? users : users.filter((u) => u.verificationStatus === statusFilter)
+    if (!unseenSort) return visible
+    return [...visible].sort((a, b) => {
       const diff = (a.unseenConnectionRequests ?? 0) - (b.unseenConnectionRequests ?? 0)
       return unseenSort === 'asc' ? diff : -diff
     })
-  }, [users, unseenSort])
+  }, [users, unseenSort, statusFilter])
+
+  const updateRowStatus = async (userId: string, status: VerificationStatus) => {
+    try {
+      setUpdatingStatusFor(userId)
+      setError(null)
+      const res = await authFetch(`${API_BASE}/admin/profiles/${userId}/verification-status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        throw new Error(err.error || 'Failed to update status')
+      }
+      setUsers((prev) =>
+        prev.map((u) => (u.userId === userId ? { ...u, verificationStatus: status, isVerified: status === 'verified' } : u))
+      )
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to update status')
+    } finally {
+      setUpdatingStatusFor(null)
+    }
+  }
 
   const cycleUnseenSort = () => {
     setUnseenSort((prev) => (prev === null ? 'desc' : prev === 'desc' ? 'asc' : null))
@@ -284,11 +319,9 @@ export default function OnboardingTab() {
         const res = await authFetch(`${API_BASE}/admin/users/${userId}`)
         if (!res.ok) throw new Error('Failed to load user')
         const data = await res.json()
-        if (data.profile) {
-          setForm(profileToForm(data.profile as Record<string, unknown>))
-        } else {
-          setForm(emptyForm())
-        }
+        const loaded = data.profile ? profileToForm(data.profile as Record<string, unknown>) : emptyForm()
+        setForm(loaded)
+        setSavedStatus(loaded.verificationStatus)
         const imgRes = await authFetch(`${API_BASE}/admin/users/${userId}/files`)
         if (imgRes.ok) {
           const imgData = await imgRes.json()
@@ -299,6 +332,7 @@ export default function OnboardingTab() {
         }
       } else {
         setForm(emptyForm())
+        setSavedStatus('pending')
         setExistingImages([])
       }
       setEditorOpen(true)
@@ -490,14 +524,14 @@ export default function OnboardingTab() {
         )}
         {imageDeleteKey && (
           <div
-            className="fixed inset-0 z-[210] flex items-center justify-center bg-black/50 p-4"
+            className="fixed inset-0 z-[210] flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4"
             role="dialog"
             aria-modal="true"
             aria-labelledby="admin-delete-photo-title"
             onClick={() => !imageDeleteBusy && setImageDeleteKey(null)}
           >
             <div
-              className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl"
+              className="w-full max-w-md rounded-t-2xl sm:rounded-xl bg-white p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <h3 id="admin-delete-photo-title" className="text-lg font-semibold text-gray-900">
@@ -537,24 +571,25 @@ export default function OnboardingTab() {
         <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-800 text-sm">{error}</div>
       )}
 
-      <div className="bg-white rounded-lg shadow p-6 space-y-4">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6 space-y-3 sm:space-y-4">
         <h2 className="text-lg font-semibold text-gray-900">Create user</h2>
         <p className="text-sm text-gray-600">Adds a row in <code className="text-xs bg-gray-100 px-1 rounded">users</code>. They can sign in later with OTP on this phone.</p>
-        <div className="flex flex-wrap gap-2 items-end">
-          <div>
+        <div className="flex flex-col sm:flex-row gap-2 sm:items-end">
+          <div className="sm:w-64">
             <label className="block text-xs text-gray-500 mb-1">Phone</label>
             <input
               value={newPhone}
               onChange={(e) => setNewPhone(e.target.value)}
               placeholder="e.g. 9198xxxxxxx"
-              className="px-3 py-2 border border-gray-300 rounded-lg w-64"
+              inputMode="tel"
+              className="px-3 py-2.5 sm:py-2 border border-gray-300 rounded-lg w-full"
             />
           </div>
           <button
             type="button"
             onClick={createUserByPhone}
             disabled={creatingUser}
-            className="px-4 py-2 bg-myColor-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+            className="px-4 py-2.5 sm:py-2 bg-myColor-600 text-white rounded-lg text-sm font-medium disabled:opacity-50"
           >
             {creatingUser ? 'Creating…' : 'Create user'}
           </button>
@@ -562,68 +597,151 @@ export default function OnboardingTab() {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex flex-wrap gap-3 items-end">
-          <h2 className="text-lg font-semibold text-gray-900 mr-auto">All users</h2>
-          <input
-            value={userSearch}
-            onChange={(e) => setUserSearch(e.target.value)}
-            placeholder="Filter by phone…"
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-48"
+        <div className="p-4 border-b border-gray-100 space-y-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+            <h2 className="text-lg font-semibold text-gray-900 sm:mr-auto">All users ({users.length})</h2>
+            <div className="flex gap-2">
+              <input
+                type="search"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && loadUsers()}
+                placeholder="Filter by phone or email…"
+                className="flex-1 sm:w-56 px-3 py-2 border border-gray-300 rounded-lg text-sm min-w-0"
+              />
+              <button
+                type="button"
+                onClick={() => loadUsers()}
+                className="shrink-0 px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              >
+                <span className="sm:hidden">Search</span>
+                <span className="hidden sm:inline">Apply filter / Refresh</span>
+              </button>
+            </div>
+          </div>
+          <VerificationStatusFilter
+            value={statusFilter}
+            onChange={setStatusFilter}
+            counts={statusCounts}
+            total={users.length}
           />
           <button
             type="button"
-            onClick={() => loadUsers()}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+            onClick={cycleUnseenSort}
+            className="md:hidden inline-flex items-center gap-1 text-xs font-medium text-gray-600"
           >
-            Apply filter / Refresh
+            Sort by unseen requests
+            <span className="text-gray-400">{unseenSort === 'desc' ? '↓' : unseenSort === 'asc' ? '↑' : '↕'}</span>
           </button>
         </div>
         {loadingUsers ? (
           <div className="p-8 text-center text-gray-500">Loading users…</div>
+        ) : sortedUsers.length === 0 ? (
+          <div className="p-8 text-center text-sm text-gray-500">No users found</div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Profile</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Verified</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Created at</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Updated at</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Last active</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+          <>
+            {/* Mobile: cards */}
+            <ul className="md:hidden divide-y divide-gray-100">
+              {sortedUsers.map((u) => (
+                <li key={u.userId} className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 truncate">
+                        {u.hasProfile ? u.name || 'Unnamed profile' : <span className="text-gray-400 font-normal">No profile</span>}
+                      </p>
+                      {u.phone ? (
+                        <a href={`tel:+${u.phone.replace(/^\+/, '')}`} className="block text-sm font-medium text-myColor-700">
+                          {u.phone}
+                        </a>
+                      ) : (
+                        <p className="text-sm text-gray-600 truncate">{u.email || '—'}</p>
+                      )}
+                      <p className="text-[11px] font-mono text-gray-400 truncate">{u.userId}</p>
+                    </div>
+                    {(u.unseenConnectionRequests ?? 0) > 0 && (
+                      <span
+                        title="Unseen connection requests"
+                        className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-xs font-medium"
+                      >
+                        {u.unseenConnectionRequests} unseen
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-3 text-[11px] text-gray-500">
+                    <span>Created: {formatAdminDate(u.profileCreatedAt ?? undefined)}</span>
+                    <span>Last active: {formatAdminDate(u.profileLastActive ?? undefined)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1">
+                    {u.hasProfile && u.verificationStatus && (
+                      <VerificationStatusSelect
+                        value={u.verificationStatus}
+                        onChange={(next) => updateRowStatus(u.userId, next)}
+                        subjectLabel={u.name || u.phone || u.userId}
+                        busy={updatingStatusFor === u.userId}
+                        className="flex-1"
+                      />
+                    )}
                     <button
                       type="button"
-                      onClick={cycleUnseenSort}
-                      title="Pending requests since last active (or updated at). Click to sort: high → low → default."
-                      className="inline-flex items-center gap-1 hover:text-gray-800 focus:outline-none focus:text-myColor-600"
+                      onClick={() => openEditor(u.userId, u.hasProfile)}
+                      className={`text-xs font-medium px-3 py-1.5 rounded-full bg-myColor-100 text-myColor-800 hover:bg-myColor-200 ${u.hasProfile ? '' : 'flex-1'}`}
                     >
-                      Unseen conn. requests
-                      <span className="text-[10px] normal-case tracking-normal text-gray-400">
-                        {unseenSort === 'desc' ? '↓' : unseenSort === 'asc' ? '↑' : '↕'}
-                      </span>
+                      {u.hasProfile ? 'Edit' : 'Create profile'}
                     </button>
-                  </th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {sortedUsers.length === 0 ? (
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {/* Desktop: table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
-                      No users found
-                    </td>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">User ID</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Profile</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Created at</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Updated at</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">Last active</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={cycleUnseenSort}
+                        title="Pending requests since last active (or updated at). Click to sort: high → low → default."
+                        className="inline-flex items-center gap-1 hover:text-gray-800 focus:outline-none focus:text-myColor-600"
+                      >
+                        Unseen conn. requests
+                        <span className="text-[10px] normal-case tracking-normal text-gray-400">
+                          {unseenSort === 'desc' ? '↓' : unseenSort === 'asc' ? '↑' : '↕'}
+                        </span>
+                      </button>
+                    </th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                   </tr>
-                ) : (
-                  sortedUsers.map((u) => (
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {sortedUsers.map((u) => (
                     <tr key={u.userId} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm">{u.phone || '—'}</td>
+                      <td className="px-4 py-3 text-sm whitespace-nowrap">{u.phone || '—'}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{u.email || '—'}</td>
                       <td className="px-4 py-3 text-xs font-mono">{u.userId}</td>
                       <td className="px-4 py-3 text-sm">{u.hasProfile ? (u.name || 'Yes') : '—'}</td>
-                      <td className="px-4 py-3 text-sm">{u.hasProfile ? (u.isVerified ? 'Yes' : 'No') : '—'}</td>
+                      <td className="px-4 py-3 text-sm whitespace-nowrap">
+                        {u.hasProfile && u.verificationStatus ? (
+                          <VerificationStatusSelect
+                            value={u.verificationStatus}
+                            onChange={(next) => updateRowStatus(u.userId, next)}
+                            subjectLabel={u.name || u.phone || u.userId}
+                            busy={updatingStatusFor === u.userId}
+                            className="w-36"
+                          />
+                        ) : (
+                          '—'
+                        )}
+                      </td>
                       <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
                         {formatAdminDate(u.profileCreatedAt ?? undefined)}
                       </td>
@@ -648,38 +766,38 @@ export default function OnboardingTab() {
                         <button
                           type="button"
                           onClick={() => openEditor(u.userId, u.hasProfile)}
-                          className="text-sm px-3 py-1 rounded bg-myColor-100 text-myColor-800 hover:bg-myColor-200"
+                          className="text-sm px-3 py-1 rounded bg-myColor-100 text-myColor-800 hover:bg-myColor-200 whitespace-nowrap"
                         >
                           {u.hasProfile ? 'Edit profile' : 'Create profile'}
                         </button>
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
       {editorOpen && editorUserId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={closeEditor}>
+        <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center p-0 sm:p-4 bg-black/50" onClick={closeEditor}>
           <div
-            className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-2xl"
+            className="bg-white sm:rounded-2xl w-full max-w-3xl h-full sm:h-auto sm:max-h-[90vh] flex flex-col shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">
+            <div className="px-4 py-3 sm:p-6 pt-[max(0.75rem,env(safe-area-inset-top))] border-b border-gray-100 flex justify-between items-center gap-3 shrink-0">
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900">
                   {editorHasProfile ? 'Edit profile' : 'Create profile'}
                 </h2>
-                <p className="text-sm text-gray-500 font-mono">{editorUserId}</p>
+                <p className="text-xs sm:text-sm text-gray-500 font-mono truncate">{editorUserId}</p>
               </div>
-              <button type="button" onClick={closeEditor} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">
+              <button type="button" onClick={closeEditor} aria-label="Close" className="shrink-0 -mr-2 p-2 text-gray-400 hover:text-gray-600 text-2xl leading-none">
                 ×
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="text-sm">
                   <span className="text-gray-600 block mb-1">Creating for</span>
@@ -823,11 +941,17 @@ export default function OnboardingTab() {
                     ))}
                   </select>
                 </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={form.verified} onChange={(e) => updateField('verified', e.target.checked)} />
-                  Verified
-                </label>
-                <label className="flex items-center gap-2 text-sm">
+                <div className="text-sm">
+                  <span className="text-gray-600 block mb-1">Verification status</span>
+                  <VerificationStatusSelect
+                    value={form.verificationStatus}
+                    savedValue={editorHasProfile ? savedStatus : 'pending'}
+                    onChange={(next) => updateField('verificationStatus', next)}
+                    subjectLabel={`${form.firstName} ${form.lastName}`.trim() || undefined}
+                    className="w-full sm:w-48"
+                  />
+                </div>
+                <label className="flex items-center gap-2 text-sm sm:pt-6">
                   <input type="checkbox" checked={form.subscribed} onChange={(e) => updateField('subscribed', e.target.checked)} />
                   Subscribed
                 </label>
@@ -885,19 +1009,19 @@ export default function OnboardingTab() {
                 </button>
               </div>
 
-              <div className="flex gap-3 pt-4 border-t border-gray-100">
-                <button type="button" onClick={closeEditor} className="flex-1 py-2 border border-gray-300 rounded-lg">
-                  Close
-                </button>
-                <button
-                  type="button"
-                  onClick={saveProfile}
-                  disabled={savingProfile}
-                  className="flex-1 py-2 bg-myColor-600 text-white rounded-lg font-medium disabled:opacity-50"
-                >
-                  {savingProfile ? 'Saving…' : editorHasProfile ? 'Save profile' : 'Create profile'}
-                </button>
-              </div>
+            </div>
+            <div className="flex gap-3 px-4 py-3 sm:p-6 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-gray-100 shrink-0">
+              <button type="button" onClick={closeEditor} className="flex-1 py-2.5 sm:py-2 border border-gray-300 rounded-lg">
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={saveProfile}
+                disabled={savingProfile}
+                className="flex-1 py-2.5 sm:py-2 bg-myColor-600 text-white rounded-lg font-medium disabled:opacity-50"
+              >
+                {savingProfile ? 'Saving…' : editorHasProfile ? 'Save profile' : 'Create profile'}
+              </button>
             </div>
           </div>
         </div>

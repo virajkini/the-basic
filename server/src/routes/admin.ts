@@ -15,6 +15,7 @@ import {
   deleteFile,
 } from '../services/fileManager.js';
 import { parseCreateProfileBody, parseProfileUpdateBody } from '../validation/profilePayload.js';
+import { isVerificationStatus, resolveVerificationStatus, verificationFields } from '../models/profile.js';
 
 function adminAudit(actorId: string | undefined, action: string, targetUserId?: string, extra?: Record<string, unknown>) {
   console.log(
@@ -55,7 +56,7 @@ const router = express.Router();
 /**
  * GET /api/admin/profiles
  * Get all profiles with user information (admin only)
- * Returns: user id, phone number, name, isVerified, isSubscribed
+ * Returns: user id, phone number, name, isVerified, verificationStatus, isSubscribed
  */
 router.get('/profiles',
   authenticateToken,
@@ -77,6 +78,7 @@ router.get('/profiles',
             name: name,
             gender: profile.gender || null,
             isVerified: profile.verified ?? false,
+            verificationStatus: resolveVerificationStatus(profile),
             isSubscribed: profile.subscribed ?? false,
             hasFcmToken: !!profile.fcmToken,
             createdAt: profile.createdAt,
@@ -100,9 +102,50 @@ router.get('/profiles',
 );
 
 /**
+ * PATCH /api/admin/profiles/:userId/verification-status
+ * Set the verification workflow status (admin only). `verified` is derived from it.
+ * Body: { status: VerificationStatus }
+ */
+router.patch('/profiles/:userId/verification-status',
+  authenticateToken,
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { status } = req.body;
+
+      if (!isVerificationStatus(status)) {
+        return res.status(400).json({ error: 'status is required and must be a valid verification status' });
+      }
+
+      const updatedProfile = await updateProfile(userId, verificationFields(status));
+
+      if (!updatedProfile) {
+        return res.status(404).json({ error: 'Profile not found' });
+      }
+
+      adminAudit(req.authenticatedUserId, 'set_verification_status', userId, { status });
+      res.json({
+        success: true,
+        profile: {
+          userId: updatedProfile._id,
+          verified: updatedProfile.verified,
+          verificationStatus: resolveVerificationStatus(updatedProfile),
+        },
+      });
+    } catch (error) {
+      console.error('Error updating verification status:', error);
+      res.status(500).json({
+        error: 'Failed to update verification status',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  }
+);
+
+/**
  * PATCH /api/admin/profiles/:userId/verified
- * Update the verified status of a user profile (admin only)
- * Body: { verified: boolean }
+ * Legacy endpoint for older admin clients. Body: { verified: boolean } → 'verified' | 'pending'.
  */
 router.patch('/profiles/:userId/verified',
   authenticateToken,
@@ -112,15 +155,13 @@ router.patch('/profiles/:userId/verified',
       const { userId } = req.params;
       const { verified } = req.body;
 
-      // Validate input
       if (typeof verified !== 'boolean') {
         return res.status(400).json({
           error: 'verified field is required and must be a boolean'
         });
       }
 
-      // Update the profile
-      const updatedProfile = await updateProfile(userId, { verified });
+      const updatedProfile = await updateProfile(userId, verificationFields(verified ? 'verified' : 'pending'));
 
       if (!updatedProfile) {
         return res.status(404).json({ error: 'Profile not found' });
@@ -392,8 +433,13 @@ router.post('/users/:userId/profile',
 
       const body = req.body as Record<string, unknown>;
       let profileData = { ...parsed.data };
-      if (typeof body.verified === 'boolean') {
-        profileData.verified = body.verified;
+      if (body.verificationStatus !== undefined) {
+        if (!isVerificationStatus(body.verificationStatus)) {
+          return res.status(400).json({ error: 'verificationStatus is invalid' });
+        }
+        profileData = { ...profileData, ...verificationFields(body.verificationStatus) };
+      } else if (typeof body.verified === 'boolean') {
+        profileData = { ...profileData, ...verificationFields(body.verified ? 'verified' : 'pending') };
       }
       if (typeof body.subscribed === 'boolean') {
         profileData.subscribed = body.subscribed;

@@ -6,6 +6,8 @@ import {
   WorkingStatus,
   FoodPreference,
   FOOD_PREFERENCE_VALUES,
+  isVerificationStatus,
+  verificationFields,
   calculateAge,
   parseHeightToCm,
 } from '../models/profile.js';
@@ -212,7 +214,7 @@ export function parseCreateProfileBody(body: unknown): CreateFail | CreateOk {
     gothra: typeof gothra === 'string' ? gothra || undefined : undefined,
     nakshatra: typeof nakshatra === 'string' ? nakshatra || undefined : undefined,
     kuldeva: typeof kuldeva === 'string' ? kuldeva || undefined : undefined,
-    verified: false,
+    ...verificationFields('pending'),
     subscribed: false,
     ...(foodPreferenceForCreate !== undefined ? { foodPreference: foodPreferenceForCreate } : {}),
   };
@@ -287,6 +289,7 @@ export function parseProfileUpdateBody(
     kuldeva,
     foodPreference,
     verified,
+    verificationStatus,
     subscribed,
     favoriteUserIds,
     primaryPhotoKey: primaryPhotoKeyRaw,
@@ -432,11 +435,17 @@ export function parseProfileUpdateBody(
   }
 
   if (options.allowVerifiedSubscribed) {
-    if (verified !== undefined) {
+    if (verificationStatus !== undefined) {
+      if (!isVerificationStatus(verificationStatus)) {
+        return { ok: false, status: 400, error: 'verificationStatus is invalid' };
+      }
+      Object.assign(updateData, verificationFields(verificationStatus));
+    } else if (verified !== undefined) {
+      // Legacy boolean from older admin clients — map onto the status so both fields stay in sync
       if (typeof verified !== 'boolean') {
         return { ok: false, status: 400, error: 'verified must be a boolean when provided' };
       }
-      updateData.verified = verified;
+      Object.assign(updateData, verificationFields(verified ? 'verified' : 'pending'));
     }
     if (subscribed !== undefined) {
       if (typeof subscribed !== 'boolean') {

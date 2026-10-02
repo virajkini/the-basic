@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { authFetch } from '../../utils/authFetch'
 import OnboardingTab from './OnboardingTab'
 import ImageUploadTab from './ImageUploadTab'
 import NotificationSender from '../../../components/admin/NotificationSender'
+import VerificationStatusSelect from '../../../components/admin/VerificationStatusSelect'
+import VerificationStatusFilter, { type VerificationFilterValue } from '../../../components/admin/VerificationStatusFilter'
+import type { VerificationStatus } from '@/lib/verificationStatus'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
@@ -15,6 +18,7 @@ interface Profile {
   name: string
   gender: 'M' | 'F' | null
   isVerified: boolean
+  verificationStatus: VerificationStatus
   isSubscribed: boolean
   createdAt: string
 }
@@ -53,6 +57,8 @@ export default function AdminPage() {
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; profile: Profile | null }>({ open: false, profile: null })
   const [deleteConfirmation, setDeleteConfirmation] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [profileSearch, setProfileSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<VerificationFilterValue>('all')
 
   // Messages state
   const [messages, setMessages] = useState<ContactMessage[]>([])
@@ -106,34 +112,51 @@ export default function AdminPage() {
     }
   }
 
-  const toggleVerified = async (userId: string, currentVerified: boolean) => {
+  const updateVerificationStatus = async (userId: string, status: VerificationStatus) => {
     try {
       setUpdating(userId)
       setError(null)
 
-      const response = await authFetch(`${API_BASE}/admin/profiles/${userId}/verified`, {
+      const response = await authFetch(`${API_BASE}/admin/profiles/${userId}/verification-status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ verified: !currentVerified }),
+        body: JSON.stringify({ status }),
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        setError(errorData.error || 'Failed to update verified status')
+        const errorData = await response.json().catch(() => ({}))
+        setError(errorData.error || 'Failed to update verification status')
         return
       }
 
       setProfiles((prev) =>
         prev.map((profile) =>
-          profile.userId === userId ? { ...profile, isVerified: !currentVerified } : profile
+          profile.userId === userId
+            ? { ...profile, verificationStatus: status, isVerified: status === 'verified' }
+            : profile
         )
       )
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update verified status')
+      setError(err instanceof Error ? err.message : 'Failed to update verification status')
     } finally {
       setUpdating(null)
     }
   }
+
+  const statusCounts = useMemo(() => {
+    const counts: Partial<Record<VerificationStatus, number>> = {}
+    for (const p of profiles) counts[p.verificationStatus] = (counts[p.verificationStatus] ?? 0) + 1
+    return counts
+  }, [profiles])
+
+  const filteredProfiles = useMemo(() => {
+    const q = profileSearch.trim().toLowerCase()
+    return profiles.filter((p) => {
+      if (statusFilter !== 'all' && p.verificationStatus !== statusFilter) return false
+      if (!q) return true
+      return [p.name, p.phone, p.email, p.userId].some((v) => v?.toLowerCase().includes(q))
+    })
+  }, [profiles, profileSearch, statusFilter])
 
   const openDeleteModal = (profile: Profile) => {
     setDeleteModal({ open: true, profile })
@@ -306,155 +329,191 @@ export default function AdminPage() {
     )
   }
 
+  const tabs: { key: Tab; label: string; badge?: number; show: boolean }[] = [
+    { key: 'profiles', label: `Profiles (${profiles.length})`, show: true },
+    { key: 'messages', label: 'Messages', badge: messageCounts?.new, show: true },
+    { key: 'onboarding', label: 'Onboarding', show: true },
+    { key: 'notifications', label: 'Notifications', show: true },
+    { key: 'imageUpload', label: 'Image Upload', show: isLocalhost },
+  ]
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-        <p className="text-gray-600">Manage user profiles and contact messages</p>
+    <div className="container mx-auto px-4 py-5 sm:py-8">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Admin Dashboard</h1>
+        <p className="text-sm sm:text-base text-gray-600">Manage user profiles and contact messages</p>
       </div>
 
       {error && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-          <p className="text-yellow-800">{error}</p>
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+          <p className="text-sm text-yellow-800">{error}</p>
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="-mb-px flex gap-4">
-          <button
-            onClick={() => setActiveTab('profiles')}
-            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'profiles'
-                ? 'border-myColor-600 text-myColor-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Profiles ({profiles.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('messages')}
-            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2 ${
-              activeTab === 'messages'
-                ? 'border-myColor-600 text-myColor-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Messages
-            {messageCounts && messageCounts.new > 0 && (
-              <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                {messageCounts.new}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('onboarding')}
-            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'onboarding'
-                ? 'border-myColor-600 text-myColor-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Onboarding
-          </button>
-          <button
-            onClick={() => setActiveTab('notifications')}
-            className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'notifications'
-                ? 'border-myColor-600 text-myColor-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Notifications
-          </button>
-          {isLocalhost && (
+      {/* Tabs — horizontally scrollable on small screens */}
+      <div className="border-b border-gray-200 mb-4 sm:mb-6 -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto scrollbar-hide">
+        <nav className="-mb-px flex gap-5 sm:gap-6 w-max">
+          {tabs.filter((t) => t.show).map((t) => (
             <button
-              onClick={() => setActiveTab('imageUpload')}
-              className={`py-3 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'imageUpload'
+              key={t.key}
+              onClick={() => setActiveTab(t.key)}
+              className={`py-3 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${
+                activeTab === t.key
                   ? 'border-myColor-600 text-myColor-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              Image Upload
+              {t.label}
+              {!!t.badge && t.badge > 0 && (
+                <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{t.badge}</span>
+              )}
             </button>
-          )}
+          ))}
         </nav>
       </div>
 
       {/* Profiles Tab */}
       {activeTab === 'profiles' && (
-        <>
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">S.No</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Verified</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscribed</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {profiles.length === 0 ? (
-                    <tr>
-                      <td colSpan={9} className="px-6 py-8 text-center text-gray-500">No profiles found</td>
-                    </tr>
-                  ) : (
-                    profiles.map((profile, index) => (
-                      <tr key={profile.userId} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{index + 1}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">{profile.userId}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{profile.phone || '—'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{profile.email || '—'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{profile.name}</td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${profile.isVerified ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                            {profile.isVerified ? 'Yes' : 'No'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${profile.isSubscribed ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
-                            {profile.isSubscribed ? 'Yes' : 'No'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatDate(profile.createdAt)}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => toggleVerified(profile.userId, profile.isVerified)}
-                              disabled={updating === profile.userId}
-                              className={`px-3 py-1 rounded text-xs font-medium transition-colors ${profile.isVerified ? 'bg-red-100 text-red-700 hover:bg-red-200' : 'bg-green-100 text-green-700 hover:bg-green-200'} disabled:opacity-50`}
-                            >
-                              {updating === profile.userId ? 'Updating...' : profile.isVerified ? 'Unverify' : 'Verify'}
-                            </button>
-                            {isLocalhost && (
+        <div className="space-y-4">
+          <div className="space-y-3">
+            <div className="relative">
+              <svg className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11a6 6 0 11-12 0 6 6 0 0112 0z" />
+              </svg>
+              <input
+                type="search"
+                value={profileSearch}
+                onChange={(e) => setProfileSearch(e.target.value)}
+                placeholder="Search name, phone, email or user ID"
+                className="w-full sm:max-w-md pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-myColor-500 focus:border-myColor-500"
+              />
+            </div>
+            <VerificationStatusFilter
+              value={statusFilter}
+              onChange={setStatusFilter}
+              counts={statusCounts}
+              total={profiles.length}
+            />
+          </div>
+
+          {filteredProfiles.length === 0 ? (
+            <div className="bg-white rounded-lg shadow px-6 py-10 text-center text-sm text-gray-500">No profiles found</div>
+          ) : (
+            <>
+              {/* Mobile: cards */}
+              <ul className="space-y-3 md:hidden">
+                {filteredProfiles.map((profile) => (
+                  <li key={profile.userId} className="bg-white rounded-xl shadow-sm ring-1 ring-gray-100 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-900 truncate">{profile.name}</p>
+                        <p className="text-[11px] font-mono text-gray-400 truncate">{profile.userId}</p>
+                      </div>
+                      {profile.isSubscribed && (
+                        <span className="shrink-0 inline-flex px-2 py-0.5 text-[11px] font-semibold rounded-full bg-blue-50 text-blue-700">
+                          Subscribed
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 space-y-0.5 text-sm">
+                      {profile.phone ? (
+                        <a href={`tel:+${profile.phone.replace(/^\+/, '')}`} className="block text-myColor-700 font-medium">
+                          {profile.phone}
+                        </a>
+                      ) : (
+                        <p className="text-gray-400">No phone</p>
+                      )}
+                      {profile.email && <p className="text-gray-600 truncate">{profile.email}</p>}
+                      <p className="text-xs text-gray-400">Joined {formatDate(profile.createdAt)}</p>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <VerificationStatusSelect
+                        value={profile.verificationStatus}
+                        onChange={(next) => updateVerificationStatus(profile.userId, next)}
+                        subjectLabel={profile.name}
+                        busy={updating === profile.userId}
+                        className="flex-1"
+                      />
+                      {isLocalhost && (
+                        <button
+                          onClick={() => openDeleteModal(profile)}
+                          className="px-3 py-1.5 rounded-full text-xs font-medium bg-red-600 text-white hover:bg-red-700"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+
+              {/* Desktop: table */}
+              <div className="hidden md:block bg-white rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">#</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscribed</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                        {isLocalhost && (
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredProfiles.map((profile, index) => (
+                        <tr key={profile.userId} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <p className="text-sm font-medium text-gray-900">{profile.name}</p>
+                            <p className="text-xs font-mono text-gray-400">{profile.userId}</p>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{profile.phone || '—'}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{profile.email || '—'}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <VerificationStatusSelect
+                              value={profile.verificationStatus}
+                              onChange={(next) => updateVerificationStatus(profile.userId, next)}
+                              subjectLabel={profile.name}
+                              busy={updating === profile.userId}
+                              className="w-40"
+                            />
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${profile.isSubscribed ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                              {profile.isSubscribed ? 'Yes' : 'No'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">{formatDate(profile.createdAt)}</td>
+                          {isLocalhost && (
+                            <td className="px-4 py-3 whitespace-nowrap text-sm">
                               <button
                                 onClick={() => openDeleteModal(profile)}
                                 className="px-3 py-1 rounded text-xs font-medium bg-red-600 text-white hover:bg-red-700"
                               >
                                 Delete
                               </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="text-sm text-gray-600">
+            Showing <span className="font-semibold">{filteredProfiles.length}</span> of{' '}
+            <span className="font-semibold">{profiles.length}</span> profiles
           </div>
-          <div className="mt-4 text-sm text-gray-600">
-            Total profiles: <span className="font-semibold">{profiles.length}</span>
-          </div>
-        </>
+        </div>
       )}
 
       {activeTab === 'onboarding' && <OnboardingTab />}
@@ -481,7 +540,7 @@ export default function AdminPage() {
             </select>
 
             {messageCounts && (
-              <div className="flex gap-3 text-sm">
+              <div className="flex flex-wrap gap-2 text-sm">
                 <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">New: {messageCounts.new}</span>
                 <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded">In Progress: {messageCounts.inProgress}</span>
                 <span className="px-2 py-1 bg-green-100 text-green-800 rounded">Resolved: {messageCounts.resolved}</span>
@@ -556,8 +615,8 @@ export default function AdminPage() {
 
       {/* Delete User Modal */}
       {deleteModal.open && deleteModal.profile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={closeDeleteModal}>
-          <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50" onClick={closeDeleteModal}>
+          <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="p-6 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
