@@ -23,3 +23,8 @@ export const VERIFICATION_STATUS_OPTIONS: { value: VerificationStatus; label: st
 export function verificationStatusOption(value: VerificationStatus | null | undefined) {
   return VERIFICATION_STATUS_OPTIONS.find((o) => o.value === value) ?? VERIFICATION_STATUS_OPTIONS[0]
 }
+
+/** Matches server DEACTIVATED_VERIFICATION_STATUSES — these users can't browse other profiles. */
+export function isDeactivatedStatus(status: VerificationStatus | null | undefined): boolean {
+  return status === 'invalid' || status === 'not_gsb' || status === 'got_married'
+}

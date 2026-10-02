@@ -20,8 +20,11 @@ import DiscoverFilterButton from '../DiscoverFilterButton'
 import RequestCallbackSection from '../RequestCallbackSection'
 import RateAppBottomSheet from '../RateAppBottomSheet'
 import { useRateAppPrompt } from '../../hooks/useRateAppPrompt'
+import { isDeactivatedStatus, type VerificationStatus } from '../../lib/verificationStatus'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
+const HOME_URL = (process.env.NEXT_PUBLIC_HOME_URL || 'https://amgeljodi.com').replace(/\/$/, '')
+const CONTACT_URL = `${HOME_URL}/contact?hideAuth=1`
 const LAYOUT_STORAGE_KEY = 'dashboard-layout'
 /** YYYY-MM-DD in local calendar; first dashboard visit per day shows welcome header */
 const DAILY_WELCOME_LS_KEY = 'amgel-dashboard-daily-welcome'
@@ -48,6 +51,7 @@ interface Profile {
   workingStatus: boolean
   designation?: string
   verified: boolean
+  verificationStatus?: VerificationStatus
   favoriteUserIds?: string[]
   createdAt: string
 }
@@ -401,6 +405,38 @@ export default function DiscoverTab({
     )
   }
 
+  // Deactivated (invalid / not GSB / got married) — no profile list at all, not even blurred
+  if (isDeactivatedStatus(profile.verificationStatus)) {
+    return (
+      <div className="min-h-full flex items-center justify-center container mx-auto px-4 py-8 md:py-12">
+        <div className="glass-card rounded-2xl p-8 md:p-12 text-center max-w-md w-full animate-fade-in-up">
+          <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-5 flex items-center justify-center">
+            <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+          </div>
+          <h1 className="text-xl md:text-2xl font-display font-bold text-myColor-900 mb-2">
+            Your profile has been deactivated
+          </h1>
+          <p className="text-sm text-myColor-600 mb-6">
+            If you think this is a mistake or have any issues, please get in touch with us.
+          </p>
+          <a
+            href={CONTACT_URL}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-myColor-600 to-myColor-700 text-white rounded-xl font-semibold shadow-lg shadow-myColor-500/30 transition-all hover:shadow-xl active:scale-95"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Contact us
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  const notReachable = profile.verificationStatus === 'not_reachable'
+
   // Has profile - Show Discover Profiles
   return (
     <div className="min-h-full container mx-auto px-4 py-4 md:py-6">
@@ -427,10 +463,14 @@ export default function DiscoverTab({
               <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              <span className="text-sm font-medium">Profile pending verification</span>
+              <span className="text-sm font-medium">
+                {notReachable ? "We couldn't reach you" : 'Profile pending verification'}
+              </span>
             </div>
             <p className="text-xs text-amber-600 mt-1.5 ml-7">
-              We'll call you within 24 hours. Photos appear blurred until verified.
+              {notReachable
+                ? "We tried calling you to verify your profile but couldn't get through. We'll try again soon — please keep your phone reachable. Photos appear blurred until verified."
+                : "We'll call you within 24 hours. Photos appear blurred until verified."}
             </p>
           </div>
         )}

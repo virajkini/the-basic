@@ -1,6 +1,6 @@
 import express from 'express';
 import { readProfile, createProfile, updateProfile, updateLastActive, listProfiles, SortOption, FilterOptions } from '../services/profileManager.js';
-import { calculateAge } from '../models/profile.js';
+import { calculateAge, isDeactivatedStatus, resolveVerificationStatus } from '../models/profile.js';
 import { parseCreateProfileBody, parseProfileUpdateBody } from '../validation/profilePayload.js';
 import { authenticateToken } from '../middleware/auth.js';
 import { verifyUserOwnership, verifyUserIdMatch } from '../middleware/verifyOwnership.js';
@@ -170,6 +170,9 @@ router.get('/discover',
         if (!viewerProfile) {
           return res.status(200).json({ success: true, profiles: [], count: 0, isVerified, skip, limit, sort: sortBy, filters: {} });
         }
+        if (isDeactivatedStatus(resolveVerificationStatus(viewerProfile))) {
+          return res.status(200).json({ success: true, profiles: [], count: 0, isVerified, deactivated: true, skip, limit, sort: sortBy, filters: {} });
+        }
 
         filters.favoritesOnly = true;
         filters.favoriteUserIds = viewerProfile.favoriteUserIds ?? [];
@@ -191,6 +194,9 @@ router.get('/discover',
 
         if (!viewerProfile) {
           return res.status(200).json({ success: true, profiles: [], count: 0, isVerified, skip, limit, sort: sortBy, filters: {} });
+        }
+        if (isDeactivatedStatus(resolveVerificationStatus(viewerProfile))) {
+          return res.status(200).json({ success: true, profiles: [], count: 0, isVerified, deactivated: true, skip, limit, sort: sortBy, filters: {} });
         }
       }
 
@@ -290,6 +296,13 @@ router.get('/view/:userId',
 
       // Check if viewing own profile (for preview functionality)
       const isOwnProfile = targetUserId === viewerUserId;
+
+      if (!isOwnProfile) {
+        const viewerProfile = await readProfile(viewerUserId);
+        if (viewerProfile && isDeactivatedStatus(resolveVerificationStatus(viewerProfile))) {
+          return res.status(403).json({ error: 'profile_deactivated' });
+        }
+      }
 
       const profile = await readProfile(targetUserId);
 
@@ -437,6 +450,7 @@ router.get('/:userId',
           kuldeva: profile.kuldeva,
           foodPreference: profile.foodPreference ?? null,
           verified: profile.verified,
+          verificationStatus: resolveVerificationStatus(profile),
           subscribed: profile.subscribed,
           favoriteUserIds: profile.favoriteUserIds ?? [],
           primaryPhotoKey: profile.primaryPhotoKey ?? null,

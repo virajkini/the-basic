@@ -30,6 +30,13 @@ export function resolveVerificationStatus(p: Pick<Profile, 'verified' | 'verific
   return p.verificationStatus ?? (p.verified ? 'verified' : 'pending');
 }
 
+/** Statuses that deactivate a profile: the user can't browse other profiles (not even blurred). */
+export const DEACTIVATED_VERIFICATION_STATUSES: readonly VerificationStatus[] = ['invalid', 'not_gsb', 'got_married'];
+
+export function isDeactivatedStatus(status: VerificationStatus): boolean {
+  return DEACTIVATED_VERIFICATION_STATUSES.includes(status);
+}
+
 /** The only way to set verification fields — keeps `verified` in sync with `verificationStatus`. */
 export function verificationFields(status: VerificationStatus): Pick<Profile, 'verified' | 'verificationStatus'> {
   return { verificationStatus: status, verified: status === 'verified' };
