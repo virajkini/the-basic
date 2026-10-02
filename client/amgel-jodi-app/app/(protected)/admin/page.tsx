@@ -1,13 +1,17 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { authFetch } from '../../utils/authFetch'
 import OnboardingTab from './OnboardingTab'
 import ImageUploadTab from './ImageUploadTab'
 import NotificationSender from '../../../components/admin/NotificationSender'
 import VerificationStatusSelect from '../../../components/admin/VerificationStatusSelect'
 import VerificationStatusFilter, { type VerificationFilterValue } from '../../../components/admin/VerificationStatusFilter'
+import LoadMoreButton from '../../../components/admin/LoadMoreButton'
 import type { VerificationStatus } from '@/lib/verificationStatus'
+import { useDebouncedValue } from '../../../hooks/useDebouncedValue'
+
+const PAGE_SIZE = 20
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
 
@@ -52,6 +56,13 @@ export default function AdminPage() {
   // Profile state
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [loadingProfiles, setLoadingProfiles] = useState(true)
+  const [profilesLoaded, setProfilesLoaded] = useState(false)
+  const [loadingMoreProfiles, setLoadingMoreProfiles] = useState(false)
+  const [profilesHasMore, setProfilesHasMore] = useState(false)
+  const [profilesTotal, setProfilesTotal] = useState(0)
+  const [totalProfiles, setTotalProfiles] = useState(0)
+  const [statusCounts, setStatusCounts] = useState<Partial<Record<VerificationStatus, number>>>({})
+  const profilesRequestRef = useRef(0)
   const [updating, setUpdating] = useState<string | null>(null)
   const [isLocalhost, setIsLocalhost] = useState(false)
   const [deleteModal, setDeleteModal] = useState<{ open: boolean; profile: Profile | null }>({ open: false, profile: null })
@@ -59,6 +70,7 @@ export default function AdminPage() {
   const [deleting, setDeleting] = useState(false)
   const [profileSearch, setProfileSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<VerificationFilterValue>('all')
+  const debouncedProfileSearch = useDebouncedValue(profileSearch.trim(), 300)
 
   // Messages state
   const [messages, setMessages] = useState<ContactMessage[]>([])
@@ -74,8 +86,13 @@ export default function AdminPage() {
   useEffect(() => {
     const hostname = window.location.hostname
     setIsLocalhost(hostname === 'localhost' || hostname === '127.0.0.1')
-    fetchProfiles()
   }, [])
+
+  // First page on mount and whenever search / status filter changes
+  useEffect(() => {
+    fetchProfiles(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedProfileSearch, statusFilter])
 
   useEffect(() => {
     if (activeTab === 'messages' && messages.length === 0) {
@@ -84,31 +101,55 @@ export default function AdminPage() {
   }, [activeTab])
 
   // Profile functions
-  const fetchProfiles = async () => {
+  /** reset: load the first page (replacing the list); otherwise append the next page. */
+  const fetchProfiles = async (reset = false) => {
+    const requestId = ++profilesRequestRef.current
     try {
-      setLoadingProfiles(true)
+      if (reset) setLoadingProfiles(true)
+      else setLoadingMoreProfiles(true)
       setError(null)
 
-      const response = await authFetch(`${API_BASE}/admin/profiles`)
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        skip: String(reset ? 0 : profiles.length),
+      })
+      if (statusFilter !== 'all') params.set('status', statusFilter)
+      if (debouncedProfileSearch) params.set('q', debouncedProfileSearch)
+
+      const response = await authFetch(`${API_BASE}/admin/profiles?${params}`)
+      if (requestId !== profilesRequestRef.current) return // a newer search/filter superseded this one
 
       if (!response.ok) {
         if (response.status === 403) {
           setError('Access denied. Admin privileges required.')
         } else {
-          const errorData = await response.json()
+          const errorData = await response.json().catch(() => ({}))
           setError(errorData.error || 'Failed to fetch profiles')
         }
         return
       }
 
       const data = await response.json()
+      if (requestId !== profilesRequestRef.current) return
       if (data.success && data.profiles) {
-        setProfiles(data.profiles)
+        setProfiles((prev) => (reset ? data.profiles : [...prev, ...data.profiles]))
+        setProfilesHasMore(!!data.hasMore)
+        setProfilesTotal(data.total ?? 0)
+        if (data.statusCounts) {
+          setStatusCounts(data.statusCounts)
+          setTotalProfiles(data.totalProfiles ?? 0)
+        }
+        setProfilesLoaded(true)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch profiles')
+      if (requestId === profilesRequestRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch profiles')
+      }
     } finally {
-      setLoadingProfiles(false)
+      if (requestId === profilesRequestRef.current) {
+        setLoadingProfiles(false)
+        setLoadingMoreProfiles(false)
+      }
     }
   }
 
@@ -129,6 +170,7 @@ export default function AdminPage() {
         return
       }
 
+      const previous = profiles.find((p) => p.userId === userId)?.verificationStatus
       setProfiles((prev) =>
         prev.map((profile) =>
           profile.userId === userId
@@ -136,27 +178,19 @@ export default function AdminPage() {
             : profile
         )
       )
+      if (previous && previous !== status) {
+        setStatusCounts((prev) => ({
+          ...prev,
+          [previous]: Math.max((prev[previous] ?? 1) - 1, 0),
+          [status]: (prev[status] ?? 0) + 1,
+        }))
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update verification status')
     } finally {
       setUpdating(null)
     }
   }
-
-  const statusCounts = useMemo(() => {
-    const counts: Partial<Record<VerificationStatus, number>> = {}
-    for (const p of profiles) counts[p.verificationStatus] = (counts[p.verificationStatus] ?? 0) + 1
-    return counts
-  }, [profiles])
-
-  const filteredProfiles = useMemo(() => {
-    const q = profileSearch.trim().toLowerCase()
-    return profiles.filter((p) => {
-      if (statusFilter !== 'all' && p.verificationStatus !== statusFilter) return false
-      if (!q) return true
-      return [p.name, p.phone, p.email, p.userId].some((v) => v?.toLowerCase().includes(q))
-    })
-  }, [profiles, profileSearch, statusFilter])
 
   const openDeleteModal = (profile: Profile) => {
     setDeleteModal({ open: true, profile })
@@ -187,7 +221,14 @@ export default function AdminPage() {
         throw new Error(errorData.message || errorData.error || 'Failed to delete user')
       }
 
-      setProfiles((prev) => prev.filter((profile) => profile.userId !== deleteModal.profile?.userId))
+      const deleted = deleteModal.profile
+      setProfiles((prev) => prev.filter((profile) => profile.userId !== deleted.userId))
+      setProfilesTotal((t) => Math.max(t - 1, 0))
+      setTotalProfiles((t) => Math.max(t - 1, 0))
+      setStatusCounts((prev) => ({
+        ...prev,
+        [deleted.verificationStatus]: Math.max((prev[deleted.verificationStatus] ?? 1) - 1, 0),
+      }))
       closeDeleteModal()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete user')
@@ -299,7 +340,7 @@ export default function AdminPage() {
     return labels[subject] || subject
   }
 
-  if (loadingProfiles && activeTab === 'profiles') {
+  if (!profilesLoaded && loadingProfiles && activeTab === 'profiles') {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -319,7 +360,7 @@ export default function AdminPage() {
           <h2 className="text-xl font-semibold text-red-800 mb-2">Error</h2>
           <p className="text-red-600">{error}</p>
           <button
-            onClick={activeTab === 'profiles' ? fetchProfiles : fetchMessages}
+            onClick={activeTab === 'profiles' ? () => fetchProfiles(true) : fetchMessages}
             className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
             Retry
@@ -330,7 +371,7 @@ export default function AdminPage() {
   }
 
   const tabs: { key: Tab; label: string; badge?: number; show: boolean }[] = [
-    { key: 'profiles', label: `Profiles (${profiles.length})`, show: true },
+    { key: 'profiles', label: `Profiles (${totalProfiles})`, show: true },
     { key: 'messages', label: 'Messages', badge: messageCounts?.new, show: true },
     { key: 'onboarding', label: 'Onboarding', show: true },
     { key: 'notifications', label: 'Notifications', show: true },
@@ -392,17 +433,21 @@ export default function AdminPage() {
               value={statusFilter}
               onChange={setStatusFilter}
               counts={statusCounts}
-              total={profiles.length}
+              total={totalProfiles}
             />
           </div>
 
-          {filteredProfiles.length === 0 ? (
+          {loadingProfiles ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            </div>
+          ) : profiles.length === 0 ? (
             <div className="bg-white rounded-lg shadow px-6 py-10 text-center text-sm text-gray-500">No profiles found</div>
           ) : (
             <>
               {/* Mobile: cards */}
               <ul className="space-y-3 md:hidden">
-                {filteredProfiles.map((profile) => (
+                {profiles.map((profile) => (
                   <li key={profile.userId} className="bg-white rounded-xl shadow-sm ring-1 ring-gray-100 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -466,7 +511,7 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredProfiles.map((profile, index) => (
+                      {profiles.map((profile, index) => (
                         <tr key={profile.userId} className="hover:bg-gray-50">
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
                           <td className="px-4 py-3 whitespace-nowrap">
@@ -509,10 +554,15 @@ export default function AdminPage() {
             </>
           )}
 
-          <div className="text-sm text-gray-600">
-            Showing <span className="font-semibold">{filteredProfiles.length}</span> of{' '}
-            <span className="font-semibold">{profiles.length}</span> profiles
-          </div>
+          {!loadingProfiles && profiles.length > 0 && (
+            <LoadMoreButton
+              onClick={() => fetchProfiles(false)}
+              loading={loadingMoreProfiles}
+              hasMore={profilesHasMore}
+              loaded={profiles.length}
+              total={profilesTotal}
+            />
+          )}
         </div>
       )}
 

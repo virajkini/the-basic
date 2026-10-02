@@ -1,28 +1,5 @@
 import { getDatabase } from '../db/mongodb.js';
 import { User } from '../models/user.js';
-import { Profile, VerificationStatus, resolveVerificationStatus } from '../models/profile.js';
-import { countUnseenIncomingRequestsSince } from './connectionManager.js';
-
-export type AdminUserListRow = {
-  userId: string;
-  phone: string | null;
-  email: string | null;
-  authProvider: 'phone' | 'google';
-  userCreatedAt: Date;
-  hasProfile: boolean;
-  name: string | null;
-  isVerified: boolean;
-  verificationStatus: VerificationStatus | null;
-  isSubscribed: boolean;
-  profileCreatedAt: Date | null;
-  profileUpdatedAt: Date | null;
-  profileLastActive: Date | null;
-  unseenConnectionRequests: number;
-};
-
-function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 function generateUserId(): string {
   // 8 hex chars = 4 billion possibilities, negligible collision risk
@@ -146,61 +123,4 @@ export async function findUserById(userId: string): Promise<User | null> {
   
   const user = await collection.findOne({ _id: userId });
   return user;
-}
-
-/**
- * List all users with optional profile summary (admin).
- */
-export async function listAllUsersWithProfileSummary(q?: string): Promise<AdminUserListRow[]> {
-  const db = await getDatabase();
-  const usersCol = db.collection<User>('users');
-  const profilesCol = db.collection<Profile>('profiles');
-
-  const filter: Record<string, unknown> =
-    q && q.trim()
-      ? {
-          $or: [
-            { phone: { $regex: escapeRegex(q.trim()), $options: 'i' } },
-            { email: { $regex: escapeRegex(q.trim()), $options: 'i' } },
-          ],
-        }
-      : {};
-
-  const users = await usersCol.find(filter).sort({ createdAt: -1 }).toArray();
-  const ids = users.map((u) => u._id);
-  const profiles = ids.length
-    ? await profilesCol.find({ _id: { $in: ids } }).toArray()
-    : [];
-  const profileById = new Map(profiles.map((p) => [p._id, p]));
-
-  const sinceByUser = new Map<string, Date>();
-  for (const u of users) {
-    const p = profileById.get(u._id);
-    const since = p?.lastActive ?? p?.updatedAt ?? u.createdAt;
-    sinceByUser.set(u._id, since);
-  }
-  const unseenCounts = await countUnseenIncomingRequestsSince(sinceByUser);
-
-  return users.map((u) => {
-    const p = profileById.get(u._id);
-    const name = p
-      ? p.name || `${p.firstName || ''} ${p.lastName || ''}`.trim() || null
-      : null;
-    return {
-      userId: u._id,
-      phone: u.phone ?? null,
-      email: u.email ?? null,
-      authProvider: u.authProvider,
-      userCreatedAt: u.createdAt,
-      hasProfile: !!p,
-      name,
-      isVerified: p?.verified ?? false,
-      verificationStatus: p ? resolveVerificationStatus(p) : null,
-      isSubscribed: p?.subscribed ?? false,
-      profileCreatedAt: p?.createdAt ?? null,
-      profileUpdatedAt: p?.updatedAt ?? null,
-      profileLastActive: p?.lastActive ?? null,
-      unseenConnectionRequests: unseenCounts.get(u._id) ?? 0,
-    };
-  });
 }

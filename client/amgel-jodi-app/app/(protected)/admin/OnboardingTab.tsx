@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import imageCompression from 'browser-image-compression'
 import { authFetch } from '../../utils/authFetch'
 import { FOOD_PREFERENCE_OPTIONS, type FoodPreference } from '@/lib/foodPreference'
 import { verificationStatusOption, type VerificationStatus } from '@/lib/verificationStatus'
 import VerificationStatusFilter, { type VerificationFilterValue } from '@/components/admin/VerificationStatusFilter'
+import LoadMoreButton from '@/components/admin/LoadMoreButton'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
+const PAGE_SIZE = 20
 
 /** Same values as user profile form: `app/(protected)/profile/page.tsx` */
 const HEIGHT_OPTIONS = [
@@ -179,7 +181,15 @@ function buildProfilePayload(form: ProfileForm, mode: 'create' | 'edit'): Record
 export default function OnboardingTab() {
   const [users, setUsers] = useState<AdminUserRow[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
+  const [loadingMoreUsers, setLoadingMoreUsers] = useState(false)
+  const [usersHasMore, setUsersHasMore] = useState(false)
+  const [usersTotal, setUsersTotal] = useState(0)
+  const [totalUsers, setTotalUsers] = useState(0)
+  const [statusCounts, setStatusCounts] = useState<Partial<Record<VerificationStatus, number>>>({})
+  const usersRequestRef = useRef(0)
   const [userSearch, setUserSearch] = useState('')
+  /** Search actually sent to the server — applied on Enter / button, not on every keystroke */
+  const [appliedSearch, setAppliedSearch] = useState('')
   const [unseenSort, setUnseenSort] = useState<'desc' | 'asc' | null>(null)
   const [statusFilter, setStatusFilter] = useState<VerificationFilterValue>('all')
   const [newPhone, setNewPhone] = useState('')
@@ -216,46 +226,59 @@ export default function OnboardingTab() {
     return () => window.removeEventListener('keydown', onKey)
   }, [imageLightbox, imageDeleteKey, imageDeleteBusy])
 
-  const loadUsers = async () => {
+  /** reset: load the first page (replacing the list); otherwise append the next page. */
+  const loadUsers = async (reset = true) => {
+    const requestId = ++usersRequestRef.current
     try {
-      setLoadingUsers(true)
+      if (reset) setLoadingUsers(true)
+      else setLoadingMoreUsers(true)
       setError(null)
-      const q = userSearch.trim() ? `?q=${encodeURIComponent(userSearch.trim())}` : ''
-      const res = await authFetch(`${API_BASE}/admin/users${q}`)
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        skip: String(reset ? 0 : users.length),
+      })
+      if (appliedSearch) params.set('q', appliedSearch)
+      if (statusFilter !== 'all') params.set('status', statusFilter)
+      if (unseenSort) params.set('unseenSort', unseenSort)
+      const res = await authFetch(`${API_BASE}/admin/users?${params}`)
+      if (requestId !== usersRequestRef.current) return // superseded by a newer search/filter/sort
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.error || 'Failed to load users')
       }
       const data = await res.json()
-      setUsers(data.users || [])
+      if (requestId !== usersRequestRef.current) return
+      const rows: AdminUserRow[] = data.users || []
+      setUsers((prev) => (reset ? rows : [...prev, ...rows]))
+      setUsersHasMore(!!data.hasMore)
+      setUsersTotal(data.total ?? 0)
+      if (data.statusCounts) {
+        setStatusCounts(data.statusCounts)
+        setTotalUsers(data.totalUsers ?? 0)
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load users')
+      if (requestId === usersRequestRef.current) {
+        setError(e instanceof Error ? e.message : 'Failed to load users')
+      }
     } finally {
-      setLoadingUsers(false)
+      if (requestId === usersRequestRef.current) {
+        setLoadingUsers(false)
+        setLoadingMoreUsers(false)
+      }
     }
   }
 
+  // First page on mount and whenever the applied search, status filter or sort changes
   useEffect(() => {
-    loadUsers()
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- initial list only; use Refresh / Apply filter
-  }, [])
+    loadUsers(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliedSearch, statusFilter, unseenSort])
 
-  const statusCounts = useMemo(() => {
-    const counts: Partial<Record<VerificationStatus, number>> = {}
-    for (const u of users) {
-      if (u.verificationStatus) counts[u.verificationStatus] = (counts[u.verificationStatus] ?? 0) + 1
-    }
-    return counts
-  }, [users])
-
-  const sortedUsers = useMemo(() => {
-    const visible = statusFilter === 'all' ? users : users.filter((u) => u.verificationStatus === statusFilter)
-    if (!unseenSort) return visible
-    return [...visible].sort((a, b) => {
-      const diff = (a.unseenConnectionRequests ?? 0) - (b.unseenConnectionRequests ?? 0)
-      return unseenSort === 'asc' ? diff : -diff
-    })
-  }, [users, unseenSort, statusFilter])
+  const applySearch = () => {
+    const next = userSearch.trim()
+    if (next !== appliedSearch) setAppliedSearch(next)
+    else loadUsers(true) // same search → acts as Refresh
+  }
 
   const cycleUnseenSort = () => {
     setUnseenSort((prev) => (prev === null ? 'desc' : prev === 'desc' ? 'asc' : null))
@@ -280,7 +303,7 @@ export default function OnboardingTab() {
         throw new Error(err.error || 'Failed to create user')
       }
       setNewPhone('')
-      await loadUsers()
+      await loadUsers(true)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create user')
     } finally {
@@ -344,7 +367,23 @@ export default function OnboardingTab() {
         throw new Error(err.error || err.details || 'Save failed')
       }
       setEditorHasProfile(true)
-      await loadUsers()
+      // Patch the row in place so the admin keeps their position in the paginated list
+      const savedName = `${form.firstName} ${form.lastName}`.trim() || null
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.userId === editorUserId
+            ? {
+                ...u,
+                hasProfile: true,
+                name: savedName,
+                isSubscribed: form.subscribed,
+                verificationStatus: u.verificationStatus ?? 'pending',
+                profileCreatedAt: u.profileCreatedAt ?? new Date().toISOString(),
+                profileUpdatedAt: new Date().toISOString(),
+              }
+            : u
+        )
+      )
       closeEditor()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Save failed')
@@ -575,19 +614,19 @@ export default function OnboardingTab() {
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="p-4 border-b border-gray-100 space-y-3">
           <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-            <h2 className="text-lg font-semibold text-gray-900 sm:mr-auto">All users ({users.length})</h2>
+            <h2 className="text-lg font-semibold text-gray-900 sm:mr-auto">All users ({totalUsers})</h2>
             <div className="flex gap-2">
               <input
                 type="search"
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && loadUsers()}
+                onKeyDown={(e) => e.key === 'Enter' && applySearch()}
                 placeholder="Filter by phone or email…"
                 className="flex-1 sm:w-56 px-3 py-2 border border-gray-300 rounded-lg text-sm min-w-0"
               />
               <button
                 type="button"
-                onClick={() => loadUsers()}
+                onClick={applySearch}
                 className="shrink-0 px-3 py-2 border border-gray-300 rounded-lg text-sm"
               >
                 <span className="sm:hidden">Search</span>
@@ -599,7 +638,7 @@ export default function OnboardingTab() {
             value={statusFilter}
             onChange={setStatusFilter}
             counts={statusCounts}
-            total={users.length}
+            total={totalUsers}
           />
           <button
             type="button"
@@ -612,13 +651,13 @@ export default function OnboardingTab() {
         </div>
         {loadingUsers ? (
           <div className="p-8 text-center text-gray-500">Loading users…</div>
-        ) : sortedUsers.length === 0 ? (
+        ) : users.length === 0 ? (
           <div className="p-8 text-center text-sm text-gray-500">No users found</div>
         ) : (
           <>
             {/* Mobile: cards */}
             <ul className="md:hidden divide-y divide-gray-100">
-              {sortedUsers.map((u) => (
+              {users.map((u) => (
                 <li key={u.userId} className="p-4 space-y-2">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
@@ -691,7 +730,7 @@ export default function OnboardingTab() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {sortedUsers.map((u) => (
+                  {users.map((u) => (
                     <tr key={u.userId} className="hover:bg-gray-50">
                       <td className="px-4 py-3 text-sm whitespace-nowrap">{u.phone || '—'}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{u.email || '—'}</td>
@@ -733,6 +772,15 @@ export default function OnboardingTab() {
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="border-t border-gray-100 px-4 py-3">
+              <LoadMoreButton
+                onClick={() => loadUsers(false)}
+                loading={loadingMoreUsers}
+                hasMore={usersHasMore}
+                loaded={users.length}
+                total={usersTotal}
+              />
             </div>
           </>
         )}
