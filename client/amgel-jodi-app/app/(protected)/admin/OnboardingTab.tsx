@@ -5,8 +5,7 @@ import { createPortal } from 'react-dom'
 import imageCompression from 'browser-image-compression'
 import { authFetch } from '../../utils/authFetch'
 import { FOOD_PREFERENCE_OPTIONS, type FoodPreference } from '@/lib/foodPreference'
-import type { VerificationStatus } from '@/lib/verificationStatus'
-import VerificationStatusSelect from '@/components/admin/VerificationStatusSelect'
+import { verificationStatusOption, type VerificationStatus } from '@/lib/verificationStatus'
 import VerificationStatusFilter, { type VerificationFilterValue } from '@/components/admin/VerificationStatusFilter'
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001/api'
@@ -49,6 +48,16 @@ function formatAdminDate(iso: string | null | undefined): string {
   })
 }
 
+/** Read-only status pill — status is changed from the Profiles tab only. */
+function StatusBadge({ status }: { status: VerificationStatus }) {
+  const o = verificationStatusOption(status)
+  return (
+    <span className={`inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ring-1 ring-inset whitespace-nowrap ${o.badge}`}>
+      {o.label}
+    </span>
+  )
+}
+
 type ProfileForm = {
   creatingFor: string
   firstName: string
@@ -70,7 +79,6 @@ type ProfileForm = {
   nakshatra: string
   kuldeva: string
   foodPreference: FoodPreference | ''
-  verificationStatus: VerificationStatus
   subscribed: boolean
 }
 
@@ -95,7 +103,6 @@ const emptyForm = (): ProfileForm => ({
   nakshatra: '',
   kuldeva: '',
   foodPreference: '',
-  verificationStatus: 'pending',
   subscribed: false,
 })
 
@@ -133,7 +140,6 @@ function profileToForm(p: Record<string, unknown>): ProfileForm {
       p.foodPreference === 'eggetarian'
         ? (p.foodPreference as FoodPreference)
         : '',
-    verificationStatus: (p.verificationStatus as VerificationStatus) || (p.verified ? 'verified' : 'pending'),
     subscribed: Boolean(p.subscribed),
   }
 }
@@ -166,7 +172,6 @@ function buildProfilePayload(form: ProfileForm, mode: 'create' | 'edit'): Record
   } else if (form.foodPreference) {
     base.foodPreference = form.foodPreference
   }
-  base.verificationStatus = form.verificationStatus
   base.subscribed = form.subscribed
   return base
 }
@@ -177,7 +182,6 @@ export default function OnboardingTab() {
   const [userSearch, setUserSearch] = useState('')
   const [unseenSort, setUnseenSort] = useState<'desc' | 'asc' | null>(null)
   const [statusFilter, setStatusFilter] = useState<VerificationFilterValue>('all')
-  const [updatingStatusFor, setUpdatingStatusFor] = useState<string | null>(null)
   const [newPhone, setNewPhone] = useState('')
   const [creatingUser, setCreatingUser] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -186,8 +190,6 @@ export default function OnboardingTab() {
   const [editorUserId, setEditorUserId] = useState<string | null>(null)
   const [editorHasProfile, setEditorHasProfile] = useState(false)
   const [form, setForm] = useState<ProfileForm>(emptyForm)
-  /** Status persisted on the server when the editor opened — drives the "remove verification?" confirm */
-  const [savedStatus, setSavedStatus] = useState<VerificationStatus>('pending')
   const [savingProfile, setSavingProfile] = useState(false)
 
   const [imageFiles, setImageFiles] = useState<File[]>([])
@@ -255,29 +257,6 @@ export default function OnboardingTab() {
     })
   }, [users, unseenSort, statusFilter])
 
-  const updateRowStatus = async (userId: string, status: VerificationStatus) => {
-    try {
-      setUpdatingStatusFor(userId)
-      setError(null)
-      const res = await authFetch(`${API_BASE}/admin/profiles/${userId}/verification-status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || 'Failed to update status')
-      }
-      setUsers((prev) =>
-        prev.map((u) => (u.userId === userId ? { ...u, verificationStatus: status, isVerified: status === 'verified' } : u))
-      )
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update status')
-    } finally {
-      setUpdatingStatusFor(null)
-    }
-  }
-
   const cycleUnseenSort = () => {
     setUnseenSort((prev) => (prev === null ? 'desc' : prev === 'desc' ? 'asc' : null))
   }
@@ -319,9 +298,7 @@ export default function OnboardingTab() {
         const res = await authFetch(`${API_BASE}/admin/users/${userId}`)
         if (!res.ok) throw new Error('Failed to load user')
         const data = await res.json()
-        const loaded = data.profile ? profileToForm(data.profile as Record<string, unknown>) : emptyForm()
-        setForm(loaded)
-        setSavedStatus(loaded.verificationStatus)
+        setForm(data.profile ? profileToForm(data.profile as Record<string, unknown>) : emptyForm())
         const imgRes = await authFetch(`${API_BASE}/admin/users/${userId}/files`)
         if (imgRes.ok) {
           const imgData = await imgRes.json()
@@ -332,7 +309,6 @@ export default function OnboardingTab() {
         }
       } else {
         setForm(emptyForm())
-        setSavedStatus('pending')
         setExistingImages([])
       }
       setEditorOpen(true)
@@ -672,19 +648,11 @@ export default function OnboardingTab() {
                     <span>Last active: {formatAdminDate(u.profileLastActive ?? undefined)}</span>
                   </div>
                   <div className="flex items-center gap-2 pt-1">
-                    {u.hasProfile && u.verificationStatus && (
-                      <VerificationStatusSelect
-                        value={u.verificationStatus}
-                        onChange={(next) => updateRowStatus(u.userId, next)}
-                        subjectLabel={u.name || u.phone || u.userId}
-                        busy={updatingStatusFor === u.userId}
-                        className="flex-1"
-                      />
-                    )}
+                    {u.hasProfile && u.verificationStatus && <StatusBadge status={u.verificationStatus} />}
                     <button
                       type="button"
                       onClick={() => openEditor(u.userId, u.hasProfile)}
-                      className={`text-xs font-medium px-3 py-1.5 rounded-full bg-myColor-100 text-myColor-800 hover:bg-myColor-200 ${u.hasProfile ? '' : 'flex-1'}`}
+                      className={`text-xs font-medium px-3 py-1.5 rounded-full bg-myColor-100 text-myColor-800 hover:bg-myColor-200 ${u.hasProfile ? 'ml-auto' : 'flex-1'}`}
                     >
                       {u.hasProfile ? 'Edit' : 'Create profile'}
                     </button>
@@ -730,17 +698,7 @@ export default function OnboardingTab() {
                       <td className="px-4 py-3 text-xs font-mono">{u.userId}</td>
                       <td className="px-4 py-3 text-sm">{u.hasProfile ? (u.name || 'Yes') : '—'}</td>
                       <td className="px-4 py-3 text-sm whitespace-nowrap">
-                        {u.hasProfile && u.verificationStatus ? (
-                          <VerificationStatusSelect
-                            value={u.verificationStatus}
-                            onChange={(next) => updateRowStatus(u.userId, next)}
-                            subjectLabel={u.name || u.phone || u.userId}
-                            busy={updatingStatusFor === u.userId}
-                            className="w-36"
-                          />
-                        ) : (
-                          '—'
-                        )}
+                        {u.hasProfile && u.verificationStatus ? <StatusBadge status={u.verificationStatus} /> : '—'}
                       </td>
                       <td className="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">
                         {formatAdminDate(u.profileCreatedAt ?? undefined)}
@@ -941,17 +899,7 @@ export default function OnboardingTab() {
                     ))}
                   </select>
                 </label>
-                <div className="text-sm">
-                  <span className="text-gray-600 block mb-1">Verification status</span>
-                  <VerificationStatusSelect
-                    value={form.verificationStatus}
-                    savedValue={editorHasProfile ? savedStatus : 'pending'}
-                    onChange={(next) => updateField('verificationStatus', next)}
-                    subjectLabel={`${form.firstName} ${form.lastName}`.trim() || undefined}
-                    className="w-full sm:w-48"
-                  />
-                </div>
-                <label className="flex items-center gap-2 text-sm sm:pt-6">
+                <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={form.subscribed} onChange={(e) => updateField('subscribed', e.target.checked)} />
                   Subscribed
                 </label>
